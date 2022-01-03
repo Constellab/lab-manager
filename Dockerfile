@@ -17,7 +17,7 @@ COPY / .
 RUN npm run build
 
 ## Second Stage : Setup command to run your app using lightweight node image
-FROM node:12-alpine
+FROM ubuntu:20.04
 WORKDIR /app
 
 # Install docker to run docker commands
