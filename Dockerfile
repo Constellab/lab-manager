@@ -50,7 +50,7 @@ RUN npm ci --production
 # copy dist
 COPY --from=builder /app/dist/ ./dist
 
-EXPOSE 3011
+EXPOSE 3010
 CMD ["node", "dist/main"]
 
 

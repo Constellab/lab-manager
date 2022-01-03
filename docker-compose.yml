@@ -9,10 +9,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
       - "traefik.enable=true"
-      # Config for the HTTPS glab domain to port 3011
+      # Config for the HTTPS glab domain to port 3010
       - "traefik.http.routers.lab-manager-router.rule=host(`lab-manager.${VIRTUAL_HOST}`)"
       - "traefik.http.routers.lab-manager-router.service=lab-manager-service"
-      - "traefik.http.services.lab-manager-service.loadbalancer.server.port=3011"
+      - "traefik.http.services.lab-manager-service.loadbalancer.server.port=3010"
       # Enable HTTPS
       - "traefik.http.routers.lab-manager-router.entrypoints=websecure"
       - "traefik.http.routers.lab-manager-router.tls.certresolver=myresolver"
