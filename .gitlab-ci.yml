@@ -15,7 +15,7 @@ stages:
 # Build nest and create an artifact with dist folder
 build-app:
   image: node:14-alpine
-  stage: build-lab
+  stage: build-app
   script:
     - npm ci
     - npm run build
@@ -30,7 +30,7 @@ build-app:
 
 # Push lab-front image to the docker registry using Dockerfile of the lab-front
 deploy-app:
-  stage: deploy-lab
+  stage: deploy-app
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
