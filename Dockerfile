@@ -22,9 +22,15 @@ FROM ubuntu:20.04
 
 RUN ls
 
-RUN ls home
+RUN ls /
 
-RUN ls ~
+RUN ls -a home
+
+RUN ls -a ~
+
+RUN ls -a dist
+
+RUN ls -a /dist
 
 #RUN ls dist
 # dependency are needed and there are not build in chunck
