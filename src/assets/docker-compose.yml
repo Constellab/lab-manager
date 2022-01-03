@@ -194,42 +194,8 @@ services:
     restart: always
     container_name: gws_biota_dev_db
 
-  # Traefik reverse proxy
-  reverse-proxy:
-    # The official v2 Traefik docker image
-    image: traefik:v2.4
-    command:
-      # So that Traefik can listen to the Docker events
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      # Enable HTTPS
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      # Email for let's encrypt
-      - "--certificatesresolvers.myresolver.acme.email=admin@gencovery.com"
-      # Json file to store certificate
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-
-      # Redirect HTTP to HTTPS
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
-    ports:
-      - 443:443
-      - 80:80
-    volumes:
-      # Volume to store the lets encrypt certificats
-      - "/srv/letsencrypt:/letsencrypt"
-      # So that Traefik can listen to the Docker events
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - gencovery-network-dev
-      - gencovery-network-prod
-    container_name: reverse_proxy
-
 networks:
   gencovery-network-dev:
-    external: false
+    external: true
   gencovery-network-prod:
-    external: false
+    external: true
