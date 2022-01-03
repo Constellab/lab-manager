@@ -4,13 +4,14 @@ import {FileService} from '../file/file.service';
 import {PrivateFile} from '../../model/private-file.class';
 import {KeyGeneratorService} from '../key-generator/key-generator.service';
 import {ConfigFile} from '../../model/config-file.class';
+import {hashSync} from 'bcrypt'
 
 @Injectable()
 export class InitService implements OnApplicationBootstrap {
 
   private readonly logger = new Logger(InitService.name);
 
-  constructor(private coreService: CoreConfigService,
+  constructor(private configService: CoreConfigService,
     private fileService: FileService,
     private keyGenerator: KeyGeneratorService) {
 
@@ -25,6 +26,8 @@ export class InitService implements OnApplicationBootstrap {
     if (!this.fileService.configFileExists()) {
       this.generateConfigFile();
     }
+
+    this.initEnvVariable();
   }
 
   private generatePrivateFile(): void {
@@ -35,7 +38,7 @@ export class InitService implements OnApplicationBootstrap {
     if (privateJson.central.api_key == null) {
       privateJson.central.api_key = this.keyGenerator.generateRandomKey(96);
     }
-    privateJson.central.api_url = this.coreService.getCentralApiUrl();
+    privateJson.central.api_url = this.configService.getCentralApiUrl();
 
     // generate the lab token
     if (privateJson.lab.token == null) {
@@ -53,6 +56,38 @@ export class InitService implements OnApplicationBootstrap {
     this.fileService.createConfigFile(configJson);
 
     this.logger.log('config.json file generated');
+  }
+
+  private initEnvVariable(): void {
+    const configJson: ConfigFile = this.fileService.readConfigFile();
+    const privateJson: PrivateFile = this.fileService.readPrivateFile();
+
+    this.setEnvVariable('APP_DIR', configJson.app_dir);
+    this.setEnvVariable('LAB_NAME', configJson.name);
+    this.setEnvVariable('LAB_TOKEN', privateJson.lab.token);
+    this.setEnvVariable('GPU', ''); // todo
+    this.setEnvVariable('CENTRAL_API_KEY', privateJson.central.api_key);
+    this.setEnvVariable('CENTRAL_API_URL', privateJson.central.api_url);
+    // set the IMAGE_SUFFIX to use the correct image based on if GPU is on
+    this.setEnvVariable('IMAGE_SUFFIX', this.configService.isGPU() ? 'gpu': 'cpu');
+
+    // Data urls
+    this.setEnvVariable('BIOTA_MARIA_DB_URL', privateJson.db.gws_biota_mariadb_url);
+    this.setEnvVariable('BIOTA_SQLITE3_DB_URL', privateJson.db.gws_biota_sqlite3db_url);
+    this.setEnvVariable('OPENDATA_BIODATA_URL', privateJson.db.opendata_biodata_url);
+    this.setEnvVariable('OPENDATA_GLOVE_URL', privateJson.db.opendata_glove_url);
+    this.setEnvVariable('OPENDATA_URL', privateJson.db.opendata_url);
+    this.setEnvVariable('TESTDATA_URL', privateJson.db.testdata_url);
+
+
+    // Generate the htpasswd for the Lab token for CODELAB using Bcrypt
+    const hash = hashSync(privateJson.lab.token, 10)
+    this.setEnvVariable('HT_PASSWD' , hash)
+
+  }
+
+  private setEnvVariable(name: string, value: string): void {
+    process.env[name] = value;
   }
 
 

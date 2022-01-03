@@ -17,6 +17,6 @@ describe('DockerService', () => {
   });
 
   it('should be defined', async () => {
-    await service.listRunningContainer();
+    await service.listContainers();
   });
 });

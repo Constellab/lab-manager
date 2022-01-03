@@ -11,7 +11,7 @@ export class DockerCommandMock implements DockerCommandServiceI {
     return Promise.resolve('');
   }
 
-  composeUp(options?: string[]): Promise<string> {
+  composeUp(): Promise<string> {
     return Promise.resolve('');
   }
 
@@ -21,5 +21,19 @@ export class DockerCommandMock implements DockerCommandServiceI {
 {"Command":"\\"docker-entrypoint.sh mariadbd\\"","CreatedAt":"2021-11-25 18:49:57 +0100 CET","ID":"1037cf73f9f0493901b6c454cfa67c2efbcf5b7c0bc9b136b15c1b7ff393b817","Image":"mariadb:10","Labels":"com.docker.compose.depends_on=,com.docker.compose.image=sha256:e2278f24ac88b82f98ef58de4bf15c0b01df3de2f1fe835e2ea4350282d58700,com.docker.compose.project=local,com.docker.compose.project.config_files=C:\\\\Users\\\\benji\\\\Documents\\\\Project\\\\Gencovery\\\\dockerlab\\\\docker-compose\\\\local\\\\docker-compose.yml,com.docker.compose.project.working_dir=C:\\\\Users\\\\benji\\\\Documents\\\\Project\\\\Gencovery\\\\dockerlab\\\\docker-compose\\\\local,com.docker.compose.version=2.1.1,com.docker.compose.config-hash=7f12f38b1e0e7e82ad544cdd7f2488f6d79e9230447c2e9eba1144fa258d50ad,com.docker.compose.container-number=1,com.docker.compose.oneoff=False,com.docker.compose.service=test_gws_dev_db","LocalVolumes":"1","Mounts":"b8acb6b7450f3adc62b3ede67237d313f060d13362f844d0e26bff3176184f6d","Names":"local-test_gws_dev_db-1","Networks":"local_gencovery-network","Ports":"0.0.0.0:3308-\u003e3306/tcp","RunningFor":"4 weeks ago","Size":"2B (virtual 410MB)","State":"running","Status":"Up 3 hours"},
 `);
   }
+
+  getLogs(): Promise<string> {
+    return Promise.resolve('INFO:     Started server process [1]\n' +
+      'INFO:     Waiting for application startup.\n' +
+      'INFO - 2022-01-03 11:50:26.794137 -  The queue is initialized and active\n' +
+      'INFO:     Application startup complete.\n' +
+      'INFO:     Uvicorn running on http://0.0.0.0:3000 (Press CTRL+C to quit)');
+  }
+
+  login(): Promise<string> {
+    return Promise.resolve('');
+  }
+
+
 
 }

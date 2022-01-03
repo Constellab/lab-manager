@@ -8,7 +8,7 @@ export class DockerService {
   constructor(private dockerCommand: DockerCommandService) {
   }
 
-  public async listRunningContainer(): Promise<DockerPs[]> {
+  public async listContainers(): Promise<DockerPs[]> {
     const result = await this.dockerCommand.dockerPs();
 
     return JSON.parse('[' + result.slice(0, -2) + ']');
@@ -24,8 +24,17 @@ export class DockerService {
     return this.dockerCommand.composeUp(strOptions);
   }
 
-  public async downContains(): Promise<void> {
+  public async downContainers(): Promise<void> {
     await this.dockerCommand.composeDown();
   }
 
+  public async restartContainers(options: ComposeUpOptions): Promise<any> {
+    await this.downContainers();
+
+    return await this.upContainers(options);
+  }
+
+  public async getLogs(containerName: string): Promise<string> {
+    return await this.dockerCommand.getLogs(containerName);
+  }
 }

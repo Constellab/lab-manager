@@ -9,4 +9,8 @@ export interface DockerCommandServiceI {
   composeDown(): Promise<string>;
 
   dockerPs(): Promise<string>;
+
+  getLogs(containerName: string): Promise<string>
+
+  login(username: string, password: string, registryUrl: string): Promise<string>;
 }

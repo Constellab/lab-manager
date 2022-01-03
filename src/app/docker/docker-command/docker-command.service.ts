@@ -21,8 +21,17 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
 
   public dockerPs(): Promise<string> {
-    return this.execCommand(`docker ps --no-trunc --format="{{json .}},"`);
+    return this.execCommand(`docker ps -a --no-trunc --format="{{json .}},"`);
   }
+
+  public getLogs(containerName: string): Promise<string> {
+    return this.execCommand(`docker logs ${containerName}`);
+  }
+
+  login(username: string, password: string, registryUrl: string): Promise<string> {
+    return this.execCommand(`docker login -u ${username} -p ${password} ${registryUrl}`);
+  }
+
 
   private execCommand(command: string): Promise<string> {
     return new Promise(((resolve, reject) => {

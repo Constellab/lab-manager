@@ -1,0 +1,235 @@
+version: "3"
+
+services:
+
+  # Production Glab
+  glab_prod:
+    image: registry.gitlab.com/gencovery/infra/gpm/glab-${IMAGE_SUFFIX}:latest
+    environment:
+      - LAB_NAME=${LAB_NAME}
+      - LAB_DB_ENGINE=${LAB_DB_ENGINE}
+      - LAB_MODE=prod
+      - LAB_ENVIRONMENT=PROD
+      - CENTRAL_API_KEY=${CENTRAL_API_KEY}
+      - CENTRAL_API_URL=${CENTRAL_API_URL}
+      - CONDA_VERSION=latest
+      - GPU=${GPU}
+      - VIRTUAL_HOST=${VIRTUAL_HOST}
+      - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
+      - UPDATE_GIT_BRICKS=${UPDATE_GIT_BRICKS}
+      - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
+      - GWS_GIT_PWD=${GWS_GIT_PWD}
+    depends_on:
+      - gws_core_prod_db
+      - gws_biota_prod_db
+    volumes:
+      - /app/prod/lab:/lab
+      - /app/prod/logs:/logs
+      - /app/prod/data:/data
+      - /app/prod/settings/glab-prod:/conf/settings
+      - /app/conf/config.json:/conf/config.json:ro
+    labels:
+      - "traefik.enable=true"
+      # Config for the HTTPS glab domain to port 8080
+      - "traefik.http.routers.glab-prod-router.rule=host(`glab-prod.${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.glab-prod-router.service=glab-prod-service"
+      - "traefik.http.services.glab-prod-service.loadbalancer.server.port=3000"
+      # Enable HTTPS
+      - "traefik.http.routers.glab-prod-router.entrypoints=websecure"
+      - "traefik.http.routers.glab-prod-router.tls.certresolver=myresolver"
+    networks:
+      - gencovery-network-prod
+    restart: always
+    container_name: glab
+
+  # Codelab
+  codelab:
+    image: registry.gitlab.com/gencovery/infra/gpm/codelab-${IMAGE_SUFFIX}:latest
+    environment:
+      - LAB_NAME=${LAB_NAME}
+      - LAB_DB_ENGINE=${LAB_DB_ENGINE}
+      - LAB_MODE=dev
+      - LAB_ENVIRONMENT=PROD
+      - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}
+      - VIRTUAL_HOST=${VIRTUAL_HOST}
+      - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
+      - CONDA_VERSION=latest
+      - GPU=${GPU}
+      - UPDATE_GIT_BRICKS=${UPDATE_GIT_BRICKS}
+      - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
+      - GWS_GIT_PWD=${GWS_GIT_PWD}
+    depends_on:
+      - gws_core_dev_db
+      - gws_biota_dev_db
+    volumes:
+      - /app/dev/lab:/lab
+      - /app/dev/logs:/logs
+      - /app/dev/data:/data
+      - /app/prod/settings/glab-prod:/conf/settings
+      - /app/conf/config.json:/conf/config.json:ro
+    labels:
+      - "traefik.enable=true"
+      # Config for the HTTPS codelab domain to port 8080
+      - "traefik.http.routers.codelab-router.rule=host(`codelab.${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.codelab-router.service=codelab-service"
+      - "traefik.http.services.codelab-service.loadbalancer.server.port=8080"
+      # Enable HTTPS
+      - "traefik.http.routers.codelab-router.entrypoints=websecure"
+      - "traefik.http.routers.codelab-router.tls.certresolver=myresolver"
+      # secure the access with htpasswd
+      - "traefik.http.routers.codelab-router.middlewares=basic-auth"
+      - "traefik.http.middlewares.basic-auth.basicauth.users=${HT_PASSWD}"
+
+      # Config for the HTTPS gws run inside the CODELAB domain to port 3000
+      - "traefik.http.routers.glab-dev-router.rule=host(`glab-dev.${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.glab-dev-router.service=glab-dev-service"
+      - "traefik.http.services.glab-dev-service.loadbalancer.server.port=3000"
+      # Enable HTTPS
+      - "traefik.http.routers.glab-dev-router.entrypoints=websecure"
+      - "traefik.http.routers.glab-dev-router.tls.certresolver=myresolver"
+    networks:
+      - gencovery-network-dev
+    restart: always
+    container_name: codelab
+
+
+  # Front
+  front:
+    image: registry.gitlab.com/gencovery/core/monorepo/lab-front:latest
+    environment:
+      - API_URL=https://glab-prod.${VIRTUAL_HOST}/
+      - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}/
+      - DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}/
+      - CODE_SERVER_URL=https://codelab.${VIRTUAL_HOST}
+      - VIRTUAL_HOST=${VIRTUAL_HOST}
+    labels:
+      - "traefik.enable=true"
+      # Configure Host domain to port 81
+      - "traefik.http.routers.front-router.rule=Host(`front.${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.front-router.service=front-service"
+      - "traefik.http.services.front-service.loadbalancer.server.port=81"
+      #Enable HTTPS
+      - "traefik.http.routers.front-router.entrypoints=websecure"
+      - "traefik.http.routers.front-router.tls.certresolver=myresolver"
+      - "traefik.frontend.redirect.entryPoint=https"
+    networks:
+      - gencovery-network-prod
+    restart: always
+    container_name: front
+
+  # GWS Core Production DB
+  gws_core_prod_db:
+    image: mariadb:10
+    command: --max_allowed_packet=256M
+    environment:
+      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_USER=gws_core
+      - MYSQL_PASSWORD=gencovery
+      - MYSQL_DATABASE=gws_core
+    volumes:
+      - /app/prod/data/gws_core/mariadb:/var/lib/mysql
+    networks:
+      - gencovery-network-prod
+    restart: always
+    container_name: gws_core_prod_db
+
+  # GWS Core Development DB
+  gws_core_dev_db:
+    image: mariadb:10
+    command: --max_allowed_packet=256M
+    environment:
+      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_USER=gws_core
+      - MYSQL_PASSWORD=gencovery
+      - MYSQL_DATABASE=gws_core
+    volumes:
+      - /app/dev/data/gws_core/mariadb:/var/lib/mysql
+    networks:
+      - gencovery-network-dev
+    restart: always
+    container_name: gws_core_dev_db
+
+  # GWS Test db
+  test_gws_dev_db:
+    image: mariadb:10
+    command: --max_allowed_packet=256M
+    environment:
+      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_USER=test_gws
+      - MYSQL_PASSWORD=gencovery
+      - MYSQL_DATABASE=test_gws
+    networks:
+      - gencovery-network-dev
+    container_name: test_gws_dev_db
+
+  # GWS Biota Production DB
+  gws_biota_prod_db:
+    image: mariadb:10
+    command: --max_allowed_packet=256M
+    environment:
+      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_USER=gws_biota
+      - MYSQL_PASSWORD=gencovery
+      - MYSQL_DATABASE=gws_biota
+    volumes:
+      - /app/prod/data/gws_biota/mariadb:/var/lib/mysql
+    networks:
+      - gencovery-network-prod
+    restart: always
+    container_name: gws_biota_prod_db
+
+  # GWS Biota Development DB
+  gws_biota_dev_db:
+    image: mariadb:10
+    command: --max_allowed_packet=256M
+    environment:
+      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_USER=gws_biota
+      - MYSQL_PASSWORD=gencovery
+      - MYSQL_DATABASE=gws_biota
+    volumes:
+      - /app/dev/data/gws_biota/mariadb:/var/lib/mysql
+    networks:
+      - gencovery-network-dev
+    restart: always
+    container_name: gws_biota_dev_db
+
+  # Traefik reverse proxy
+  reverse-proxy:
+    # The official v2 Traefik docker image
+    image: traefik:v2.4
+    command:
+      # So that Traefik can listen to the Docker events
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      # Enable HTTPS
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      # Email for let's encrypt
+      - "--certificatesresolvers.myresolver.acme.email=admin@gencovery.com"
+      # Json file to store certificate
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+
+      # Redirect HTTP to HTTPS
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+    ports:
+      - 443:443
+      - 80:80
+    volumes:
+      # Volume to store the lets encrypt certificats
+      - "/srv/letsencrypt:/letsencrypt"
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - gencovery-network-dev
+      - gencovery-network-prod
+    container_name: reverse_proxy
+
+networks:
+  gencovery-network-dev:
+    external: false
+  gencovery-network-prod:
+    external: false

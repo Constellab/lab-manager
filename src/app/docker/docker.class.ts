@@ -11,10 +11,15 @@ export interface DockerPs {
   Ports: string;
   RunningFor: string;
   Size: string;
-  State: string;
+  State: 'running' | 'exited';
   Status: string;
 }
 
 export interface ComposeUpOptions{
   updateBricks?: boolean;
+}
+
+export interface ContainerStatus{
+    name: string;
+
 }

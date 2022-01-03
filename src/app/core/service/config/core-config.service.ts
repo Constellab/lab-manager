@@ -35,11 +35,38 @@ export class CoreConfigService {
     return this.configService.get('LAB_MANAGER_API_KEY');
   }
 
+  public isGPU(): boolean {
+    const stringBool: string = this.configService.get('GPU');
+
+    return stringBool === 'true';
+  }
+
   public getCentralApiUrl(): string {
     if (this.getEnvironmentProfile() === 'prod') {
       return 'https://central-back.constellab.gencovery.com';
     } else {
       return 'https://central-back-pre-prod.constellab-pre-prod.gencovery.com';
+    }
+  }
+
+  protected getConfigNumber(configName: string): number {
+    try {
+      return parseInt(this.configService.get(configName), 10);
+    } catch (error) {
+      console.error('Error while parsing config ' + configName + ' to number');
+      throw error;
+    }
+  }
+
+  protected getConfigBoolean(configName: string): boolean {
+    const stringBool: string = this.configService.get(configName);
+
+    if (stringBool === 'false') {
+      return false;
+    } else if (stringBool === 'true') {
+      return true;
+    } else {
+      throw Error('Error while parsing config ' + configName + ' to boolean');
     }
   }
 }

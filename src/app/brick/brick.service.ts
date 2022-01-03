@@ -16,7 +16,7 @@ export class BrickService {
 
     for(const pipEnv of config.environment.pip){
       for(const brick of pipEnv.packages){
-        if (brick.isBrick) {
+        if (brick.is_brick) {
           bricks.push({
             name: brick.name,
             type: 'pip',
@@ -30,7 +30,7 @@ export class BrickService {
     // add git bricks
     for (const gitEnv of config.environment.git) {
       for (const brick of gitEnv.packages) {
-        if (brick.isBrick) {
+        if (brick.is_brick) {
           bricks.push({
             name: brick.name,
             type: 'git',
