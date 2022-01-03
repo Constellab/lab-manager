@@ -1,5 +1,5 @@
 import {Injectable} from '@nestjs/common';
-import {DockerCommandService} from '../docker-command/docker-command.service';
+import {DockerCommandService} from '../../core/service/docker-command/docker-command.service';
 import {ComposeUpOptions, DockerPs} from '../docker.class';
 
 @Injectable()

@@ -4,6 +4,7 @@ import {InitService} from './service/init/init.service';
 import {CoreConfigService} from './service/config/core-config.service';
 import {CORE_MODULE_PROVIDER, CoreModuleConfig} from './model/core-module-config.class';
 import {KeyGeneratorService} from './service/key-generator/key-generator.service';
+import {DockerCommandService} from './service/docker-command/docker-command.service';
 
 @Module({
   providers: [
@@ -23,13 +24,16 @@ export class CoreModule {
         FileService,
         InitService,
         CoreConfigService,
-        KeyGeneratorService
+        KeyGeneratorService,
+        DockerCommandService,
       ],
       exports: [
         FileService,
         InitService,
         CoreConfigService,
-        KeyGeneratorService
+        KeyGeneratorService,
+        DockerCommandService,
+
       ]
     };
   }

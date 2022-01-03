@@ -1,7 +1,7 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {DockerService} from './docker.service';
-import {DockerCommandService} from '../docker-command/docker-command.service';
-import {DockerCommandMock} from '../docker-command/docker-command.mock';
+import {DockerCommandService} from '../../core/service/docker-command/docker-command.service';
+import {DockerCommandMock} from '../../core/service/docker-command/docker-command.mock';
 
 describe('DockerService', () => {
   let service: DockerService;
