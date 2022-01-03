@@ -10,23 +10,6 @@ variables:
 
 stages:
   - build-app
-  - deploy-app
-
-# Build nest and create an artifact with dist folder
-build-app:
-  image: node:14-alpine
-  stage: build-app
-  script:
-    - npm ci
-    - npm run build
-  artifacts:
-    expire_in: 1 day
-    paths:
-      - dist/
-      - package.json
-      - package-lock.json
-  only:
-    - master
 
 # Push lab-front image to the docker registry using Dockerfile of the lab-front
 deploy-app:
