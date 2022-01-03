@@ -22,6 +22,10 @@ FROM ubuntu:20.04
 
 RUN ls
 
+RUN ls home
+
+RUN ls ~
+
 #RUN ls dist
 # dependency are needed and there are not build in chunck
 RUN npm install --only=production
