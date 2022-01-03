@@ -12,8 +12,8 @@ stages:
   - build-app
 
 # Push lab-front image to the docker registry using Dockerfile of the lab-front
-deploy-app:
-  stage: deploy-app
+build-app:
+  stage: build-app
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
