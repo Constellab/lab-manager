@@ -25,7 +25,6 @@ export class DockerService {
     } else {
       CoreConfigService.setEnvVariable('UPDATE_GIT_BRICKS', '0');
     }
-    throw Error('ça ce passe mal')
 
     return this.dockerCommand.composeUp(this.fileService.dockerComposePath, strOptions);
   }
