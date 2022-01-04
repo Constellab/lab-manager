@@ -13,6 +13,9 @@ services:
       - GWS_GIT_LOGIN=astroboygencovery
       - GWS_GIT_PWD=plHjfdrnpL%26JJ9h2RMKYQtuLHUYvHQ8ZzU%23yUWm%26
       - VIRTUAL_HOST=${VIRTUAL_HOST}
+      - DOCKER_REGISTRY_PWD=mmDyQMy3GPoiy_Q63X2Y
+      - DOCKER_REGISTRY_USERNAME=gencovery-reader
+      - DOCKER_REGISTRY_URL=registry.gitlab.com
     labels:
       - "traefik.enable=true"
       # Config for the HTTPS glab domain to port 3010

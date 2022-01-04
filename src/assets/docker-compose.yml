@@ -7,7 +7,6 @@ services:
     image: registry.gitlab.com/gencovery/infra/gpm/glab-${IMAGE_SUFFIX}:latest
     environment:
       - LAB_NAME=${LAB_NAME}
-      - LAB_DB_ENGINE=${LAB_DB_ENGINE}
       - LAB_MODE=prod
       - LAB_ENVIRONMENT=PROD
       - CENTRAL_API_KEY=${CENTRAL_API_KEY}
@@ -47,7 +46,6 @@ services:
     image: registry.gitlab.com/gencovery/infra/gpm/codelab-${IMAGE_SUFFIX}:latest
     environment:
       - LAB_NAME=${LAB_NAME}
-      - LAB_DB_ENGINE=${LAB_DB_ENGINE}
       - LAB_MODE=dev
       - LAB_ENVIRONMENT=PROD
       - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}

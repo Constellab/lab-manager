@@ -50,6 +50,18 @@ export class CoreConfigService {
     }
   }
 
+  public getDockerRegistryUrl(): string{
+    return this.configService.get('DOCKER_REGISTRY_URL');
+  }
+
+  public getDockerRegistryUsername(): string{
+    return this.configService.get('DOCKER_REGISTRY_USERNAME');
+  }
+
+  public getDockerRegistryPassword(): string{
+    return this.configService.get('DOCKER_REGISTRY_PWD');
+  }
+
   /**
    * Get the path of the volume.
    * @param path if path provided, there are join to the volume path

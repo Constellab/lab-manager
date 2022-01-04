@@ -5,6 +5,7 @@ import {PrivateFile} from '../../models/private-file.class';
 import {KeyGeneratorService} from '../key-generator/key-generator.service';
 import {ConfigFile} from '../../models/config-file.class';
 import {hashSync} from 'bcrypt';
+import {DockerCommandService} from '../docker-command/docker-command.service';
 
 @Injectable()
 export class InitService implements OnApplicationBootstrap {
@@ -13,7 +14,8 @@ export class InitService implements OnApplicationBootstrap {
 
   constructor(private configService: CoreConfigService,
     private fileService: FileService,
-    private keyGenerator: KeyGeneratorService) {
+    private keyGenerator: KeyGeneratorService,
+    private dockerCommandService: DockerCommandService) {
 
   }
 
@@ -29,6 +31,7 @@ export class InitService implements OnApplicationBootstrap {
     this.generateDockerCompose();
 
     this.initEnvVariable();
+    this.loginToGitlabRepository().then();
   }
 
   private generatePrivateFile(): void {
@@ -92,6 +95,24 @@ export class InitService implements OnApplicationBootstrap {
     const hash = hashSync(privateJson.lab.token, 10);
     CoreConfigService.setEnvVariable('HT_PASSWD', hash);
     this.logger.log('Env variable initialized');
+  }
 
+  private async loginToGitlabRepository(): Promise<void> {
+    this.logger.log('Logging to docker registry');
+    try {
+
+      await this.dockerCommandService.login(
+        this.configService.getDockerRegistryUsername(),
+        this.configService.getDockerRegistryPassword(),
+        this.configService.getDockerRegistryUrl()
+      );
+    } catch (e: any) {
+      // eslint-disable-next-line max-len
+      this.logger.error(`Can't log in to the docker registry '${this.configService.getDockerRegistryUrl()}' with user ${this.configService.getDockerRegistryUsername()}`);
+      if (e.stack) {
+        this.logger.error(e.stack);
+      }
+    }
+    this.logger.log('Logged to docker registry');
   }
 }

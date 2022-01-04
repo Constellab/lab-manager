@@ -43,12 +43,18 @@ export class DockerCommandService implements DockerCommandServiceI {
             return;
           }
           if (stderr) {
-            this.logger.error(`Error during the execution of the command '${command}'. Error : '${stderr}'`);
-            reject(stderr);
-            return;
+            if (stdout) {
+              this.logger.warn(`Warning during the execution of the command '${command}'. Error : '${stderr}'`);
+            } else {
+              this.logger.error(`Error during the execution of the command '${command}'. Error : '${stderr}'`);
+              reject(stderr);
+              return;
+            }
           }
           return resolve(stdout);
         });
     }));
   }
 }
+
+
