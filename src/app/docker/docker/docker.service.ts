@@ -1,11 +1,13 @@
 import {Injectable} from '@nestjs/common';
 import {DockerCommandService} from '../../core/service/docker-command/docker-command.service';
 import {ComposeUpOptions, DockerPs} from '../docker.class';
+import {FileService} from '../../core/service/file/file.service';
 
 @Injectable()
 export class DockerService {
 
-  constructor(private dockerCommand: DockerCommandService) {
+  constructor(private dockerCommand: DockerCommandService,
+    private fileService: FileService) {
   }
 
   public async listContainers(): Promise<DockerPs[]> {
@@ -21,11 +23,11 @@ export class DockerService {
       strOptions.push('--up-git-bricks');
     }
 
-    return this.dockerCommand.composeUp(strOptions);
+    return this.dockerCommand.composeUp(this.fileService.dockerComposePath, strOptions);
   }
 
   public async downContainers(): Promise<void> {
-    await this.dockerCommand.composeDown();
+    await this.dockerCommand.composeDown(this.fileService.dockerComposePath);
   }
 
   public async restartContainers(options: ComposeUpOptions): Promise<any> {

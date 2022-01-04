@@ -4,9 +4,9 @@
  */
 export interface DockerCommandServiceI {
 
-  composeUp(options?: string[]): Promise<string>;
+  composeUp(filePath?: string, options?: string[]): Promise<string>;
 
-  composeDown(): Promise<string>;
+  composeDown(filePath?: string): Promise<string>;
 
   dockerPs(): Promise<string>;
 

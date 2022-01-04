@@ -4,7 +4,7 @@ import {FileService} from '../file/file.service';
 import {PrivateFile} from '../../model/private-file.class';
 import {KeyGeneratorService} from '../key-generator/key-generator.service';
 import {ConfigFile} from '../../model/config-file.class';
-import {hashSync} from 'bcrypt'
+import {hashSync} from 'bcrypt';
 
 @Injectable()
 export class InitService implements OnApplicationBootstrap {
@@ -26,6 +26,7 @@ export class InitService implements OnApplicationBootstrap {
     if (!this.fileService.configFileExists()) {
       this.generateConfigFile();
     }
+    this.generateDockerCompose();
 
     this.initEnvVariable();
   }
@@ -58,7 +59,14 @@ export class InitService implements OnApplicationBootstrap {
     this.logger.log('config.json file generated');
   }
 
+  private generateDockerCompose(): void {
+    this.logger.log('Generating docker-compose.yml file');
+    this.fileService.copyDockerCompose();
+    this.logger.log('docker-compose.yml file generated');
+  }
+
   private initEnvVariable(): void {
+    this.logger.log('Initializing env variable');
     const configJson: ConfigFile = this.fileService.readConfigFile();
     const privateJson: PrivateFile = this.fileService.readPrivateFile();
 
@@ -69,7 +77,7 @@ export class InitService implements OnApplicationBootstrap {
     this.setEnvVariable('CENTRAL_API_KEY', privateJson.central.api_key);
     this.setEnvVariable('CENTRAL_API_URL', privateJson.central.api_url);
     // set the IMAGE_SUFFIX to use the correct image based on if GPU is on
-    this.setEnvVariable('IMAGE_SUFFIX', this.configService.isGPU() ? 'gpu': 'cpu');
+    this.setEnvVariable('IMAGE_SUFFIX', this.configService.isGPU() ? 'gpu' : 'cpu');
 
     // Data urls
     this.setEnvVariable('BIOTA_MARIA_DB_URL', privateJson.db.gws_biota_mariadb_url);
@@ -81,8 +89,9 @@ export class InitService implements OnApplicationBootstrap {
 
 
     // Generate the htpasswd for the Lab token for CODELAB using Bcrypt
-    const hash = hashSync(privateJson.lab.token, 10)
-    this.setEnvVariable('HT_PASSWD' , hash)
+    const hash = hashSync(privateJson.lab.token, 10);
+    this.setEnvVariable('HT_PASSWD', hash);
+    this.logger.log('Env variable initialized');
 
   }
 

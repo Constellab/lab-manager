@@ -47,7 +47,7 @@ services:
       - "80:80"
     volumes:
       # Volume to store the lets encrypt certificats
-      - "/srv/letsencrypt:/letsencrypt"
+      - /srv/letsencrypt:/letsencrypt
       # So that Traefik can listen to the Docker events
       - /var/run/docker.sock:/var/run/docker.sock
     networks:

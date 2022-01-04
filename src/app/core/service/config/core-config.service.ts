@@ -1,6 +1,7 @@
 import {Injectable, LogLevel} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 import {EnvironmentProfile} from '../../model/config.class';
+import {join} from 'path';
 
 export const ENVIRONMENT_PROFILE_KEY = 'ENVIRONMENT_PROFILE';
 
@@ -47,6 +48,20 @@ export class CoreConfigService {
     } else {
       return 'https://central-back-pre-prod.constellab-pre-prod.gencovery.com';
     }
+  }
+
+  /**
+   * Get the path of the volume.
+   * @param path if path provided, there are join to the volume path
+   */
+  public getVolumePath(...path: string[]): string {
+    const volumePath = this.configService.get('VOLUME_PATH');
+
+    if(volumePath == null){
+      throw Error(`The env variable 'VOLUME_PATH' must be set.`)
+    }
+
+    return join(volumePath, ...path);
   }
 
   protected getConfigNumber(configName: string): number {

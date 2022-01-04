@@ -10,13 +10,13 @@ export class DockerCommandService implements DockerCommandServiceI {
 
   private readonly logger = new Logger(DockerCommandService.name);
 
-  public composeUp(options: string[] = []): Promise<string> {
-    const command: string = 'docker-compose up -d ' + options.join(' ');
+  public composeUp(filePath: string = 'docker-compose.yml', options: string[] = []): Promise<string> {
+    const command: string = `docker-compose -f ${filePath} up -d ${options.join(' ')}`;
     return this.execCommand(command);
   }
 
-  public composeDown(): Promise<string> {
-    const command: string = 'docker-compose down';
+  public composeDown(filePath: string = 'docker-compose.yml'): Promise<string> {
+    const command: string = `docker-compose -f ${filePath} down`;
     return this.execCommand(command);
   }
 

@@ -1,10 +1,11 @@
 import {Inject, Injectable} from '@nestjs/common';
 import {PrivateFile} from '../../model/private-file.class';
-import {existsSync, readFileSync, writeFileSync} from 'fs';
+import {copyFileSync, existsSync, readFileSync, writeFileSync} from 'fs';
 
 import {join} from 'path';
 import {CORE_MODULE_PROVIDER, CoreModuleConfig} from '../../model/core-module-config.class';
 import {ConfigFile} from '../../model/config-file.class';
+import {CoreConfigService} from '../config/core-config.service';
 
 @Injectable()
 export class FileService {
@@ -17,7 +18,10 @@ export class FileService {
   private readonly privateFileName = 'private.json';
   private readonly configFileName = 'config.json';
 
-  constructor(@Inject(CORE_MODULE_PROVIDER) private config: CoreModuleConfig) {
+  public readonly dockerComposeFileName = 'docker-compose.yml';
+
+  constructor(@Inject(CORE_MODULE_PROVIDER) private config: CoreModuleConfig,
+    private configService: CoreConfigService) {
   }
 
   //////////////////////// PRIVATE FILE ///////////////////////////////////
@@ -43,7 +47,7 @@ export class FileService {
   }
 
   private get privateFilePath(): string {
-    return this.getDistPath(this.assets, this.privateFileName);
+    return this.getVolumePath(this.privateFileName);
   }
 
   //////////////////////// CONFIG FILE ///////////////////////////////////
@@ -69,7 +73,18 @@ export class FileService {
   }
 
   private get configFilePath(): string {
-    return this.getDistPath(this.assets, this.configFileName);
+    return this.getVolumePath(this.configFileName);
+  }
+
+  //////////////////////// DOCKER COMPOSE //////////////////////
+
+  public copyDockerCompose(): void {
+    const templatePath = this.getDistPath(this.assets, this.dockerComposeFileName);
+    this.copyFile(templatePath, this.dockerComposePath);
+  }
+
+  public get dockerComposePath(): string {
+    return this.getVolumePath(this.dockerComposeFileName);
   }
 
   //////////////////////// GENERIC ///////////////////////////////////
@@ -104,5 +119,17 @@ export class FileService {
    */
   private getDistPath(...path: string[]): string {
     return join(this.config.distFolder, ...path);
+  }
+
+  /**
+   * Check if a file exists in dist folder
+   * @param path
+   */
+  private getVolumePath(...path: string[]): string {
+    return this.configService.getVolumePath(...path);
+  }
+
+  public copyFile(source: string, destination: string): void {
+    copyFileSync(source, destination);
   }
 }
