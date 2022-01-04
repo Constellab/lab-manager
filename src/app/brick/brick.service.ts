@@ -1,7 +1,7 @@
 import {Injectable} from '@nestjs/common';
 import {Brick} from './brick.class';
-import {ConfigFile} from '../core/model/config-file.class';
-import {FileService} from '../core/service/file/file.service';
+import {ConfigFile} from '../core/models/config-file.class';
+import {FileService} from '../core/services/file/file.service';
 
 @Injectable()
 export class BrickService {

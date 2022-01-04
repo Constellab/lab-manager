@@ -7,6 +7,12 @@ services:
     image: registry.gitlab.com/gencovery/infra/lab-manager/lab-manager:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /app/conf:/app/conf
+    environment:
+      - VOLUME_PATH=/app/conf
+      - GWS_GIT_LOGIN=astroboygencovery
+      - GWS_GIT_PWD=plHjfdrnpL%26JJ9h2RMKYQtuLHUYvHQ8ZzU%23yUWm%26
+      - VIRTUAL_HOST=${VIRTUAL_HOST}
     labels:
       - "traefik.enable=true"
       # Config for the HTTPS glab domain to port 3010

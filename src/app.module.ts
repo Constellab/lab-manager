@@ -2,14 +2,15 @@ import {Module} from '@nestjs/common';
 import {CoreModule} from './app/core/core.module';
 import {join} from 'path';
 import {ConfigModule} from '@nestjs/config';
-import {CoreConfigService} from './app/core/service/config/core-config.service';
+import {CoreConfigService} from './app/core/services/config/core-config.service';
 import {WinstonModule, WinstonModuleOptions} from 'nest-winston';
-import {configureLogger, LoggerConfig} from './app/core/model/logger.class';
-import {APP_GUARD} from '@nestjs/core';
-import {ApiKeyGuard} from './app/core/guard/api-key.guard';
-import { AppController } from './app.controller';
-import { DockerModule } from './app/docker/docker.module';
+import {configureLogger, LoggerConfig} from './app/core/models/logger.class';
+import {APP_FILTER, APP_GUARD} from '@nestjs/core';
+import {ApiKeyGuard} from './app/core/guards/api-key.guard';
+import {AppController} from './app.controller';
+import {DockerModule} from './app/docker/docker.module';
 import {BrickModule} from './app/brick/brick.module';
+import {CoreExceptionHandlerFilter} from './app/core/filters/core-exception-handler.filter';
 
 function configureWinstonLogger(configService: CoreConfigService): WinstonModuleOptions {
   const logConfig: LoggerConfig = {
@@ -45,6 +46,12 @@ function configureWinstonLogger(configService: CoreConfigService): WinstonModule
       provide: APP_GUARD,
       useClass: ApiKeyGuard,
     },
+    // set global exception handler
+    {
+      provide: APP_FILTER,
+      useClass: CoreExceptionHandlerFilter,
+    },
+
   ],
 })
 export class AppModule {

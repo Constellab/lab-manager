@@ -1,10 +1,10 @@
 import {Inject, Injectable} from '@nestjs/common';
-import {PrivateFile} from '../../model/private-file.class';
+import {PrivateFile} from '../../models/private-file.class';
 import {copyFileSync, existsSync, readFileSync, writeFileSync} from 'fs';
 
 import {join} from 'path';
-import {CORE_MODULE_PROVIDER, CoreModuleConfig} from '../../model/core-module-config.class';
-import {ConfigFile} from '../../model/config-file.class';
+import {CORE_MODULE_PROVIDER, CoreModuleConfig} from '../../models/core-module-config.class';
+import {ConfigFile} from '../../models/config-file.class';
 import {CoreConfigService} from '../config/core-config.service';
 
 @Injectable()

@@ -1,7 +1,8 @@
 import {Injectable} from '@nestjs/common';
-import {DockerCommandService} from '../../core/service/docker-command/docker-command.service';
+import {DockerCommandService} from '../../core/services/docker-command/docker-command.service';
 import {ComposeUpOptions, DockerPs} from '../docker.class';
-import {FileService} from '../../core/service/file/file.service';
+import {FileService} from '../../core/services/file/file.service';
+import {CoreConfigService} from '../../core/services/config/core-config.service';
 
 @Injectable()
 export class DockerService {
@@ -20,8 +21,11 @@ export class DockerService {
     const strOptions: string[] = [];
 
     if (options.updateBricks) {
-      strOptions.push('--up-git-bricks');
+      CoreConfigService.setEnvVariable('UPDATE_GIT_BRICKS', '1');
+    } else {
+      CoreConfigService.setEnvVariable('UPDATE_GIT_BRICKS', '0');
     }
+    throw Error('ça ce passe mal')
 
     return this.dockerCommand.composeUp(this.fileService.dockerComposePath, strOptions);
   }

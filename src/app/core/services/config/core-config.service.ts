@@ -1,6 +1,6 @@
 import {Injectable, LogLevel} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
-import {EnvironmentProfile} from '../../model/config.class';
+import {EnvironmentProfile} from '../../models/config.class';
 import {join} from 'path';
 
 export const ENVIRONMENT_PROFILE_KEY = 'ENVIRONMENT_PROFILE';
@@ -62,6 +62,10 @@ export class CoreConfigService {
     }
 
     return join(volumePath, ...path);
+  }
+
+  public static setEnvVariable(name: string, value: string): void {
+    process.env[name] = value;
   }
 
   protected getConfigNumber(configName: string): number {

@@ -1,9 +1,9 @@
 import {Injectable, Logger, OnApplicationBootstrap} from '@nestjs/common';
 import {CoreConfigService} from '../config/core-config.service';
 import {FileService} from '../file/file.service';
-import {PrivateFile} from '../../model/private-file.class';
+import {PrivateFile} from '../../models/private-file.class';
 import {KeyGeneratorService} from '../key-generator/key-generator.service';
-import {ConfigFile} from '../../model/config-file.class';
+import {ConfigFile} from '../../models/config-file.class';
 import {hashSync} from 'bcrypt';
 
 @Injectable()
@@ -70,34 +70,28 @@ export class InitService implements OnApplicationBootstrap {
     const configJson: ConfigFile = this.fileService.readConfigFile();
     const privateJson: PrivateFile = this.fileService.readPrivateFile();
 
-    this.setEnvVariable('APP_DIR', configJson.app_dir);
-    this.setEnvVariable('LAB_NAME', configJson.name);
-    this.setEnvVariable('LAB_TOKEN', privateJson.lab.token);
-    this.setEnvVariable('GPU', ''); // todo
-    this.setEnvVariable('CENTRAL_API_KEY', privateJson.central.api_key);
-    this.setEnvVariable('CENTRAL_API_URL', privateJson.central.api_url);
+    CoreConfigService.setEnvVariable('APP_DIR', configJson.app_dir);
+    CoreConfigService.setEnvVariable('LAB_NAME', configJson.name);
+    CoreConfigService.setEnvVariable('LAB_TOKEN', privateJson.lab.token);
+    CoreConfigService.setEnvVariable('GPU', ''); // todo
+    CoreConfigService.setEnvVariable('CENTRAL_API_KEY', privateJson.central.api_key);
+    CoreConfigService.setEnvVariable('CENTRAL_API_URL', privateJson.central.api_url);
     // set the IMAGE_SUFFIX to use the correct image based on if GPU is on
-    this.setEnvVariable('IMAGE_SUFFIX', this.configService.isGPU() ? 'gpu' : 'cpu');
+    CoreConfigService.setEnvVariable('IMAGE_SUFFIX', this.configService.isGPU() ? 'gpu' : 'cpu');
 
     // Data urls
-    this.setEnvVariable('BIOTA_MARIA_DB_URL', privateJson.db.gws_biota_mariadb_url);
-    this.setEnvVariable('BIOTA_SQLITE3_DB_URL', privateJson.db.gws_biota_sqlite3db_url);
-    this.setEnvVariable('OPENDATA_BIODATA_URL', privateJson.db.opendata_biodata_url);
-    this.setEnvVariable('OPENDATA_GLOVE_URL', privateJson.db.opendata_glove_url);
-    this.setEnvVariable('OPENDATA_URL', privateJson.db.opendata_url);
-    this.setEnvVariable('TESTDATA_URL', privateJson.db.testdata_url);
+    CoreConfigService.setEnvVariable('BIOTA_MARIA_DB_URL', privateJson.db.gws_biota_mariadb_url);
+    CoreConfigService.setEnvVariable('BIOTA_SQLITE3_DB_URL', privateJson.db.gws_biota_sqlite3db_url);
+    CoreConfigService.setEnvVariable('OPENDATA_BIODATA_URL', privateJson.db.opendata_biodata_url);
+    CoreConfigService.setEnvVariable('OPENDATA_GLOVE_URL', privateJson.db.opendata_glove_url);
+    CoreConfigService.setEnvVariable('OPENDATA_URL', privateJson.db.opendata_url);
+    CoreConfigService.setEnvVariable('TESTDATA_URL', privateJson.db.testdata_url);
 
 
     // Generate the htpasswd for the Lab token for CODELAB using Bcrypt
     const hash = hashSync(privateJson.lab.token, 10);
-    this.setEnvVariable('HT_PASSWD', hash);
+    CoreConfigService.setEnvVariable('HT_PASSWD', hash);
     this.logger.log('Env variable initialized');
 
   }
-
-  private setEnvVariable(name: string, value: string): void {
-    process.env[name] = value;
-  }
-
-
 }
