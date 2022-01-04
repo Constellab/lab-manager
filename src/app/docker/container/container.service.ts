@@ -11,7 +11,6 @@ export class ContainerService {
   private static readonly DB_GWS_CORE_DEV = 'gws_core_dev_db';
   private static readonly DB_GWS_BIOTA_DEV = 'gws_biota_dev_db';
   private static readonly DB_GWS_CORE_DEV_TEST = 'test_gws_dev_db';
-  private static readonly REVERSE_PROXY = 'reverse_proxy';
 
   constructor() {
   }
@@ -19,6 +18,6 @@ export class ContainerService {
   public getContainersNames(): string[] {
     return [ContainerService.GLAB, ContainerService.CODELAB, ContainerService.FRONT, ContainerService.DB_GWS_CORE_PROD,
       ContainerService.DB_GWS_BIOTA_PROD, ContainerService.DB_GWS_CORE_DEV, ContainerService.DB_GWS_BIOTA_DEV,
-      ContainerService.DB_GWS_CORE_DEV_TEST, ContainerService.REVERSE_PROXY];
+      ContainerService.DB_GWS_CORE_DEV_TEST];
   }
 }

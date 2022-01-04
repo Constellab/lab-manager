@@ -18,7 +18,6 @@ export class FileService {
   private readonly privateFileName = 'private.json';
   private readonly configFileName = 'config.json';
 
-  public readonly dockerComposeFileName = 'docker-compose.yml';
 
   constructor(@Inject(CORE_MODULE_PROVIDER) private config: CoreModuleConfig,
     private configService: CoreConfigService) {
@@ -43,7 +42,7 @@ export class FileService {
   }
 
   private get privateTemplateFilePath(): string {
-    return this.getDistPath(this.assets, this.privateTemplateFileName);
+    return this.getAssetPath(this.privateTemplateFileName);
   }
 
   private get privateFilePath(): string {
@@ -69,7 +68,7 @@ export class FileService {
   }
 
   private get configTemplateFilePath(): string {
-    return this.getDistPath(this.assets, this.configTemplateFileName);
+    return this.getAssetPath(this.configTemplateFileName);
   }
 
   private get configFilePath(): string {
@@ -79,12 +78,20 @@ export class FileService {
   //////////////////////// DOCKER COMPOSE //////////////////////
 
   public copyDockerCompose(): void {
-    const templatePath = this.getDistPath(this.assets, this.dockerComposeFileName);
+    const templatePath = this.getAssetPath(this.dockerComposeFileName);
     this.copyFile(templatePath, this.dockerComposePath);
   }
 
   public get dockerComposePath(): string {
     return this.getVolumePath(this.dockerComposeFileName);
+  }
+
+  private get dockerComposeFileName(): string {
+    if (this.configService.isLocal()) {
+      return 'docker-compose-dev.yml';
+    } else {
+      return 'docker-compose.yml';
+    }
   }
 
   //////////////////////// GENERIC ///////////////////////////////////
@@ -117,8 +124,12 @@ export class FileService {
    * Check if a file exists in dist folder
    * @param path
    */
-  private getDistPath(...path: string[]): string {
+  public getDistPath(...path: string[]): string {
     return join(this.config.distFolder, ...path);
+  }
+
+  public getAssetPath(...path: string[]): string {
+    return this.getDistPath(this.assets, ...path);
   }
 
   /**

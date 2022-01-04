@@ -1,11 +1,11 @@
 import {Injectable, Logger, OnApplicationBootstrap} from '@nestjs/common';
-import {CoreConfigService} from '../config/core-config.service';
-import {FileService} from '../file/file.service';
-import {PrivateFile} from '../../models/private-file.class';
-import {KeyGeneratorService} from '../key-generator/key-generator.service';
-import {ConfigFile} from '../../models/config-file.class';
+import {CoreConfigService} from '../../core/services/config/core-config.service';
+import {FileService} from '../../core/services/file/file.service';
+import {PrivateFile} from '../../core/models/private-file.class';
+import {KeyGeneratorService} from '../../core/services/key-generator/key-generator.service';
+import {ConfigFile} from '../../core/models/config-file.class';
 import {hashSync} from 'bcrypt';
-import {DockerCommandService} from '../docker-command/docker-command.service';
+import {DockerService} from '../docker/docker.service';
 
 @Injectable()
 export class InitService implements OnApplicationBootstrap {
@@ -15,23 +15,40 @@ export class InitService implements OnApplicationBootstrap {
   constructor(private configService: CoreConfigService,
     private fileService: FileService,
     private keyGenerator: KeyGeneratorService,
-    private dockerCommandService: DockerCommandService) {
-
+    private dockerService: DockerService) {
   }
 
-
-  onApplicationBootstrap(): void {
-    if (!this.fileService.privateFileExists()) {
-      this.generatePrivateFile();
-    }
-
-    if (!this.fileService.configFileExists()) {
-      this.generateConfigFile();
-    }
-    this.generateDockerCompose();
-
+  onApplicationBootstrap(): any {
     this.initEnvVariable();
-    this.loginToGitlabRepository().then();
+  }
+
+  public async init(): Promise<void> {
+    try {
+      this.logger.log('[INIT] Init started');
+
+      if (!this.fileService.privateFileExists()) {
+        this.generatePrivateFile();
+      }
+
+      if (!this.fileService.configFileExists()) {
+        this.generateConfigFile();
+      }
+      this.generateDockerCompose();
+
+      await this.loginToDockerRegistry();
+
+
+      // PULL IMAGES
+      await this.dockerService.pullContainers();
+
+      // UP CONTAINERS
+      await this.dockerService.upContainers({});
+
+      this.logger.log('[INIT] Init ended successfully');
+
+    } catch (e) {
+      this.logger.error('[INIT] Init ended with error');
+    }
   }
 
   private generatePrivateFile(): void {
@@ -97,22 +114,10 @@ export class InitService implements OnApplicationBootstrap {
     this.logger.log('Env variable initialized');
   }
 
-  private async loginToGitlabRepository(): Promise<void> {
-    this.logger.log('Logging to docker registry');
+  private async loginToDockerRegistry(): Promise<void> {
     try {
-
-      await this.dockerCommandService.login(
-        this.configService.getDockerRegistryUsername(),
-        this.configService.getDockerRegistryPassword(),
-        this.configService.getDockerRegistryUrl()
-      );
+      await this.dockerService.login();
     } catch (e: any) {
-      // eslint-disable-next-line max-len
-      this.logger.error(`Can't log in to the docker registry '${this.configService.getDockerRegistryUrl()}' with user ${this.configService.getDockerRegistryUsername()}`);
-      if (e.stack) {
-        this.logger.error(e.stack);
-      }
     }
-    this.logger.log('Logged to docker registry');
   }
 }

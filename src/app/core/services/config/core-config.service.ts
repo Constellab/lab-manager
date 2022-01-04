@@ -50,16 +50,20 @@ export class CoreConfigService {
     }
   }
 
-  public getDockerRegistryUrl(): string{
+  public getDockerRegistryUrl(): string {
     return this.configService.get('DOCKER_REGISTRY_URL');
   }
 
-  public getDockerRegistryUsername(): string{
+  public getDockerRegistryUsername(): string {
     return this.configService.get('DOCKER_REGISTRY_USERNAME');
   }
 
-  public getDockerRegistryPassword(): string{
+  public getDockerRegistryPassword(): string {
     return this.configService.get('DOCKER_REGISTRY_PWD');
+  }
+
+  public getAppFolder(): string {
+    return '/app';
   }
 
   /**
@@ -69,8 +73,8 @@ export class CoreConfigService {
   public getVolumePath(...path: string[]): string {
     const volumePath = this.configService.get('VOLUME_PATH');
 
-    if(volumePath == null){
-      throw Error(`The env variable 'VOLUME_PATH' must be set.`)
+    if (volumePath == null) {
+      throw Error(`The env variable 'VOLUME_PATH' must be set.`);
     }
 
     return join(volumePath, ...path);

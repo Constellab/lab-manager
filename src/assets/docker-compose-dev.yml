@@ -1,0 +1,135 @@
+# Docker compose file used in dev (local env). It removes the volumes and traefik config
+
+version: "3"
+
+services:
+
+  # Production Glab
+  glab_prod:
+    image: registry.gitlab.com/gencovery/infra/gpm/glab-${IMAGE_SUFFIX}:latest
+    environment:
+      - LAB_NAME=${LAB_NAME}
+      - LAB_MODE=prod
+      - LAB_ENVIRONMENT=PROD
+      - CENTRAL_API_KEY=${CENTRAL_API_KEY}
+      - CENTRAL_API_URL=${CENTRAL_API_URL}
+      - CONDA_VERSION=latest
+      - GPU=${GPU}
+      - VIRTUAL_HOST=
+      - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
+      - UPDATE_GIT_BRICKS=${UPDATE_GIT_BRICKS}
+      - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
+      - GWS_GIT_PWD=${GWS_GIT_PWD}
+    depends_on:
+      - gws_core_prod_db
+      - gws_biota_prod_db
+    networks:
+      - gencovery-network-prod
+    container_name: glab
+
+  # Codelab
+  codelab:
+    image: registry.gitlab.com/gencovery/infra/gpm/codelab-${IMAGE_SUFFIX}:latest
+    environment:
+      - LAB_NAME=${LAB_NAME}
+      - LAB_MODE=dev
+      - LAB_ENVIRONMENT=PROD
+      - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}
+      - VIRTUAL_HOST=${VIRTUAL_HOST}
+      - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
+      - CONDA_VERSION=latest
+      - GPU=${GPU}
+      - UPDATE_GIT_BRICKS=${UPDATE_GIT_BRICKS}
+      - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
+      - GWS_GIT_PWD=${GWS_GIT_PWD}
+    depends_on:
+      - gws_core_dev_db
+      - gws_biota_dev_db
+    networks:
+      - gencovery-network-dev
+    container_name: codelab
+
+
+  # Front
+  front:
+    image: registry.gitlab.com/gencovery/core/monorepo/lab-front:latest
+    environment:
+      - API_URL=https://glab-prod.${VIRTUAL_HOST}/
+      - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}/
+      - DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}/
+      - CODE_SERVER_URL=https://codelab.${VIRTUAL_HOST}
+      - VIRTUAL_HOST=
+    networks:
+      - gencovery-network-prod
+    container_name: front
+
+  # GWS Core Production DB
+  gws_core_prod_db:
+    image: mariadb:10
+    command: --max_allowed_packet=256M
+    environment:
+      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_USER=gws_core
+      - MYSQL_PASSWORD=gencovery
+      - MYSQL_DATABASE=gws_core
+    networks:
+      - gencovery-network-prod
+    container_name: gws_core_prod_db
+
+  # GWS Core Development DB
+  gws_core_dev_db:
+    image: mariadb:10
+    command: --max_allowed_packet=256M
+    environment:
+      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_USER=gws_core
+      - MYSQL_PASSWORD=gencovery
+      - MYSQL_DATABASE=gws_core
+    networks:
+      - gencovery-network-dev
+    container_name: gws_core_dev_db
+
+  # GWS Test db
+  test_gws_dev_db:
+    image: mariadb:10
+    command: --max_allowed_packet=256M
+    environment:
+      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_USER=test_gws
+      - MYSQL_PASSWORD=gencovery
+      - MYSQL_DATABASE=test_gws
+    networks:
+      - gencovery-network-dev
+    container_name: test_gws_dev_db
+
+  # GWS Biota Production DB
+  gws_biota_prod_db:
+    image: mariadb:10
+    command: --max_allowed_packet=256M
+    environment:
+      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_USER=gws_biota
+      - MYSQL_PASSWORD=gencovery
+      - MYSQL_DATABASE=gws_biota
+    networks:
+      - gencovery-network-prod
+    container_name: gws_biota_prod_db
+
+  # GWS Biota Development DB
+  gws_biota_dev_db:
+    image: mariadb:10
+    command: --max_allowed_packet=256M
+    environment:
+      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_USER=gws_biota
+      - MYSQL_PASSWORD=gencovery
+      - MYSQL_DATABASE=gws_biota
+    networks:
+      - gencovery-network-dev
+    container_name: gws_biota_dev_db
+
+networks:
+  gencovery-network-dev:
+    external: true
+  gencovery-network-prod:
+    external: true

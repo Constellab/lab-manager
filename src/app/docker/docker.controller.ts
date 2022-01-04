@@ -1,11 +1,16 @@
-import {Body, Controller, Get, Param, Put} from '@nestjs/common';
-import {DockerService} from './docker/docker.service';
+import {Body, Controller, Get, Param, Post, Put} from '@nestjs/common';
+import {ContainerStatusInfo, DockerService} from './docker/docker.service';
 import {ComposeUpOptions, DockerPs} from './docker.class';
+import {InitService} from './init/init.service';
+import {TaskService} from '../core/services/task/task.service';
+import {TaskStatusInfo} from '../core/models/task.class';
 
 @Controller('docker')
 export class DockerController {
 
-  constructor(private dockerService: DockerService) {
+  constructor(private dockerService: DockerService,
+    private initService: InitService,
+    private taskService: TaskService) {
   }
 
   @Get('containers')
@@ -13,8 +18,23 @@ export class DockerController {
     return await this.dockerService.listContainers();
   }
 
+  @Post('init')
+  async init(): Promise<void> {
+    return await this.initService.init();
+  }
+
+  @Get('task')
+  getTask(): TaskStatusInfo {
+    return this.taskService.currentTask;
+  }
+
+  @Get('containers-status')
+  async getContainersStatus(): Promise<ContainerStatusInfo> {
+    return this.dockerService.getContainersStatus();
+  }
+
   @Put('up-containers')
-  async upContainers(@Body() options: ComposeUpOptions): Promise<void> {
+  async upContainers(@Body() options: ComposeUpOptions): Promise<DockerPs[]> {
     return await this.dockerService.upContainers(options);
   }
 

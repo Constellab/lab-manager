@@ -1,14 +1,15 @@
 import {DynamicModule, Module} from '@nestjs/common';
 import {FileService} from './services/file/file.service';
-import {InitService} from './services/init/init.service';
 import {CoreConfigService} from './services/config/core-config.service';
 import {CORE_MODULE_PROVIDER, CoreModuleConfig} from './models/core-module-config.class';
 import {KeyGeneratorService} from './services/key-generator/key-generator.service';
 import {DockerCommandService} from './services/docker-command/docker-command.service';
+import {BiotaService} from './services/biota/biota.service';
+import {CommandService} from './services/command/command.service';
+import {TaskService} from './services/task/task.service';
 
 @Module({
-  providers: [
-  ],
+  providers: [],
 })
 export class CoreModule {
 
@@ -22,18 +23,21 @@ export class CoreModule {
           useValue: config,
         },
         FileService,
-        InitService,
         CoreConfigService,
         KeyGeneratorService,
         DockerCommandService,
+        BiotaService,
+        CommandService,
+        TaskService,
       ],
       exports: [
         FileService,
-        InitService,
         CoreConfigService,
         KeyGeneratorService,
         DockerCommandService,
-
+        BiotaService,
+        CommandService,
+        TaskService,
       ]
     };
   }
