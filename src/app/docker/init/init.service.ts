@@ -47,7 +47,10 @@ export class InitService implements OnApplicationBootstrap {
       this.logger.log('[INIT] Init ended successfully');
 
     } catch (e) {
-      this.logger.error('[INIT] Init ended with error');
+      this.logger.error('[INIT] Init ended with error :' + e);
+      if (e.stack) {
+        this.logger.error(e.stack);
+      }
     }
   }
 

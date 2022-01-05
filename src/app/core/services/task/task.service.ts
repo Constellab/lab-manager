@@ -64,7 +64,7 @@ export class TaskService {
     });
 
     let log = `Update task '${name}' to '${status}'`;
-    if (info != null) {
+    if (info) {
       log += `, info : '${info}'`;
     }
 
