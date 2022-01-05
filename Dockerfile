@@ -92,6 +92,8 @@ COPY / .
 
 RUN npm run build
 
+RUN chmod -R 777 dist/assets
+
 EXPOSE 3010
 CMD ["node", "dist/main"]
 
