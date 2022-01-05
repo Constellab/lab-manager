@@ -25,7 +25,7 @@ export class BiotaService {
     this.taskService.newTask(taskName);
 
     try {
-      await this.commandService.execFile(file, [this.configService.getAppFolder()]);
+      await this.commandService.execCommand(`sh ${file}`);
       this.taskService.markTaskAsSuccess(taskName);
     } catch (e: any) {
       this.taskService.markTaskAsError(taskName, 'Error during the biota pull. Error : ' + e);

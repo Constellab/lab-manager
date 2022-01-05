@@ -21,18 +21,21 @@
     "git": [
       {
         "source": "https://$GWS_GIT_LOGIN:$GWS_GIT_PWD@gitlab.com/gencovery/core",
+        "default_branch": "develop",
         "packages": [
           {
             "name": "gws_core",
             "branch": "develop",
             "commit": "latest",
-            "isBrick": true
+            "is_brick": true,
+            "is_hidden": true
           },
           {
             "name": "skeleton",
             "branch": "master",
             "commit": "latest",
-            "isBrick": false
+            "is_brick": false,
+            "is_hidden": false
           }
         ]
       }

@@ -37,6 +37,7 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
 
   public getLogs(containerName: string): Promise<string> {
+    // todo get stderr & stdout
     return this.commandService.execCommand(`docker logs ${containerName}`);
   }
 

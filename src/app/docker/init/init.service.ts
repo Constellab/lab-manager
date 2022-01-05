@@ -22,7 +22,6 @@ export class InitService implements OnApplicationBootstrap {
   }
 
   onApplicationBootstrap(): any {
-    this.initEnvVariable();
   }
 
   public async initAll(): Promise<void> {
@@ -32,6 +31,7 @@ export class InitService implements OnApplicationBootstrap {
       this.initAppVolume();
 
       this.generateFiles();
+      this.initEnvVariable();
 
       await this.loginToDockerRegistry();
 
