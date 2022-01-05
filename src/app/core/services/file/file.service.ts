@@ -1,6 +1,6 @@
 import {Inject, Injectable} from '@nestjs/common';
 import {PrivateFile} from '../../models/private-file.class';
-import {copyFileSync, existsSync, readFileSync, writeFileSync} from 'fs';
+import {copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync} from 'fs';
 
 import {join} from 'path';
 import {CORE_MODULE_PROVIDER, CoreModuleConfig} from '../../models/core-module-config.class';
@@ -26,7 +26,7 @@ export class FileService {
   //////////////////////// PRIVATE FILE ///////////////////////////////////
 
   public privateFileExists(): boolean {
-    return this.fileExists(this.privateFilePath);
+    return this.exists(this.privateFilePath);
   }
 
   public createPrivateFile(content: PrivateFile): void {
@@ -52,7 +52,7 @@ export class FileService {
   //////////////////////// CONFIG FILE ///////////////////////////////////
 
   public configFileExists(): boolean {
-    return this.fileExists(this.configFilePath);
+    return this.exists(this.configFilePath);
   }
 
   public createConfigFile(content: ConfigFile): void {
@@ -101,7 +101,7 @@ export class FileService {
     return JSON.parse(content);
   }
 
-  private fileExists(path: string): boolean {
+  private exists(path: string): boolean {
     return existsSync(path);
   }
 
@@ -109,7 +109,7 @@ export class FileService {
    * read a file with a path relative to dist folder
    */
   private readFile(path: string): Buffer {
-    if (!this.fileExists(path)) {
+    if (!this.exists(path)) {
       throw new Error(`The file '${path}' does not exist`);
     }
 
@@ -142,5 +142,14 @@ export class FileService {
 
   public copyFile(source: string, destination: string): void {
     copyFileSync(source, destination);
+  }
+
+  public createDir(path: string, recursive: boolean = false): void {
+    mkdirSync(path, {recursive: recursive});
+  }
+
+  public createDirIfNotExists(path: string, recursive: boolean = false): void {
+    if (this.exists(path)) return;
+    this.createDir(path, recursive);
   }
 }

@@ -7,7 +7,7 @@ services:
     image: registry.gitlab.com/gencovery/infra/lab-manager/lab-manager:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /app/conf:/app/conf
+      - /app:/app
     environment:
       - VOLUME_PATH=/app/conf
       - GWS_GIT_LOGIN=astroboygencovery

@@ -67,7 +67,12 @@ export class TaskService {
     if (info != null) {
       log += `, info : '${info}'`;
     }
-    this.logger.log(log);
+
+    if (status == TaskStatus.ERROR) {
+      this.logger.error(log);
+    } else {
+      this.logger.log(log);
+    }
   }
 
   public forceStopCurrentTask(): void {

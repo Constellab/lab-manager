@@ -23,13 +23,6 @@ else
     cgpu_folder="cpu"
 fi
 
-if [[ "$all_vars" == *" --up-git-bricks"* ]]; then
-    export UPDATE_GIT_BRICKS=1
-    all_vars="${all_vars//--up-git-bricks}"
-else
-    export UPDATE_GIT_BRICKS=0
-fi
-
 
 if [[ ! -d "${app_dir}/prod/lab/.sys/" ]]; then
     sudo mkdir -p "${app_dir}/prod/lab/.sys/"

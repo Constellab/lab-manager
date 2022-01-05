@@ -6,6 +6,8 @@ import {KeyGeneratorService} from '../../core/services/key-generator/key-generat
 import {ConfigFile} from '../../core/models/config-file.class';
 import {hashSync} from 'bcrypt';
 import {DockerService} from '../docker/docker.service';
+import {BiotaService} from '../../core/services/biota/biota.service';
+import {join} from 'path';
 
 @Injectable()
 export class InitService implements OnApplicationBootstrap {
@@ -15,28 +17,26 @@ export class InitService implements OnApplicationBootstrap {
   constructor(private configService: CoreConfigService,
     private fileService: FileService,
     private keyGenerator: KeyGeneratorService,
-    private dockerService: DockerService) {
+    private dockerService: DockerService,
+    private biotaService: BiotaService) {
   }
 
   onApplicationBootstrap(): any {
     this.initEnvVariable();
   }
 
-  public async init(): Promise<void> {
+  public async initAll(): Promise<void> {
     try {
       this.logger.log('[INIT] Init started');
 
-      if (!this.fileService.privateFileExists()) {
-        this.generatePrivateFile();
-      }
+      this.initAppVolume();
 
-      if (!this.fileService.configFileExists()) {
-        this.generateConfigFile();
-      }
-      this.generateDockerCompose();
+      this.generateFiles();
 
       await this.loginToDockerRegistry();
 
+      // PULL BIOTA DB
+      await this.biotaService.pullBiota();
 
       // PULL IMAGES
       await this.dockerService.pullContainers();
@@ -49,6 +49,30 @@ export class InitService implements OnApplicationBootstrap {
     } catch (e) {
       this.logger.error('[INIT] Init ended with error');
     }
+  }
+
+  private initAppVolume(): void {
+    this.logger.log('Generating app volumes');
+
+    const appFolder = this.configService.getAppFolder();
+
+    this.fileService.createDirIfNotExists(join(appFolder, 'prod', 'lab', '.sys'), true);
+    this.fileService.createDirIfNotExists(join(appFolder, 'prod', 'data'), true);
+    this.fileService.createDirIfNotExists(join(appFolder, 'dev', 'lab', '.sys'), true);
+    this.fileService.createDirIfNotExists(join(appFolder, 'dev', 'data'), true);
+
+    this.logger.log('App volume generated');
+  }
+
+  private generateFiles(): void {
+    if (!this.fileService.privateFileExists()) {
+      this.generatePrivateFile();
+    }
+
+    if (!this.fileService.configFileExists()) {
+      this.generateConfigFile();
+    }
+    this.generateDockerCompose();
   }
 
   private generatePrivateFile(): void {

@@ -4,13 +4,15 @@ import {ComposeUpOptions, DockerPs} from './docker.class';
 import {InitService} from './init/init.service';
 import {TaskService} from '../core/services/task/task.service';
 import {TaskStatusInfo} from '../core/models/task.class';
+import {BiotaService} from '../core/services/biota/biota.service';
 
 @Controller('docker')
 export class DockerController {
 
   constructor(private dockerService: DockerService,
     private initService: InitService,
-    private taskService: TaskService) {
+    private taskService: TaskService,
+    private biotaService: BiotaService) {
   }
 
   @Get('containers')
@@ -18,9 +20,9 @@ export class DockerController {
     return await this.dockerService.listContainers();
   }
 
-  @Post('init')
-  async init(): Promise<void> {
-    return await this.initService.init();
+  @Post('init-all')
+  initAll(): void {
+    this.initService.initAll().then();
   }
 
   @Get('task')
@@ -51,5 +53,15 @@ export class DockerController {
   @Get(':containerName/logs')
   async getLogs(@Param('containerName') containerName: string): Promise<string> {
     return await this.dockerService.getLogs(containerName);
+  }
+
+  @Post('pull-biota-db')
+  async pullBiotaDb(): Promise<void> {
+    return this.biotaService.pullBiota();
+  }
+
+  @Post('registry-login')
+  async registryLogin(): Promise<void> {
+    return this.dockerService.login();
   }
 }
