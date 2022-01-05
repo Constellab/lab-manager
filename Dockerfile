@@ -57,7 +57,7 @@
 
 ## Second Stage : Setup command to run your app using lightweight node image
 FROM ubuntu:20.04
-WORKDIR /app
+WORKDIR /lab-manager
 
 # Install docker to run docker commands
 RUN apt-get update && \
