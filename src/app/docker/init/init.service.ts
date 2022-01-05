@@ -63,6 +63,7 @@ export class InitService implements OnApplicationBootstrap {
     this.fileService.createDirIfNotExists(join(appFolder, 'prod', 'data'), true);
     this.fileService.createDirIfNotExists(join(appFolder, 'dev', 'lab', '.sys'), true);
     this.fileService.createDirIfNotExists(join(appFolder, 'dev', 'data'), true);
+    this.fileService.createDirIfNotExists(join(appFolder, 'conf'));
 
     this.logger.log('App volume generated');
   }
