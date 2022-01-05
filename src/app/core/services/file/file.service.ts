@@ -86,7 +86,7 @@ export class FileService {
     return this.getVolumePath(this.dockerComposeFileName);
   }
 
-  private get dockerComposeFileName(): string {
+  public get dockerComposeFileName(): string {
     if (this.configService.isLocal()) {
       return 'docker-compose-dev.yml';
     } else {

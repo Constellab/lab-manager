@@ -108,9 +108,10 @@ export class InitService implements OnApplicationBootstrap {
   }
 
   private generateDockerCompose(): void {
-    this.logger.log('Generating docker-compose.yml file');
+    const dockerComposeFileName = this.fileService.dockerComposeFileName;
+    this.logger.log(`Generating ${dockerComposeFileName} file`);
     this.fileService.copyDockerCompose();
-    this.logger.log('docker-compose.yml file generated');
+    this.logger.log(`${dockerComposeFileName} file generated`);
   }
 
   private initEnvVariable(): void {
