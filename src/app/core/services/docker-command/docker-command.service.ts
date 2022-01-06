@@ -36,6 +36,14 @@ export class DockerCommandService implements DockerCommandServiceI {
     return this.commandService.execCommand(`docker ps -a --no-trunc --format="{{json .}},"`);
   }
 
+  public dockerPull(image: string): Promise<string> {
+    return this.commandService.execCommand(`docker pull ${image}`);
+  }
+
+  public forceRestart(container: string, dockerRunCommand: string): Promise<string> {
+    return this.commandService.execCommand(`docker stop ${container} && docker rm ${container} && ${dockerRunCommand}`);
+  }
+
   public getLogs(containerName: string): Promise<string> {
     // todo get stderr & stdout
     return this.commandService.execCommand(`docker logs ${containerName}`);

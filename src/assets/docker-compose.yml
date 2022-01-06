@@ -25,7 +25,7 @@ services:
       - /app/prod/lab:/lab
       - /app/prod/logs:/logs
       - /app/prod/data:/data
-      - /app/prod/settings/glab-prod:/conf/settings
+      - /app/prod/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
     labels:
       - "traefik.enable=true"
@@ -63,7 +63,7 @@ services:
       - /app/dev/lab:/lab
       - /app/dev/logs:/logs
       - /app/dev/data:/data
-      - /app/prod/settings/glab-prod:/conf/settings
+      - /app/prod/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
     labels:
       - "traefik.enable=true"
@@ -95,8 +95,8 @@ services:
   front:
     image: registry.gitlab.com/gencovery/core/monorepo/lab-front:latest
     environment:
-      - API_URL=https://glab-prod.${VIRTUAL_HOST}/
-      - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}/
+      - API_URL=https://glab.${VIRTUAL_HOST}/
+      - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}/
       - DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}/
       - CODE_SERVER_URL=https://codelab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=${VIRTUAL_HOST}

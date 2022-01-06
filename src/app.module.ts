@@ -11,6 +11,7 @@ import {AppController} from './app.controller';
 import {DockerModule} from './app/docker/docker.module';
 import {BrickModule} from './app/brick/brick.module';
 import {CoreExceptionHandlerFilter} from './app/core/filters/core-exception-handler.filter';
+import {LabManagerModule} from './app/lab-manager/lab-manager.module';
 
 function configureWinstonLogger(configService: CoreConfigService): WinstonModuleOptions {
   const logConfig: LoggerConfig = {
@@ -39,6 +40,7 @@ function configureWinstonLogger(configService: CoreConfigService): WinstonModule
 
     DockerModule,
     BrickModule,
+    LabManagerModule,
   ],
   controllers: [AppController],
   providers: [
