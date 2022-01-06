@@ -20,12 +20,13 @@ export class BiotaService {
 
   public async pullBiota(): Promise<void> {
     const file = this.fileService.getAssetPath(this.pullBiotaScript);
+    const destination = this.configService.getAppFolder();
 
     const taskName = 'PULL_BIOTA_DB';
     this.taskService.newTask(taskName);
 
     try {
-      await this.commandService.execCommand(`sh ${file}`);
+      await this.commandService.execCommand(`bash ${file} ${destination}`);
       this.taskService.markTaskAsSuccess(taskName);
     } catch (e: any) {
       this.taskService.markTaskAsError(taskName, 'Error during the biota pull. Error : ' + e);

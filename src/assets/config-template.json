@@ -34,7 +34,7 @@
             "name": "skeleton",
             "branch": "master",
             "commit": "latest",
-            "is_brick": false,
+            "is_brick": true,
             "is_hidden": false
           }
         ]

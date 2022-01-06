@@ -139,7 +139,7 @@ export class InitService implements OnApplicationBootstrap {
 
     // Generate the htpasswd for the Lab token for CODELAB using Bcrypt
     const hash = hashSync(privateJson.lab.token, 10);
-    CoreConfigService.setEnvVariable('HT_PASSWD', hash);
+    CoreConfigService.setEnvVariable('HT_PASSWD', `${privateJson.lab.username}:${hash}`);
     this.logger.log('Env variable initialized');
   }
 

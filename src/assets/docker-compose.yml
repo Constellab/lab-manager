@@ -3,7 +3,7 @@ version: "3"
 services:
 
   # Production Glab
-  glab_prod:
+  glab:
     image: registry.gitlab.com/gencovery/infra/gpm/glab-${IMAGE_SUFFIX}:latest
     environment:
       - LAB_NAME=${LAB_NAME}
@@ -30,12 +30,12 @@ services:
     labels:
       - "traefik.enable=true"
       # Config for the HTTPS glab domain to port 8080
-      - "traefik.http.routers.glab-prod-router.rule=host(`glab-prod.${VIRTUAL_HOST}`)"
-      - "traefik.http.routers.glab-prod-router.service=glab-prod-service"
-      - "traefik.http.services.glab-prod-service.loadbalancer.server.port=3000"
+      - "traefik.http.routers.glab-router.rule=host(`glab.${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.glab-router.service=glab-service"
+      - "traefik.http.services.glab-service.loadbalancer.server.port=3000"
       # Enable HTTPS
-      - "traefik.http.routers.glab-prod-router.entrypoints=websecure"
-      - "traefik.http.routers.glab-prod-router.tls.certresolver=myresolver"
+      - "traefik.http.routers.glab-router.entrypoints=websecure"
+      - "traefik.http.routers.glab-router.tls.certresolver=myresolver"
     networks:
       - gencovery-network-prod
     restart: always
@@ -48,7 +48,7 @@ services:
       - LAB_NAME=${LAB_NAME}
       - LAB_MODE=dev
       - LAB_ENVIRONMENT=PROD
-      - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}
+      - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
       - CONDA_VERSION=latest

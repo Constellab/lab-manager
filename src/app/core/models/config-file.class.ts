@@ -24,6 +24,7 @@ export interface ConfigFileEnvPipPackage {
   name: string;
   version: string; // version supported by pip, can be empty, ==2.0 or >=2.1
   is_brick: boolean;
+  is_hidden: boolean;
 }
 
 
@@ -37,4 +38,5 @@ export interface ConfigFileEnvGitPackage {
   branch: string;
   commit: 'latest' | string;
   is_brick: boolean;
+  is_hidden: boolean;
 }

@@ -4,6 +4,7 @@
     "api_url": null
   },
   "lab": {
+    "username": "codelab",
     "token": null
   },
   "db":{

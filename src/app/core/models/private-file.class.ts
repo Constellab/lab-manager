@@ -4,6 +4,7 @@ export interface PrivateFile {
     api_url: string;
   },
   lab: {
+    username: string;
     token: string;
   },
   db: {
