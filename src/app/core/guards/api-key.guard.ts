@@ -1,6 +1,6 @@
 import {CanActivate, ExecutionContext, Injectable} from '@nestjs/common';
 import {Request,} from 'express';
-import {apiKeyHeader} from '../models/config.class';
+import {apiKeyHeader, authorizationSchema} from '../models/config.class';
 import {CoreConfigService} from '../services/config/core-config.service';
 import {isDecoratedWithPublic} from '../decorators/public.decorator';
 import {Reflector} from '@nestjs/core';
@@ -21,6 +21,7 @@ export class ApiKeyGuard implements CanActivate {
 
     const apiKey = req.header(apiKeyHeader);
 
-    return apiKey === this.configService.getLabManagerApiKey();
+    if (!apiKey) return false;
+    return apiKey === authorizationSchema + ' ' + this.configService.getLabManagerApiKey();
   }
 }

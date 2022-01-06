@@ -63,7 +63,7 @@ export class DockerService {
     }
   }
 
-  public async upContainers(options: ComposeUpOptions): Promise<DockerPs[]> {
+  public async upContainers(options: ComposeUpOptions): Promise<void> {
     const taskName = 'UP_CONTAINERS';
     this.taskService.newTask(taskName);
 
@@ -76,8 +76,6 @@ export class DockerService {
     try {
       const result = await this.dockerCommand.composeUp(this.fileService.dockerComposePath);
       this.taskService.markTaskAsSuccess(taskName, result);
-
-      return this.listContainers();
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
       throw e;

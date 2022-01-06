@@ -1,6 +1,6 @@
 import {Injectable} from '@nestjs/common';
 import {DockerCommandServiceI} from './docker-command.class';
-import {CommandService} from '../command/command.service';
+import {CommandService, ExecCommandMode} from '../command/command.service';
 
 /**
  * Service to execute docker command and get result
@@ -45,8 +45,7 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
 
   public getLogs(containerName: string): Promise<string> {
-    // todo get stderr & stdout
-    return this.commandService.execCommand(`docker logs ${containerName}`);
+    return this.commandService.execCommand(`docker logs ${containerName}`, ExecCommandMode.STDERR_AS_SUCCESS);
   }
 
   login(username: string, password: string, registryUrl: string): Promise<string> {

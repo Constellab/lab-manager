@@ -25,8 +25,8 @@ export class DockerController {
     this.initService.initAll().then();
   }
 
-  @Get('task')
-  getTask(): TaskStatusInfo {
+  @Get('current-task')
+  getCurrentTask(): TaskStatusInfo {
     return this.taskService.currentTask;
   }
 
@@ -36,7 +36,7 @@ export class DockerController {
   }
 
   @Put('up-containers')
-  async upContainers(@Body() options: ComposeUpOptions): Promise<DockerPs[]> {
+  async upContainers(@Body() options: ComposeUpOptions): Promise<void> {
     return await this.dockerService.upContainers(options);
   }
 
@@ -45,8 +45,8 @@ export class DockerController {
     return await this.dockerService.restartContainers(options);
   }
 
-  @Put('stop-containers')
-  async stopContainers(): Promise<void> {
+  @Put('down-containers')
+  async downContainers(): Promise<void> {
     return await this.dockerService.downContainers();
   }
 

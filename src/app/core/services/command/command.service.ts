@@ -7,6 +7,12 @@ export interface SpawnResult {
   data: string;
 }
 
+export enum ExecCommandMode {
+  STDERR_AS_ERROR, // reject promis when stderr is not empty
+  STDERR_AS_WARNING, // on stderr, log warning and return stdout
+  STDERR_AS_SUCCESS // consider STDERR as success and return stdout and stderr
+}
+
 /**
  * Service to execute shell commands and scripts
  */
@@ -18,9 +24,9 @@ export class CommandService {
   /**
    * Execute a command and return the result once the command is finished
    * @param command command to execute
-   * @param ignoreStderr if true, the stderr are only logged and the command is not considered as error
+   * @param mode mode to handle stderr
    */
-  public execCommand(command: string, ignoreStderr: boolean = true): Promise<string> {
+  public execCommand(command: string, mode: ExecCommandMode = ExecCommandMode.STDERR_AS_WARNING): Promise<string> {
     return new Promise(((resolve, reject) => {
       exec(command,
         (error, stdout, stderr) => {
@@ -29,16 +35,22 @@ export class CommandService {
             reject(error);
             return;
           }
-          if (stderr) {
-            if (ignoreStderr) {
-              this.logger.warn(`Warning during the execution of the command '${command}'. Error : '${stderr}'`);
-            } else {
-              this.logger.error(`Error during the execution of the command '${command}'. Error : '${stderr}'`);
-              reject(stderr);
-              return;
-            }
+
+          switch (mode) {
+            case ExecCommandMode.STDERR_AS_SUCCESS:
+              return stdout + stderr;
+            case ExecCommandMode.STDERR_AS_WARNING:
+              if (stderr) {
+                this.logger.warn(`Warning during the execution of the command '${command}'. Error : '${stderr}'`);
+              }
+              return stdout;
+            case ExecCommandMode.STDERR_AS_ERROR:
+              if (stderr) {
+                this.logger.error(`Error during the execution of the command '${command}'. Error : '${stderr}'`);
+                reject(stderr);
+              }
+              return resolve(stdout);
           }
-          return resolve(stdout);
         });
     }));
   }

@@ -18,8 +18,3 @@ export interface DockerPs {
 export interface ComposeUpOptions{
   updateBricks?: boolean;
 }
-
-export interface ContainerStatus{
-    name: string;
-
-}
