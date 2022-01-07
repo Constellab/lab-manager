@@ -33,7 +33,9 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
 
   public dockerPs(): Promise<string> {
-    return this.commandService.execCommand(`docker ps -a --no-trunc --format="{{json .}},"`);
+    // return a json like with each line separated with e_o_f\n
+    // eslint-disable-next-line max-len
+    return this.commandService.execCommand(`docker ps -a --no-trunc --format={\\"id\\":\\"{{.ID}}\\",\\"command\\":{{.Command}},\\"createdAt\\":\\"{{.CreatedAt}}\\",\\"image\\":\\"{{.Image}}\\",\\"mounts\\":\\"{{.Mounts}}\\",\\"names\\":\\"{{.Names}}\\",\\"networks\\":\\"{{.Networks}}\\",\\"ports\\":\\"{{.Ports}}\\",\\"runningFor\\":\\"{{.RunningFor}}\\",\\"size\\":\\"{{.Size}}\\",\\"state\\":\\"{{.State}}\\",\\"status\\":\\"{{.Status}}\\"}e_o_f`);
   }
 
   public dockerPull(image: string): Promise<string> {

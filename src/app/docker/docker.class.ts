@@ -1,18 +1,16 @@
 export interface DockerPs {
-  Command: string;
-  CreatedAt: string;
-  ID: string;
-  Image: string;
-  Labels: string;
-  LocalVolumes: string;
-  Mounts: string;
-  Names: string;
-  Networks: string;
-  Ports: string;
-  RunningFor: string;
-  Size: string;
-  State: 'running' | 'exited';
-  Status: string;
+  command: string;
+  createdAt: string;
+  id: string;
+  image: string;
+  mounts: string;
+  names: string;
+  networks: string;
+  ports: string;
+  runningFor: string;
+  size: string;
+  state: 'running' | 'exited';
+  status: string;
 }
 
 export interface ComposeUpOptions{

@@ -38,18 +38,22 @@ export class CommandService {
 
           switch (mode) {
             case ExecCommandMode.STDERR_AS_SUCCESS:
-              return stdout + stderr;
+              resolve(stdout + stderr);
+              return;
             case ExecCommandMode.STDERR_AS_WARNING:
               if (stderr) {
                 this.logger.warn(`Warning during the execution of the command '${command}'. Error : '${stderr}'`);
               }
-              return stdout;
+              resolve(stdout);
+              return;
             case ExecCommandMode.STDERR_AS_ERROR:
               if (stderr) {
                 this.logger.error(`Error during the execution of the command '${command}'. Error : '${stderr}'`);
                 reject(stderr);
+                return;
               }
-              return resolve(stdout);
+              resolve(stdout);
+              return;
           }
         });
     }));

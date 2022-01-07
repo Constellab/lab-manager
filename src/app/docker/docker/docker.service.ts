@@ -48,7 +48,7 @@ export class DockerService {
   public async listContainers(): Promise<DockerPs[]> {
     const result = await this.dockerCommand.dockerPs();
 
-    return JSON.parse('[' + result.slice(0, -2) + ']');
+    return result.split('e_o_f\n').filter(value => value.length > 0).map(value => JSON.parse(value))
   }
 
   public async pullContainers(): Promise<void> {
@@ -129,14 +129,14 @@ export class DockerService {
     const containersUp: string[] = [];
 
     for (const containerName of containerNames) {
-      const container: DockerPs = containers.find(c => c.Names === containerName);
+      const container: DockerPs = containers.find(c => c.names === containerName);
 
       if (container == null) {
         containersDown.push(containerName);
         continue;
       }
 
-      if (container.State === 'running') {
+      if (container.state === 'running') {
         containersUp.push(containerName);
       } else {
         containersStop.push(containerName);
