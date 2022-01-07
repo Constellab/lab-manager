@@ -1,4 +1,4 @@
-import {Body, Controller, Get, Param, Post, Put} from '@nestjs/common';
+import {Body, Controller, Get, Param, Post} from '@nestjs/common';
 import {ContainerStatusInfo, DockerService} from './docker/docker.service';
 import {ComposeUpOptions, DockerPs} from './docker.class';
 import {InitService} from './init/init.service';
@@ -35,17 +35,17 @@ export class DockerController {
     return this.dockerService.getContainersStatus();
   }
 
-  @Put('up-containers')
+  @Post('up-containers')
   async upContainers(@Body() options: ComposeUpOptions): Promise<void> {
     return await this.dockerService.upContainers(options);
   }
 
-  @Put('restart-containers')
+  @Post('restart-containers')
   async restartContainers(@Body() options: ComposeUpOptions): Promise<void> {
     return await this.dockerService.restartContainers(options);
   }
 
-  @Put('down-containers')
+  @Post('down-containers')
   async downContainers(): Promise<void> {
     return await this.dockerService.downContainers();
   }

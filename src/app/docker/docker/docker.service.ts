@@ -41,6 +41,7 @@ export class DockerService {
     } catch (e: any) {
       // eslint-disable-next-line max-len
       this.taskService.markTaskAsError(taskName, `Can't log in to the docker registry '${this.configService.getDockerRegistryUrl()}' with user ${this.configService.getDockerRegistryUsername()}`);
+      throw e;
     }
   }
 
