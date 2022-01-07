@@ -61,4 +61,9 @@ export class LabController {
   async registryLogin(): Promise<void> {
     return this.dockerService.login();
   }
+
+  @Post('stop-current-task')
+  async stopCurrentTask(): Promise<void> {
+    return this.taskService.forceStopCurrentTask();
+  }
 }
