@@ -1,8 +1,7 @@
-export enum TaskStatus {
-  RUNNING = 'RUNNING',
-  SUCCESS = 'SUCCESS',
-  ERROR = 'ERROR'
-}
+/**
+ * Status for the lab manager tasks
+ */
+export type TaskStatus = 'RUNNING' | 'SUCCESS' | 'ERROR';
 
 export interface TaskStatusInfo {
   name: string;

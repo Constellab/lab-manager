@@ -7,6 +7,7 @@ import {DockerCommandService} from './services/docker-command/docker-command.ser
 import {BiotaService} from './services/biota/biota.service';
 import {CommandService} from './services/command/command.service';
 import {TaskService} from './services/task/task.service';
+import {EnvVariableService} from './services/env-variable/env-variable.service';
 
 @Module({
   providers: [],
@@ -29,6 +30,7 @@ export class CoreModule {
         BiotaService,
         CommandService,
         TaskService,
+        EnvVariableService,
       ],
       exports: [
         FileService,
@@ -38,6 +40,7 @@ export class CoreModule {
         BiotaService,
         CommandService,
         TaskService,
+        EnvVariableService,
       ]
     };
   }

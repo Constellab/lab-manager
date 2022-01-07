@@ -36,11 +36,6 @@ export class CoreConfigService {
     return this.configService.get('LAB_MANAGER_API_KEY');
   }
 
-  public isGPU(): boolean {
-    const stringBool: string = this.configService.get('GPU');
-
-    return stringBool === 'true';
-  }
 
   public getCentralApiUrl(): string {
     if (this.getEnvironmentProfile() === 'prod') {

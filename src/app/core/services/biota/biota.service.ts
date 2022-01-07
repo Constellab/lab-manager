@@ -3,6 +3,7 @@ import {CommandService} from '../command/command.service';
 import {FileService} from '../file/file.service';
 import {CoreConfigService} from '../config/core-config.service';
 import {TaskService} from '../task/task.service';
+import {EnvVariableService} from '../env-variable/env-variable.service';
 
 @Injectable()
 export class BiotaService {
@@ -15,10 +16,15 @@ export class BiotaService {
   constructor(private commandService: CommandService,
     private fileService: FileService,
     private configService: CoreConfigService,
-    private taskService: TaskService) {
+    private taskService: TaskService,
+    private envVariableService: EnvVariableService) {
   }
 
-  public async pullBiota(): Promise<void> {
+  public async pullBiota(setEnvVariable: boolean = true): Promise<void> {
+    if (setEnvVariable) {
+      await this.envVariableService.setEnvVariables();
+    }
+
     const file = this.fileService.getAssetPath(this.pullBiotaScript);
     const destination = this.configService.getAppFolder();
 
@@ -31,7 +37,7 @@ export class BiotaService {
     } catch (e: any) {
       this.taskService.markTaskAsError(taskName, 'Error during the biota pull. Error : ' + e);
       if (e.stack) {
-        this.logger.error(e.stack)
+        this.logger.error(e.stack);
       }
       throw e;
     }

@@ -4,10 +4,10 @@ import {FileService} from '../../core/services/file/file.service';
 import {PrivateFile} from '../../core/models/private-file.class';
 import {KeyGeneratorService} from '../../core/services/key-generator/key-generator.service';
 import {ConfigFile} from '../../core/models/config-file.class';
-import {hashSync} from 'bcrypt';
 import {DockerService} from '../docker/docker.service';
 import {BiotaService} from '../../core/services/biota/biota.service';
 import {join} from 'path';
+import {EnvVariableService} from '../../core/services/env-variable/env-variable.service';
 
 @Injectable()
 export class InitService implements OnApplicationBootstrap {
@@ -18,7 +18,8 @@ export class InitService implements OnApplicationBootstrap {
     private fileService: FileService,
     private keyGenerator: KeyGeneratorService,
     private dockerService: DockerService,
-    private biotaService: BiotaService) {
+    private biotaService: BiotaService,
+    private envVariableService: EnvVariableService) {
   }
 
   onApplicationBootstrap(): any {
@@ -31,18 +32,18 @@ export class InitService implements OnApplicationBootstrap {
       this.initAppVolume();
 
       this.generateFiles();
-      this.initEnvVariable();
+      await this.envVariableService.setEnvVariables();
 
       await this.loginToDockerRegistry();
 
       // PULL BIOTA DB
-      await this.biotaService.pullBiota();
+      await this.biotaService.pullBiota(false);
 
       // PULL IMAGES
-      await this.dockerService.pullContainers();
+      await this.dockerService.pullContainers(false);
 
       // UP CONTAINERS
-      await this.dockerService.upContainers({});
+      await this.dockerService.upContainers({}, false);
 
       this.logger.log('[INIT] Init ended successfully');
 
@@ -112,35 +113,6 @@ export class InitService implements OnApplicationBootstrap {
     this.logger.log(`Generating ${dockerComposeFileName} file`);
     this.fileService.copyDockerCompose();
     this.logger.log(`${dockerComposeFileName} file generated`);
-  }
-
-  private initEnvVariable(): void {
-    this.logger.log('Initializing env variable');
-    const configJson: ConfigFile = this.fileService.readConfigFile();
-    const privateJson: PrivateFile = this.fileService.readPrivateFile();
-
-    CoreConfigService.setEnvVariable('APP_DIR', configJson.app_dir);
-    CoreConfigService.setEnvVariable('LAB_NAME', configJson.name);
-    CoreConfigService.setEnvVariable('LAB_TOKEN', privateJson.lab.token);
-    CoreConfigService.setEnvVariable('GPU', ''); // todo
-    CoreConfigService.setEnvVariable('CENTRAL_API_KEY', privateJson.central.api_key);
-    CoreConfigService.setEnvVariable('CENTRAL_API_URL', privateJson.central.api_url);
-    // set the IMAGE_SUFFIX to use the correct image based on if GPU is on
-    CoreConfigService.setEnvVariable('IMAGE_SUFFIX', this.configService.isGPU() ? 'gpu' : 'cpu');
-
-    // Data urls
-    CoreConfigService.setEnvVariable('BIOTA_MARIA_DB_URL', privateJson.db.gws_biota_mariadb_url);
-    CoreConfigService.setEnvVariable('BIOTA_SQLITE3_DB_URL', privateJson.db.gws_biota_sqlite3db_url);
-    CoreConfigService.setEnvVariable('OPENDATA_BIODATA_URL', privateJson.db.opendata_biodata_url);
-    CoreConfigService.setEnvVariable('OPENDATA_GLOVE_URL', privateJson.db.opendata_glove_url);
-    CoreConfigService.setEnvVariable('OPENDATA_URL', privateJson.db.opendata_url);
-    CoreConfigService.setEnvVariable('TESTDATA_URL', privateJson.db.testdata_url);
-
-
-    // Generate the htpasswd for the Lab token for CODELAB using Bcrypt
-    const hash = hashSync(privateJson.lab.token, 10);
-    CoreConfigService.setEnvVariable('HT_PASSWD', `${privateJson.lab.username}:${hash}`);
-    this.logger.log('Env variable initialized');
   }
 
   private async loginToDockerRegistry(): Promise<void> {

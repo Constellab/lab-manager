@@ -1,23 +1,25 @@
 import {Body, Controller, Get, Param, Post} from '@nestjs/common';
-import {ContainerStatusInfo, DockerService} from './docker/docker.service';
+import {DockerService} from './docker/docker.service';
 import {ComposeUpOptions, DockerPs} from './docker.class';
 import {InitService} from './init/init.service';
 import {TaskService} from '../core/services/task/task.service';
-import {TaskStatusInfo} from '../core/models/task.class';
 import {BiotaService} from '../core/services/biota/biota.service';
+import {LabStatus} from './lab.class';
+import {LabService} from './lab.service';
 
-@Controller('docker')
-export class DockerController {
+@Controller('lab')
+export class LabController {
 
   constructor(private dockerService: DockerService,
     private initService: InitService,
     private taskService: TaskService,
-    private biotaService: BiotaService) {
+    private biotaService: BiotaService,
+    private labService: LabService) {
   }
 
   @Get('containers')
-  async listContainers(): Promise<DockerPs[]> {
-    return await this.dockerService.listContainers();
+  listContainers(): Promise<DockerPs[]> {
+    return this.dockerService.listContainers();
   }
 
   @Post('init-all')
@@ -25,14 +27,9 @@ export class DockerController {
     this.initService.initAll().then();
   }
 
-  @Get('current-task')
-  getCurrentTask(): TaskStatusInfo {
-    return this.taskService.currentTask;
-  }
-
-  @Get('containers-status')
-  async getContainersStatus(): Promise<ContainerStatusInfo> {
-    return this.dockerService.getContainersStatus();
+  @Get('status')
+  getCurrentTask(): Promise<LabStatus> {
+    return this.labService.getStatus();
   }
 
   @Post('up-containers')
@@ -41,18 +38,18 @@ export class DockerController {
   }
 
   @Post('restart-containers')
-  async restartContainers(@Body() options: ComposeUpOptions): Promise<void> {
-    return await this.dockerService.restartContainers(options);
+  restartContainers(@Body() options: ComposeUpOptions): Promise<void> {
+    return this.dockerService.restartContainers(options);
   }
 
   @Post('down-containers')
-  async downContainers(): Promise<void> {
-    return await this.dockerService.downContainers();
+  downContainers(): Promise<void> {
+    return this.dockerService.downContainers();
   }
 
   @Get(':containerName/logs')
-  async getLogs(@Param('containerName') containerName: string): Promise<string> {
-    return await this.dockerService.getLogs(containerName);
+  getLogs(@Param('containerName') containerName: string): Promise<string> {
+    return this.dockerService.getLogs(containerName);
   }
 
   @Post('pull-biota-db')

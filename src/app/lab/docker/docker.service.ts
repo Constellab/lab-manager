@@ -5,26 +5,17 @@ import {FileService} from '../../core/services/file/file.service';
 import {CoreConfigService} from '../../core/services/config/core-config.service';
 import {ContainerService} from '../container/container.service';
 import {TaskService} from '../../core/services/task/task.service';
+import {ContainerStatusInfo} from '../lab.class';
+import {EnvVariableService} from '../../core/services/env-variable/env-variable.service';
 
-export enum ContainersStatus {
-  STOP = 'STOP',
-  DOWN = 'DOWN',
-  UP = 'UP',
-  PARTIALLY_UP = 'PARTIALLY_UP'
-}
-
-export interface ContainerStatusInfo {
-  status: ContainersStatus;
-  info?: string;
-}
 
 @Injectable()
 export class DockerService {
 
-
   constructor(private dockerCommand: DockerCommandService,
     private fileService: FileService, private containerService: ContainerService,
-    private taskService: TaskService, private configService: CoreConfigService) {
+    private taskService: TaskService, private configService: CoreConfigService,
+    private envVariableService: EnvVariableService) {
   }
 
   public async login(): Promise<void> {
@@ -48,10 +39,14 @@ export class DockerService {
   public async listContainers(): Promise<DockerPs[]> {
     const result = await this.dockerCommand.dockerPs();
 
-    return result.split('e_o_f\n').filter(value => value.length > 0).map(value => JSON.parse(value))
+    return result.split('e_o_f\n').filter(value => value.length > 0).map(value => JSON.parse(value));
   }
 
-  public async pullContainers(): Promise<void> {
+  public async pullContainers(setEnvVariable: boolean = true): Promise<void> {
+    if (setEnvVariable) {
+      await this.envVariableService.setEnvVariables();
+    }
+
     const taskName = 'PULL_CONTAINERS';
     this.taskService.newTask(taskName);
 
@@ -64,7 +59,11 @@ export class DockerService {
     }
   }
 
-  public async upContainers(options: ComposeUpOptions): Promise<void> {
+  public async upContainers(options: ComposeUpOptions, setEnvVariable: boolean = true): Promise<void> {
+    if (setEnvVariable) {
+      await this.envVariableService.setEnvVariables();
+    }
+
     const taskName = 'UP_CONTAINERS';
     this.taskService.newTask(taskName);
 
@@ -109,10 +108,10 @@ export class DockerService {
     }
   }
 
-  public async restartContainers(options: ComposeUpOptions): Promise<any> {
+  public async restartContainers(options: ComposeUpOptions, setEnvVariable: boolean = true): Promise<any> {
     await this.composeStop();
 
-    return await this.upContainers(options);
+    return await this.upContainers(options, setEnvVariable);
   }
 
   public async getLogs(containerName: string): Promise<string> {
@@ -145,27 +144,27 @@ export class DockerService {
 
     if (containersUp.length === containerNames.length) {
       return {
-        status: ContainersStatus.UP,
+        status: 'UP',
         info: 'All containers are running'
       };
     }
 
     if (containersDown.length === containerNames.length) {
       return {
-        status: ContainersStatus.DOWN,
+        status: 'DOWN',
         info: 'The containers does not exist'
       };
     }
 
     if (containersStop.length === containerNames.length) {
       return {
-        status: ContainersStatus.STOP,
+        status: 'STOP',
         info: 'All containers are stopped'
       };
     }
 
     return {
-      status: ContainersStatus.PARTIALLY_UP,
+      status: 'PARTIALLY_UP',
       info: 'Containers are partially up'
     };
 

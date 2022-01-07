@@ -22,13 +22,13 @@ export class TaskService {
   }
 
   public newTask(name: string, info?: string): void {
-    if (this.currentTask != null && this.currentTask.status === TaskStatus.RUNNING) {
+    if (this.currentTask != null && this.currentTask.status === 'RUNNING') {
       // eslint-disable-next-line max-len
       throw new BadRequestException(`The task ${this.currentTask.name} is running, please wait for this task to finish before running a new task`);
     }
 
     this.task$.next({
-      status: TaskStatus.RUNNING,
+      status: 'RUNNING',
       name: name,
       info: info
     });
@@ -41,11 +41,11 @@ export class TaskService {
   }
 
   public markTaskAsError(name: string, info: string): void {
-    this.updateTask(name, TaskStatus.ERROR, info);
+    this.updateTask(name, 'ERROR', info);
   }
 
   public markTaskAsSuccess(name: string, info?: string): void {
-    this.updateTask(name, TaskStatus.SUCCESS, info);
+    this.updateTask(name, 'SUCCESS', info);
   }
 
   public updateTask(name: string, status: TaskStatus, info?: string): void {
@@ -53,7 +53,7 @@ export class TaskService {
       throw new BadRequestException(`There is no running task`);
     }
 
-    if (this.currentTask.name != name || this.currentTask.status !== TaskStatus.RUNNING) {
+    if (this.currentTask.name != name || this.currentTask.status !== 'RUNNING') {
       throw new BadRequestException(`The task ${name} is not running`);
     }
 
@@ -68,7 +68,7 @@ export class TaskService {
       log += `, info : '${info}'`;
     }
 
-    if (status == TaskStatus.ERROR) {
+    if (status == 'ERROR') {
       this.logger.error(log);
     } else {
       this.logger.log(log);
@@ -76,13 +76,13 @@ export class TaskService {
   }
 
   public forceStopCurrentTask(): void {
-    if (this.currentTask == null || this.currentTask.status !== TaskStatus.RUNNING) {
+    if (this.currentTask == null || this.currentTask.status !== 'RUNNING') {
       throw new BadRequestException(`There is no running task`);
     }
 
     this.task$.next({
       name: this.currentTask.name,
-      status: TaskStatus.ERROR,
+      status: 'ERROR',
       info: 'Stopped manually'
     });
 

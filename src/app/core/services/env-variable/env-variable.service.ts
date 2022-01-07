@@ -1,0 +1,63 @@
+import {Injectable, Logger} from '@nestjs/common';
+import {ConfigFile} from '../../models/config-file.class';
+import {PrivateFile} from '../../models/private-file.class';
+import {CoreConfigService} from '../config/core-config.service';
+import {hashSync} from 'bcrypt';
+import {FileService} from '../file/file.service';
+import {CommandService} from '../command/command.service';
+
+@Injectable()
+export class EnvVariableService {
+
+  private readonly logger = new Logger(EnvVariableService.name);
+
+  constructor(private configService: CoreConfigService,
+    private fileService: FileService,
+    private commandService: CommandService) {
+  }
+
+  /**
+   * Set all the env variable necessary for the docker-compose file
+   */
+  public async setEnvVariables(): Promise<void> {
+    this.logger.log('Initializing env variable');
+    const configJson: ConfigFile = this.fileService.readConfigFile();
+    const privateJson: PrivateFile = this.fileService.readPrivateFile();
+
+    CoreConfigService.setEnvVariable('APP_DIR', configJson.app_dir);
+    CoreConfigService.setEnvVariable('LAB_NAME', configJson.name);
+    CoreConfigService.setEnvVariable('LAB_TOKEN', privateJson.lab.token);
+
+    CoreConfigService.setEnvVariable('CENTRAL_API_KEY', privateJson.central.api_key);
+    CoreConfigService.setEnvVariable('CENTRAL_API_URL', privateJson.central.api_url);
+
+    const isGpu: boolean = await this.isGpu();
+    CoreConfigService.setEnvVariable('GPU', isGpu ? 'cuda' : '');
+    // set the IMAGE_SUFFIX to use the correct image based on if GPU is on
+    CoreConfigService.setEnvVariable('IMAGE_SUFFIX', isGpu ? 'gpu' : 'cpu');
+
+    // Data urls
+    CoreConfigService.setEnvVariable('BIOTA_MARIA_DB_URL', privateJson.db.gws_biota_mariadb_url);
+    CoreConfigService.setEnvVariable('BIOTA_SQLITE3_DB_URL', privateJson.db.gws_biota_sqlite3db_url);
+    CoreConfigService.setEnvVariable('OPENDATA_BIODATA_URL', privateJson.db.opendata_biodata_url);
+    CoreConfigService.setEnvVariable('OPENDATA_GLOVE_URL', privateJson.db.opendata_glove_url);
+    CoreConfigService.setEnvVariable('OPENDATA_URL', privateJson.db.opendata_url);
+    CoreConfigService.setEnvVariable('TESTDATA_URL', privateJson.db.testdata_url);
+
+
+    // Generate the htpasswd for the Lab token for CODELAB using Bcrypt
+    const hash = hashSync(privateJson.lab.token, 10);
+    CoreConfigService.setEnvVariable('HT_PASSWD', `${privateJson.lab.username}:${hash}`);
+    this.logger.log('Env variable initialized');
+  }
+
+  private async isGpu(): Promise<boolean> {
+    try {
+      // to check if this is a GPU server, check if nvidia is installed
+      const nvidia = await this.commandService.execCommand('lspci | grep -i nvidia');
+      return nvidia != '';
+    } catch (_) {
+      return false;
+    }
+  }
+}
