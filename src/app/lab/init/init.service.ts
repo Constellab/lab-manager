@@ -2,12 +2,12 @@ import {Injectable, Logger, OnApplicationBootstrap} from '@nestjs/common';
 import {CoreConfigService} from '../../core/services/config/core-config.service';
 import {FileService} from '../../core/services/file/file.service';
 import {PrivateFile} from '../../core/models/private-file.class';
-import {KeyGeneratorService} from '../../core/services/key-generator/key-generator.service';
 import {ConfigFile} from '../../core/models/config-file.class';
 import {DockerService} from '../docker/docker.service';
 import {BiotaService} from '../../core/services/biota/biota.service';
 import {join} from 'path';
 import {EnvVariableService} from '../../core/services/env-variable/env-variable.service';
+import {LabInitConfig} from '../lab.class';
 
 @Injectable()
 export class InitService implements OnApplicationBootstrap {
@@ -16,7 +16,6 @@ export class InitService implements OnApplicationBootstrap {
 
   constructor(private configService: CoreConfigService,
     private fileService: FileService,
-    private keyGenerator: KeyGeneratorService,
     private dockerService: DockerService,
     private biotaService: BiotaService,
     private envVariableService: EnvVariableService) {
@@ -25,18 +24,19 @@ export class InitService implements OnApplicationBootstrap {
   onApplicationBootstrap(): any {
   }
 
-  public async initAll(): Promise<void> {
+  public async initAll(labInitConfig: LabInitConfig): Promise<void> {
     try {
       this.logger.log('[INIT] Init started');
 
       this.initAppVolume();
 
-      this.generateFiles();
+      this.generateFiles(labInitConfig);
       await this.envVariableService.setEnvVariables();
 
       await this.loginToDockerRegistry();
 
       // PULL BIOTA DB
+      // todo do it only if biota is required
       await this.biotaService.pullBiota(false);
 
       // PULL IMAGES
@@ -69,9 +69,9 @@ export class InitService implements OnApplicationBootstrap {
     this.logger.log('App volume generated');
   }
 
-  private generateFiles(): void {
+  private generateFiles(labInitConfig: LabInitConfig): void {
     if (!this.fileService.privateFileExists()) {
-      this.generatePrivateFile();
+      this.generatePrivateFile(labInitConfig);
     }
 
     if (!this.fileService.configFileExists()) {
@@ -80,20 +80,16 @@ export class InitService implements OnApplicationBootstrap {
     this.generateDockerCompose();
   }
 
-  private generatePrivateFile(): void {
+  private generatePrivateFile(labInitConfig: LabInitConfig): void {
     this.logger.log('Generating private.json file');
     const privateJson: PrivateFile = this.fileService.readPrivateTemplateFile();
 
     // configure central information a central api key
-    if (privateJson.central.api_key == null) {
-      privateJson.central.api_key = this.keyGenerator.generateRandomKey(96);
-    }
+    privateJson.central.api_key = labInitConfig.centralApiKey;
     privateJson.central.api_url = this.configService.getCentralApiUrl();
 
-    // generate the lab token
-    if (privateJson.lab.token == null) {
-      privateJson.lab.token = this.keyGenerator.generateRandomKey(96);
-    }
+    // set token
+    privateJson.lab.token = labInitConfig.codelabToken;
 
     this.fileService.createPrivateFile(privateJson);
     this.logger.log('private.json file generated');

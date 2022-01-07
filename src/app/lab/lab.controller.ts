@@ -4,7 +4,7 @@ import {ComposeUpOptions, DockerPs} from './docker.class';
 import {InitService} from './init/init.service';
 import {TaskService} from '../core/services/task/task.service';
 import {BiotaService} from '../core/services/biota/biota.service';
-import {LabStatus} from './lab.class';
+import {LabInitConfig, LabStatus} from './lab.class';
 import {LabService} from './lab.service';
 
 @Controller('lab')
@@ -23,8 +23,8 @@ export class LabController {
   }
 
   @Post('init-all')
-  initAll(): void {
-    this.initService.initAll().then();
+  initAll(@Body() labInitConfig: LabInitConfig): void {
+    this.initService.initAll(labInitConfig).then();
   }
 
   @Get('status')

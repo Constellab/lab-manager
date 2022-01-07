@@ -15,3 +15,11 @@ export interface LabStatus {
   containersStatus: ContainerStatusInfo;
   currentTask ?: TaskStatusInfo;
 }
+
+/**
+ * Object to config the lab manager required on init
+ */
+export interface LabInitConfig{
+  centralApiKey: string;
+  codelabToken: string;
+}
