@@ -71,7 +71,10 @@ export class InitService implements OnApplicationBootstrap {
 
   private generateFiles(labInitConfig: LabInitConfig): void {
     this.generatePrivateFile(labInitConfig);
-    this.generateConfigFile();
+
+    if (!this.fileService.configFileExists()) {
+      this.generateConfigFile();
+    }
 
     this.generateDockerCompose();
   }
