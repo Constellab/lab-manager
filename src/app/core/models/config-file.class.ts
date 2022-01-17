@@ -3,7 +3,6 @@ export interface ConfigFile {
   title: string;
   description: string;
   app_dir: string;
-  virtual_host: string;
   uri: string;
   variables: Record<string, string>;
   environment: ConfigFileEnv;

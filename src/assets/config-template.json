@@ -3,7 +3,6 @@
   "title": "Gencovery Lab",
   "description": "Gencovery Digital Lab as a Service",
   "app_dir": "/app",
-  "virtual_host": "test.gencovery.io",
   "uri": "91620768-2cdd-11eb-adc1-0242ac120002",
   "variables": {
   },
