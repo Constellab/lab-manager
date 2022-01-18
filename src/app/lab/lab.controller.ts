@@ -47,6 +47,11 @@ export class LabController {
     return this.dockerService.downContainers();
   }
 
+  @Post('pull-containers')
+  pullContainers(): Promise<void>{
+    return this.dockerService.pullContainers();
+  }
+
   @Get(':containerName/logs')
   getLogs(@Param('containerName') containerName: string): Promise<string> {
     return this.dockerService.getLogs(containerName);
