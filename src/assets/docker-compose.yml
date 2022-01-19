@@ -87,7 +87,6 @@ services:
       - "traefik.http.routers.glab-dev-router.tls.certresolver=myresolver"
     networks:
       - gencovery-network-dev
-    restart: always
     container_name: codelab
 
 
@@ -112,7 +111,6 @@ services:
       - "traefik.frontend.redirect.entryPoint=https"
     networks:
       - gencovery-network-prod
-    restart: always
     container_name: front
 
   # GWS Core Production DB
@@ -128,7 +126,6 @@ services:
       - /app/prod/data/gws_core/mariadb:/var/lib/mysql
     networks:
       - gencovery-network-prod
-    restart: always
     container_name: gws_core_prod_db
 
   # GWS Core Development DB
@@ -144,7 +141,6 @@ services:
       - /app/dev/data/gws_core/mariadb:/var/lib/mysql
     networks:
       - gencovery-network-dev
-    restart: always
     container_name: gws_core_dev_db
 
   # GWS Test db
@@ -173,7 +169,6 @@ services:
       - /app/prod/data/gws_biota/mariadb:/var/lib/mysql
     networks:
       - gencovery-network-prod
-    restart: always
     container_name: gws_biota_prod_db
 
   # GWS Biota Development DB
@@ -189,7 +184,6 @@ services:
       - /app/dev/data/gws_biota/mariadb:/var/lib/mysql
     networks:
       - gencovery-network-dev
-    restart: always
     container_name: gws_biota_dev_db
 
 networks:
