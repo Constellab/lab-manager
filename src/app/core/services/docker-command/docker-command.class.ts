@@ -16,4 +16,6 @@ export interface DockerCommandServiceI {
   getLogs(containerName: string): Promise<string>;
 
   login(username: string, password: string, registryUrl: string): Promise<string>;
+
+  systemPrune(): Promise<string>;
 }

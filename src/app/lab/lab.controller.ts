@@ -48,7 +48,7 @@ export class LabController {
   }
 
   @Post('pull-containers')
-  pullContainers(): Promise<void>{
+  pullContainers(): Promise<void> {
     return this.dockerService.pullContainers();
   }
 
@@ -65,6 +65,11 @@ export class LabController {
   @Post('registry-login')
   async registryLogin(): Promise<void> {
     return this.dockerService.login();
+  }
+
+  @Post('system-prune')
+  async systemPrune(): Promise<void> {
+    return this.dockerService.systemPrune();
   }
 
   @Post('stop-current-task')

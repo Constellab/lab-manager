@@ -122,6 +122,19 @@ export class DockerService {
     return await this.dockerCommand.getLogs(containerName);
   }
 
+  public async systemPrune(): Promise<void> {
+    const taskName = 'SYSTEM PRUNE';
+    this.taskService.newTask(taskName);
+
+    try {
+      const result = await this.dockerCommand.systemPrune();
+      this.taskService.markTaskAsSuccess(taskName, result);
+    } catch (e) {
+      this.taskService.markTaskAsError(taskName, e.toString());
+      throw e;
+    }
+  }
+
   public async getContainersStatus(): Promise<ContainerStatusInfo> {
     const containers: DockerPs[] = await this.listContainers();
 

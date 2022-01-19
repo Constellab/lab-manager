@@ -50,9 +50,16 @@ export class DockerCommandService implements DockerCommandServiceI {
     return this.commandService.execCommand(`docker logs ${containerName}`, ExecCommandMode.STDERR_AS_SUCCESS);
   }
 
-  login(username: string, password: string, registryUrl: string): Promise<string> {
+  public login(username: string, password: string, registryUrl: string): Promise<string> {
     return this.commandService.execCommand(`docker login -u ${username} -p ${password} ${registryUrl}`);
   }
+
+  public systemPrune(): Promise<string> {
+    return this.commandService.execCommand(`docker system prune -f`);
+  }
+
+
+
 }
 
 

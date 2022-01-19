@@ -38,6 +38,12 @@ export class DockerCommandMock implements DockerCommandServiceI {
     return Promise.resolve('');
   }
 
+  systemPrune(): Promise<string> {
+    return Promise.resolve('');
+  }
+
+
+
 
 
 }
