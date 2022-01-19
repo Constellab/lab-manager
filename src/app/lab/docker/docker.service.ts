@@ -64,6 +64,10 @@ export class DockerService {
       await this.envVariableService.setEnvVariables();
     }
 
+    if(options.updateContainers){
+      await this.pullContainers(setEnvVariable)
+    }
+
     const taskName = 'UP_CONTAINERS';
     this.taskService.newTask(taskName);
 
