@@ -3,7 +3,7 @@
 
 # Build step
 FROM node:12-alpine as builder
-WORKDIR /app
+WORKDIR /lab-manager
 
 # Copy package and package-lock.json file for modules installation
 COPY /package.json /package-lock.json ./
@@ -18,7 +18,7 @@ RUN npm run build
 
 ## Second Stage : Setup command to run your app using lightweight node image
 FROM ubuntu:20.04
-WORKDIR /app
+WORKDIR /lab-manager
 
 # Install docker to run docker commands
 RUN apt-get update && \
@@ -42,13 +42,13 @@ RUN chmod +x /usr/local/bin/docker-compose
 # Set UTC timezone for the docker
 ENV TZ=UTC
 
-COPY --from=builder /app/package.json /app/package-lock.json ./
+COPY --from=builder /lab-manager/package.json /lab-manager/package-lock.json ./
 
 # dependency are needed and there are not build in chunck
 RUN npm ci --production
 
 # copy dist
-COPY --from=builder /app/dist/ ./dist
+COPY --from=builder /lab-manager/dist/ ./dist
 
 #RUN chmod -R 777 dist/assets
 
