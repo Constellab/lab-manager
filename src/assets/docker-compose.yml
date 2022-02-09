@@ -11,6 +11,7 @@ services:
       - LAB_ENVIRONMENT=PROD
       - CENTRAL_API_KEY=${CENTRAL_API_KEY}
       - CENTRAL_API_URL=${CENTRAL_API_URL}
+      - FRONT_URL=https://front.${VIRTUAL_HOST}
       - CONDA_VERSION=latest
       - GPU=${GPU}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
@@ -49,6 +50,7 @@ services:
       - LAB_MODE=dev
       - LAB_ENVIRONMENT=PROD
       - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}
+      - FRONT_URL=https://front.${VIRTUAL_HOST}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
       - CONDA_VERSION=latest
