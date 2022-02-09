@@ -45,6 +45,14 @@ export class CoreConfigService {
     }
   }
 
+  public getCentralFrontUrl(): string {
+    if (this.getEnvironmentProfile() === 'prod') {
+      return 'https://constellab.gencovery.com';
+    } else {
+      return 'https://constellab-pre-prod.gencovery.com';
+    }
+  }
+
   public getDockerRegistryUrl(): string {
     return this.configService.get('DOCKER_REGISTRY_URL');
   }
