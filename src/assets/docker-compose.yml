@@ -99,6 +99,7 @@ services:
       - DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}/
       - CODE_SERVER_URL=https://codelab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
+      - CENTRAL_FRONT_URL=${CENTRAL_FRONT_URL}
     labels:
       - "traefik.enable=true"
       # Configure Host domain to port 81
