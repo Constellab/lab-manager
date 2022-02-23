@@ -2,7 +2,7 @@ import {Inject, Injectable} from '@nestjs/common';
 import {PrivateFile} from '../../models/private-file.class';
 import {copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync} from 'fs';
 
-import {join} from 'path';
+import {dirname, join} from 'path';
 import {CORE_MODULE_PROVIDER, CoreModuleConfig} from '../../models/core-module-config.class';
 import {CoreConfigService} from '../config/core-config.service';
 
@@ -88,6 +88,9 @@ export class FileService {
   }
 
   public writeFile(path: string, content: any): void {
+    // create the directory first
+    const dir = dirname(path);
+    mkdirSync(dir, {recursive: true});
     writeFileSync(path, content);
   }
 
