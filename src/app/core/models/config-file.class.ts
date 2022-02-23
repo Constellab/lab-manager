@@ -6,6 +6,7 @@ export interface ConfigFile {
   description: string;
   app_dir: string;
   uri: string;
+  frontVersion: string;
   variables: Record<string, string>;
   environment: ConfigFileEnv;
 }
@@ -48,7 +49,8 @@ export interface ConfigFileEnvGitPackage {
 /**
  * DTO used to update the config
  */
-export interface UpdateConfigDTO{
+export interface UpdateConfigDTO {
+  frontVersion: string;
   bricks: SaveBrickDTO[];
 }
 
@@ -62,6 +64,6 @@ export interface SaveBrickDTO {
   isHidden: boolean;
 }
 
-export interface LabConfigDTO{
+export interface LabConfigDTO {
   bricks: Brick[];
 }

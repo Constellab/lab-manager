@@ -39,6 +39,9 @@ export class EnvVariableService {
     // set the IMAGE_SUFFIX to use the correct image based on if GPU is on
     CoreConfigService.setEnvVariable('IMAGE_SUFFIX', isGpu ? 'gpu' : 'cpu');
 
+    // FRONT VERSION
+    CoreConfigService.setEnvVariable('FRONT_VERSION', configJson.frontVersion);
+
     // Data urls
     CoreConfigService.setEnvVariable('BIOTA_MARIA_DB_URL', privateJson.db.gws_biota_mariadb_url);
     CoreConfigService.setEnvVariable('BIOTA_SQLITE3_DB_URL', privateJson.db.gws_biota_sqlite3db_url);

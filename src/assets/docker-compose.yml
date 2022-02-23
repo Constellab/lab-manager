@@ -94,7 +94,7 @@ services:
 
   # Front
   front:
-    image: registry.gitlab.com/gencovery/core/monorepo/lab-front:latest
+    image: registry.gitlab.com/gencovery/core/monorepo/lab-front:${FRONT_VERSION}
     environment:
       - API_URL=https://glab.${VIRTUAL_HOST}/
       - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}/
