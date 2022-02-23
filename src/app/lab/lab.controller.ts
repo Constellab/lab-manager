@@ -81,7 +81,7 @@ export class LabController {
   }
 
   @Get('config')
-  getBricks(): LabConfigDTO {
+  getConfig(): LabConfigDTO {
     return this.configFileService.getLabConfig();
   }
 

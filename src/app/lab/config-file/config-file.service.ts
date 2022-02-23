@@ -97,6 +97,11 @@ export class ConfigFileService {
   }
 
   public getLabConfig(): LabConfigDTO {
+    if (!this.configFileExists()) {
+      return {
+        bricks: []
+      };
+    }
     return {
       bricks: this.getBricks()
     };
