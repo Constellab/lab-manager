@@ -6,7 +6,7 @@ import {CoreConfigService} from '../../core/services/config/core-config.service'
 import {ContainerService} from '../container/container.service';
 import {TaskService} from '../../core/services/task/task.service';
 import {ContainerStatusInfo} from '../lab.class';
-import {EnvVariableService} from '../../core/services/env-variable/env-variable.service';
+import {EnvVariableService} from '../env-variable/env-variable.service';
 
 
 @Injectable()

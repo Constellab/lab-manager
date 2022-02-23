@@ -4,7 +4,6 @@ import {copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync} from '
 
 import {join} from 'path';
 import {CORE_MODULE_PROVIDER, CoreModuleConfig} from '../../models/core-module-config.class';
-import {ConfigFile} from '../../models/config-file.class';
 import {CoreConfigService} from '../config/core-config.service';
 
 @Injectable()
@@ -13,10 +12,8 @@ export class FileService {
   private readonly assets = 'assets';
 
   private readonly privateTemplateFileName = 'private-template.json';
-  private readonly configTemplateFileName = 'config-template.json';
 
   private readonly privateFileName = 'private.json';
-  private readonly configFileName = 'config.json';
 
 
   constructor(@Inject(CORE_MODULE_PROVIDER) private config: CoreModuleConfig,
@@ -49,32 +46,6 @@ export class FileService {
     return this.getVolumePath(this.privateFileName);
   }
 
-  //////////////////////// CONFIG FILE ///////////////////////////////////
-
-  public configFileExists(): boolean {
-    return this.exists(this.configFilePath);
-  }
-
-  public createConfigFile(content: ConfigFile): void {
-    this.writeFile(this.configFilePath, JSON.stringify(content));
-  }
-
-  public readConfigFile(): ConfigFile {
-    return this.readJsonFile(this.configFilePath);
-  }
-
-  public readConfigTemplateFile(): ConfigFile {
-    return this.readJsonFile(this.configTemplateFilePath);
-  }
-
-  private get configTemplateFilePath(): string {
-    return this.getAssetPath(this.configTemplateFileName);
-  }
-
-  private get configFilePath(): string {
-    return this.getVolumePath(this.configFileName);
-  }
-
   //////////////////////// DOCKER COMPOSE //////////////////////
 
   public copyDockerCompose(): void {
@@ -96,12 +67,12 @@ export class FileService {
 
   //////////////////////// GENERIC ///////////////////////////////////
 
-  private readJsonFile(path: string): any {
+  public readJsonFile(path: string): any {
     const content: any = this.readFile(path);
     return JSON.parse(content);
   }
 
-  private exists(path: string): boolean {
+  public exists(path: string): boolean {
     return existsSync(path);
   }
 
@@ -116,7 +87,7 @@ export class FileService {
     return readFileSync(path);
   }
 
-  private writeFile(path: string, content: any): void {
+  public writeFile(path: string, content: any): void {
     writeFileSync(path, content);
   }
 
@@ -136,7 +107,7 @@ export class FileService {
    * Check if a file exists in dist folder
    * @param path
    */
-  private getVolumePath(...path: string[]): string {
+  public getVolumePath(...path: string[]): string {
     return this.configService.getVolumePath(...path);
   }
 

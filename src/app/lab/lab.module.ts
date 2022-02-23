@@ -4,6 +4,9 @@ import {DockerService} from './docker/docker.service';
 import {ContainerService} from './container/container.service';
 import {InitService} from './init/init.service';
 import {LabService} from './lab.service';
+import {ConfigFileService} from './config-file/config-file.service';
+import {BiotaService} from './biota/biota.service';
+import {EnvVariableService} from './env-variable/env-variable.service';
 
 @Module({
   providers: [
@@ -11,6 +14,9 @@ import {LabService} from './lab.service';
     ContainerService,
     InitService,
     LabService,
+    ConfigFileService,
+    BiotaService,
+    EnvVariableService,
   ],
   controllers: [LabController]
 })

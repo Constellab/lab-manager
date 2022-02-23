@@ -1,8 +1,8 @@
 import {Injectable, Logger} from '@nestjs/common';
-import {CommandService} from '../command/command.service';
-import {FileService} from '../file/file.service';
-import {CoreConfigService} from '../config/core-config.service';
-import {TaskService} from '../task/task.service';
+import {CommandService} from '../../core/services/command/command.service';
+import {FileService} from '../../core/services/file/file.service';
+import {CoreConfigService} from '../../core/services/config/core-config.service';
+import {TaskService} from '../../core/services/task/task.service';
 import {EnvVariableService} from '../env-variable/env-variable.service';
 
 @Injectable()

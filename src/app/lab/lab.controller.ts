@@ -1,11 +1,13 @@
-import {Body, Controller, Get, Param, Post} from '@nestjs/common';
+import {Body, Controller, Get, Param, Post, Put} from '@nestjs/common';
 import {DockerService} from './docker/docker.service';
 import {ComposeUpOptions, DockerPs} from './docker.class';
 import {InitService} from './init/init.service';
 import {TaskService} from '../core/services/task/task.service';
-import {BiotaService} from '../core/services/biota/biota.service';
+import {BiotaService} from './biota/biota.service';
 import {LabInitConfig, LabStatus} from './lab.class';
 import {LabService} from './lab.service';
+import {LabConfigDTO, UpdateConfigDTO} from '../core/models/config-file.class';
+import {ConfigFileService} from './config-file/config-file.service';
 
 @Controller('lab')
 export class LabController {
@@ -14,7 +16,8 @@ export class LabController {
     private initService: InitService,
     private taskService: TaskService,
     private biotaService: BiotaService,
-    private labService: LabService) {
+    private labService: LabService,
+    private configFileService: ConfigFileService) {
   }
 
   @Get('containers')
@@ -75,5 +78,15 @@ export class LabController {
   @Post('stop-current-task')
   async stopCurrentTask(): Promise<void> {
     return this.taskService.forceStopCurrentTask();
+  }
+
+  @Get('config')
+  getBricks(): LabConfigDTO {
+    return this.configFileService.getLabConfig();
+  }
+
+  @Put('config')
+  updateConfig(@Body() updateConfig: UpdateConfigDTO): void {
+    this.configFileService.updateConfig(updateConfig);
   }
 }

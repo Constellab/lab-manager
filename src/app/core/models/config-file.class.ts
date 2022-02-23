@@ -1,3 +1,5 @@
+import {Brick} from './brick.class';
+
 export interface ConfigFile {
   name: string;
   title: string;
@@ -13,6 +15,8 @@ export interface ConfigFileEnv {
   git: ConfigFileEnvGit[];
   variables: Record<string, string>;
 }
+
+export type ConfigBrickPackage = ConfigFileEnvPipPackage | ConfigFileEnvGitPackage
 
 export interface ConfigFileEnvPip {
   source: string;
@@ -38,4 +42,26 @@ export interface ConfigFileEnvGitPackage {
   commit: 'latest' | string;
   is_brick: boolean;
   is_hidden: boolean;
+  version: string;
+}
+
+/**
+ * DTO used to update the config
+ */
+export interface UpdateConfigDTO{
+  bricks: SaveBrickDTO[];
+}
+
+export interface SaveBrickDTO {
+  name: string;
+  repo: string;
+  repoType: 'PIP' | 'GIT';
+  version: string;
+  commit?: string;
+  branch?: string;
+  isHidden: boolean;
+}
+
+export interface LabConfigDTO{
+  bricks: Brick[];
 }

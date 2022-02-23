@@ -9,7 +9,6 @@ import {APP_FILTER, APP_GUARD} from '@nestjs/core';
 import {ApiKeyGuard} from './app/core/guards/api-key.guard';
 import {AppController} from './app.controller';
 import {LabModule} from './app/lab/lab.module';
-import {BrickModule} from './app/brick/brick.module';
 import {CoreExceptionHandlerFilter} from './app/core/filters/core-exception-handler.filter';
 import {LabManagerModule} from './app/lab-manager/lab-manager.module';
 
@@ -39,7 +38,6 @@ function configureWinstonLogger(configService: CoreConfigService): WinstonModule
     }),
 
     LabModule,
-    BrickModule,
     LabManagerModule,
   ],
   controllers: [AppController],

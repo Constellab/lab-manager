@@ -1,10 +1,11 @@
 import {Injectable, Logger} from '@nestjs/common';
-import {ConfigFile} from '../../models/config-file.class';
-import {PrivateFile} from '../../models/private-file.class';
-import {CoreConfigService} from '../config/core-config.service';
+import {ConfigFile} from '../../core/models/config-file.class';
+import {PrivateFile} from '../../core/models/private-file.class';
+import {CoreConfigService} from '../../core/services/config/core-config.service';
 import {hashSync} from 'bcrypt';
-import {FileService} from '../file/file.service';
-import {CommandService} from '../command/command.service';
+import {FileService} from '../../core/services/file/file.service';
+import {CommandService} from '../../core/services/command/command.service';
+import {ConfigFileService} from '../config-file/config-file.service';
 
 @Injectable()
 export class EnvVariableService {
@@ -13,6 +14,7 @@ export class EnvVariableService {
 
   constructor(private configService: CoreConfigService,
     private fileService: FileService,
+    private configFileService: ConfigFileService,
     private commandService: CommandService) {
   }
 
@@ -21,7 +23,7 @@ export class EnvVariableService {
    */
   public async setEnvVariables(): Promise<void> {
     this.logger.log('Initializing env variable');
-    const configJson: ConfigFile = this.fileService.readConfigFile();
+    const configJson: ConfigFile = this.configFileService.readConfigFile();
     const privateJson: PrivateFile = this.fileService.readPrivateFile();
 
     CoreConfigService.setEnvVariable('APP_DIR', configJson.app_dir);

@@ -2,17 +2,23 @@ export type Brick = BrickPip | BrickGit;
 
 interface BrickBase {
   name: string;
-  type: 'pip' | 'git';
-  source: string;
+  repoType: 'PIP' | 'GIT';
+  repo: string;
+  version: string;
+  isHidden: boolean,
 }
 
 export interface BrickPip extends BrickBase {
-  type: 'pip';
-  version: string;
+  repoType: 'PIP';
 }
 
 export interface BrickGit extends BrickBase {
-  type: 'git';
+  repoType: 'GIT';
   branch: string;
   commit: string;
+}
+
+export enum BrickGWS{
+  GWS_CORE = 'gws_core',
+  GWS_BIOTA = 'gws_biota'
 }

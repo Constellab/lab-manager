@@ -1,13 +1,14 @@
-import {Injectable, Logger, OnApplicationBootstrap} from '@nestjs/common';
+import {BadRequestException, Injectable, Logger, OnApplicationBootstrap} from '@nestjs/common';
 import {CoreConfigService} from '../../core/services/config/core-config.service';
 import {FileService} from '../../core/services/file/file.service';
 import {PrivateFile} from '../../core/models/private-file.class';
-import {ConfigFile} from '../../core/models/config-file.class';
 import {DockerService} from '../docker/docker.service';
-import {BiotaService} from '../../core/services/biota/biota.service';
+import {BiotaService} from '../biota/biota.service';
 import {join} from 'path';
-import {EnvVariableService} from '../../core/services/env-variable/env-variable.service';
+import {EnvVariableService} from '../env-variable/env-variable.service';
 import {LabInitConfig} from '../lab.class';
+import {ConfigFileService} from '../config-file/config-file.service';
+import {BrickGWS} from '../../core/models/brick.class';
 
 @Injectable()
 export class InitService implements OnApplicationBootstrap {
@@ -15,6 +16,7 @@ export class InitService implements OnApplicationBootstrap {
   private readonly logger = new Logger(InitService.name);
 
   constructor(private configService: CoreConfigService,
+    private configFileService: ConfigFileService,
     private fileService: FileService,
     private dockerService: DockerService,
     private biotaService: BiotaService,
@@ -25,10 +27,14 @@ export class InitService implements OnApplicationBootstrap {
   }
 
   public async initAll(labInitConfig: LabInitConfig): Promise<void> {
+    if (!this.configFileService.configFileExists()) {
+      throw new BadRequestException('You must configure the bricks before calling init');
+    }
     try {
       this.logger.log('[INIT] Init started');
 
       this.initAppVolume();
+
 
       this.generateFiles(labInitConfig);
       await this.envVariableService.setEnvVariables();
@@ -36,8 +42,9 @@ export class InitService implements OnApplicationBootstrap {
       await this.loginToDockerRegistry();
 
       // PULL BIOTA DB
-      // todo do it only if biota is required
-      await this.biotaService.pullBiota(false);
+      if (this.configFileService.hasBrick(BrickGWS.GWS_BIOTA)) {
+        await this.biotaService.pullBiota(false);
+      }
 
       // PULL IMAGES
       await this.dockerService.pullContainers(false);
@@ -72,10 +79,6 @@ export class InitService implements OnApplicationBootstrap {
   private generateFiles(labInitConfig: LabInitConfig): void {
     this.generatePrivateFile(labInitConfig);
 
-    if (!this.fileService.configFileExists()) {
-      this.generateConfigFile();
-    }
-
     this.generateDockerCompose();
   }
 
@@ -92,15 +95,6 @@ export class InitService implements OnApplicationBootstrap {
 
     this.fileService.createPrivateFile(privateJson);
     this.logger.log('private.json file generated');
-  }
-
-  private generateConfigFile(): void {
-    this.logger.log('Generating config.json file');
-
-    const configJson: ConfigFile = this.fileService.readConfigTemplateFile();
-    this.fileService.createConfigFile(configJson);
-
-    this.logger.log('config.json file generated');
   }
 
   private generateDockerCompose(): void {
