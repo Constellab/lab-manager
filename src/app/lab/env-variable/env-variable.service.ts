@@ -40,7 +40,7 @@ export class EnvVariableService {
     CoreConfigService.setEnvVariable('IMAGE_SUFFIX', isGpu ? 'gpu' : 'cpu');
 
     // FRONT VERSION
-    CoreConfigService.setEnvVariable('FRONT_VERSION', configJson.frontVersion);
+    CoreConfigService.setEnvVariable('FRONT_VERSION', configJson.front_version);
 
     // Data urls
     CoreConfigService.setEnvVariable('BIOTA_MARIA_DB_URL', privateJson.db.gws_biota_mariadb_url);

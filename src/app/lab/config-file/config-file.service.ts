@@ -35,7 +35,7 @@ export class ConfigFileService {
     }
 
     // set the front version
-    config.frontVersion = updateConfig.frontVersion;
+    config.front_version = updateConfig.frontVersion;
 
     const pipEnv: ConfigFileEnvPip[] = [];
     const gitEnv: ConfigFileEnvGit[] = [];
@@ -114,7 +114,7 @@ export class ConfigFileService {
       description: 'Gencovery Digital Lab as a Service',
       app_dir: '/app',
       uri: '91620768-2cdd-11eb-adc1-0242ac120002',
-      frontVersion: null,
+      front_version: null,
       variables: {},
       environment: {
         pip: [],

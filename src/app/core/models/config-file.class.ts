@@ -6,7 +6,7 @@ export interface ConfigFile {
   description: string;
   app_dir: string;
   uri: string;
-  frontVersion: string;
+  front_version: string;
   variables: Record<string, string>;
   environment: ConfigFileEnv;
 }
