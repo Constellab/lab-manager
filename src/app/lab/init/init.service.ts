@@ -8,7 +8,6 @@ import {join} from 'path';
 import {EnvVariableService} from '../env-variable/env-variable.service';
 import {LabInitConfig} from '../lab.class';
 import {ConfigFileService} from '../config-file/config-file.service';
-import {BrickGWS} from '../../core/models/brick.class';
 
 @Injectable()
 export class InitService implements OnApplicationBootstrap {
@@ -42,9 +41,7 @@ export class InitService implements OnApplicationBootstrap {
       await this.loginToDockerRegistry();
 
       // PULL BIOTA DB
-      if (this.configFileService.hasBrick(BrickGWS.GWS_BIOTA)) {
-        await this.biotaService.pullBiota(false);
-      }
+      await this.biotaService.pullBiota(false);
 
       // PULL IMAGES
       await this.dockerService.pullContainers(false);
