@@ -195,18 +195,39 @@ export class DockerService {
     return container.state === 'running';
   }
 
-  public startAdminerService(): Promise<boolean> {
-    const virtualHost = this.configService.getVirtualHost();
+  public async startAdminerService(): Promise<boolean> {
+    const taskName = 'START ADMINER';
+    this.taskService.newTask(taskName);
 
-    const labels = this.traefikService.getTraefikLabels(virtualHost, ContainerService.ADMINER_NAME, '8080');
+    try {
 
-    const networks = [ContainerService.NETWORK_DEV, ContainerService.NETWORK_PROD];
-    return this.dockerCommand.dockerRun(ContainerService.ADMINER_IMAGE, ContainerService.ADMINER_NAME, {
-      networks: networks, labels: labels
-    });
+      const virtualHost = this.configService.getVirtualHost();
+
+      const labels = this.traefikService.getTraefikLabels(virtualHost, ContainerService.ADMINER_NAME, '8080');
+
+      const networks = [ContainerService.NETWORK_DEV, ContainerService.NETWORK_PROD];
+      const result = await this.dockerCommand.dockerRun(ContainerService.ADMINER_IMAGE, ContainerService.ADMINER_NAME, {
+        networks: networks, labels: labels
+      });
+      this.taskService.markTaskAsSuccess(taskName, 'Ok');
+      return result;
+    } catch (e) {
+      this.taskService.markTaskAsError(taskName, e.toString());
+      throw e;
+    }
   }
 
-  public stopAdminerService(): Promise<string> {
-    return this.dockerCommand.dockerRmContainer(ContainerService.ADMINER_NAME);
+  public async stopAdminerService(): Promise<boolean> {
+    const taskName = 'STOP ADMINER';
+    this.taskService.newTask(taskName);
+
+    try {
+      const result = await this.dockerCommand.dockerRmContainer(ContainerService.ADMINER_NAME);
+      this.taskService.markTaskAsSuccess(taskName, result);
+      return true;
+    } catch (e) {
+      this.taskService.markTaskAsError(taskName, e.toString());
+      throw e;
+    }
   }
 }

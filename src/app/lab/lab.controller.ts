@@ -96,7 +96,7 @@ export class LabController {
   }
 
   @Put('adminer/stop')
-  stopAdminer(): Promise<string> {
+  stopAdminer(): Promise<boolean> {
     return this.dockerService.stopAdminerService();
   }
 }
