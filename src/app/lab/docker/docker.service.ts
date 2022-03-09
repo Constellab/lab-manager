@@ -222,8 +222,8 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.dockerRmContainer(ContainerService.ADMINER_NAME);
-      this.taskService.markTaskAsSuccess(taskName, result);
+      await this.dockerCommand.dockerRmContainer(ContainerService.ADMINER_NAME);
+      this.taskService.markTaskAsSuccess(taskName, 'Ok');
       return true;
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());

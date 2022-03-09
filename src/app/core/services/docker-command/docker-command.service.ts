@@ -106,8 +106,12 @@ export class DockerCommandService implements DockerCommandServiceI {
     }
   }
 
-  public async dockerRmContainer(containerName: string): Promise<string> {
-    return this.commandService.execCommand(`docker rm -f ${containerName}`);
+  public async dockerRmContainer(containerName: string): Promise<void> {
+    const result = await this.commandService.execCommand(`docker rm -f ${containerName}`);
+
+    if(result !== containerName){
+      throw new BadRequestException(`Error while removing container '${containerName}'. Error : ${result}`);
+    }
   }
 
 }
