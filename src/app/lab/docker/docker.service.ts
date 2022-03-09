@@ -200,11 +200,7 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-
-      // host = adminer.*.gencovery.io
-      const host = ContainerService.ADMINER_NAME + '.' + this.configService.getVirtualHost();
-
-      const labels = this.traefikService.getTraefikLabels(host, ContainerService.ADMINER_NAME, '8080');
+      const labels = this.traefikService.getTraefikLabels(ContainerService.ADMINER_NAME, '8080');
 
       const networks = [ContainerService.NETWORK_DEV, ContainerService.NETWORK_PROD];
       const result = await this.dockerCommand.dockerRun(ContainerService.ADMINER_IMAGE, ContainerService.ADMINER_NAME, {
