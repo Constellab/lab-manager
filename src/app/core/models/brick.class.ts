@@ -15,7 +15,6 @@ export interface BrickPip extends BrickBase {
 export interface BrickGit extends BrickBase {
   repoType: 'GIT';
   branch: string;
-  commit: string;
 }
 
 export enum BrickGWS{

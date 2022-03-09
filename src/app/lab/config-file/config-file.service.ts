@@ -89,7 +89,6 @@ export class ConfigFileService {
         name: brickDTO.name,
         is_brick: true,
         is_hidden: brickDTO.isHidden,
-        commit: brickDTO.commit,
         branch: brickDTO.branch,
         version: brickDTO.version
       };
@@ -177,7 +176,6 @@ export class ConfigFileService {
             repoType: 'GIT',
             version: brick.version,
             branch: brick.branch,
-            commit: brick.commit,
             repo: gitEnv.source,
             isHidden: brick.is_hidden
           });

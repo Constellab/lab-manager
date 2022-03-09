@@ -40,7 +40,6 @@ export interface ConfigFileEnvGit {
 export interface ConfigFileEnvGitPackage {
   name: string;
   branch: string;
-  commit: 'latest' | string;
   is_brick: boolean;
   is_hidden: boolean;
   version: string;
@@ -59,7 +58,6 @@ export interface SaveBrickDTO {
   repo: string;
   repoType: 'PIP' | 'GIT';
   version: string;
-  commit?: string;
   branch?: string;
   isHidden: boolean;
 }
