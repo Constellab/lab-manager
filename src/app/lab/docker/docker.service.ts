@@ -7,6 +7,7 @@ import {ContainerService} from '../container/container.service';
 import {TaskService} from '../../core/services/task/task.service';
 import {ContainerStatusInfo} from '../lab.class';
 import {EnvVariableService} from '../env-variable/env-variable.service';
+import {TraefikService} from '../../core/services/traefik/traefik.service';
 
 
 @Injectable()
@@ -15,7 +16,7 @@ export class DockerService {
   constructor(private dockerCommand: DockerCommandService,
     private fileService: FileService, private containerService: ContainerService,
     private taskService: TaskService, private configService: CoreConfigService,
-    private envVariableService: EnvVariableService) {
+    private envVariableService: EnvVariableService, private traefikService: TraefikService) {
   }
 
   public async login(): Promise<void> {
@@ -37,9 +38,7 @@ export class DockerService {
   }
 
   public async listContainers(): Promise<DockerPs[]> {
-    const result = await this.dockerCommand.dockerPs();
-
-    return result.split('e_o_f\n').filter(value => value.length > 0).map(value => JSON.parse(value));
+    return this.dockerCommand.dockerPs();
   }
 
   public async pullContainers(setEnvVariable: boolean = true): Promise<void> {
@@ -64,8 +63,8 @@ export class DockerService {
       await this.envVariableService.setEnvVariables();
     }
 
-    if(options.updateContainers){
-      await this.pullContainers(setEnvVariable)
+    if (options.updateContainers) {
+      await this.pullContainers(setEnvVariable);
     }
 
     const taskName = 'UP_CONTAINERS';
@@ -184,6 +183,30 @@ export class DockerService {
       status: 'PARTIALLY_UP',
       info: 'Containers are partially up'
     };
+  }
 
+  public async adminerIsRunning(): Promise<boolean> {
+    const container = await this.dockerCommand.dockerContainerInfo(ContainerService.ADMINER_NAME);
+
+    if (container == null) {
+      return false;
+    }
+
+    return container.state === 'running';
+  }
+
+  public startAdminerService(): Promise<boolean> {
+    const virtualHost = this.configService.getVirtualHost();
+
+    const labels = this.traefikService.getTraefikLabels(virtualHost, ContainerService.ADMINER_NAME, '8080');
+
+    const networks = [ContainerService.NETWORK_DEV, ContainerService.NETWORK_PROD];
+    return this.dockerCommand.dockerRun(ContainerService.ADMINER_IMAGE, ContainerService.ADMINER_NAME, {
+      networks: networks, labels: labels
+    });
+  }
+
+  public stopAdminerService(): Promise<string> {
+    return this.dockerCommand.dockerRmContainer(ContainerService.ADMINER_NAME);
   }
 }

@@ -36,6 +36,10 @@ export class CoreConfigService {
     return this.configService.get('LAB_MANAGER_API_KEY');
   }
 
+  public getVirtualHost(): string {
+    return this.configService.get('VIRTUAL_HOST');
+  }
+
 
   public getCentralApiUrl(): string {
     if (this.getEnvironmentProfile() === 'prod') {

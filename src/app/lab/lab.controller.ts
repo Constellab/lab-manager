@@ -89,4 +89,14 @@ export class LabController {
   updateConfig(@Body() updateConfig: UpdateConfigDTO): void {
     this.configFileService.updateConfig(updateConfig);
   }
+
+  @Put('adminer/start')
+  startAdminer(): Promise<boolean> {
+    return this.dockerService.startAdminerService();
+  }
+
+  @Put('adminer/stop')
+  stopAdminer(): Promise<string> {
+    return this.dockerService.stopAdminerService();
+  }
 }

@@ -13,7 +13,12 @@ export interface DockerPs {
   status: string;
 }
 
-export interface ComposeUpOptions{
+export interface ComposeUpOptions {
   updateBricks?: boolean;
-  updateContainers?: boolean
+  updateContainers?: boolean;
+}
+
+export interface DockerRunOptions {
+  networks?: string[];
+  labels?: string[];
 }

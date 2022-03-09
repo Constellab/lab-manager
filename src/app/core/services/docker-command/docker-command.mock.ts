@@ -1,5 +1,6 @@
 import {Injectable} from '@nestjs/common';
 import {DockerCommandServiceI} from './docker-command.class';
+import {DockerPs, DockerRunOptions} from '../../../lab/docker.class';
 
 /*  eslint-disable max-len */
 /**
@@ -19,11 +20,50 @@ export class DockerCommandMock implements DockerCommandServiceI {
     return Promise.resolve('');
   }
 
-  dockerPs(): Promise<string> {
-    return Promise.resolve(`{"id":"4f8364e6037b348a9eff4768cf9694d6490c803923433326cac87ee6a5ee61e9","command":"/entrypoint.sh --run-codelab","createdAt":"2022-01-04 17:42:12 +0100 CET","image":"registry.gitlab.com/gencovery/infra/gpm/codelab-cpu:latest","mounts":"","names":"codelab","networks":"gencovery-network-dev","ports":"3000/tcp, 8080/tcp","runningFor":"2 days ago","size":"4.03kB (virtual 8.01GB)","state":"exited","status":"Exited (255) 26 hours ago"}e_o_f
-{"id":"32154a0c511e03ce33214b595517625d06f9c5b79d84b4b8b2f647f220e20cfd","command":"docker-entrypoint.sh --max_allowed_packet=256M","createdAt":"2022-01-04 17:42:01 +0100 CET","image":"mariadb:10","mounts":"80cc052efbf24a902bc6ed67ac022e67e52fa97af8e86fd1cec461cce45d1fc4","names":"gws_core_dev_db","networks":"gencovery-network-dev","ports":"3306/tcp","runningFor":"2 days ago","size":"0B (virtual 410MB)","state":"exited","status":"Exited (255) 26 hours ago"}e_o_f
-{"id":"f0593e930fcfeb938c29db7272c256dfb3425ed5102424b0e9e714019c2dd760","command":"/entrypoint.sh --run-glab","createdAt":"2022-01-04 17:42:01 +0100 CET","image":"registry.gitlab.com/gencovery/infra/gpm/glab-cpu:latest","mounts":"","names":"glab","networks":"gencovery-network-prod","ports":"","runningFor":"2 days ago","size":"0B (virtual 7.64GB)","state":"exited","status":"Exited (2) 43 hours ago"}e_o_f
-`);
+  dockerPs(): Promise<DockerPs[]> {
+    return Promise.resolve([
+      {
+        'id': '4f8364e6037b348a9eff4768cf9694d6490c803923433326cac87ee6a5ee61e9',
+        'command': '/entrypoint.sh --run-codelab',
+        'createdAt': '2022-01-04 17:42:12 +0100 CET',
+        'image': 'registry.gitlab.com/gencovery/infra/gpm/codelab-cpu:latest',
+        'mounts': '',
+        'names': 'codelab',
+        'networks': 'gencovery-network-dev',
+        'ports': '3000/tcp, 8080/tcp',
+        'runningFor': '2 days ago',
+        'size': '4.03kB (virtual 8.01GB)',
+        'state': 'exited',
+        'status': 'Exited (255) 26 hours ago'
+      },
+      {
+        'id': '32154a0c511e03ce33214b595517625d06f9c5b79d84b4b8b2f647f220e20cfd',
+        'command': 'docker-entrypoint.sh --max_allowed_packet=256M',
+        'createdAt': '2022-01-04 17:42:01 +0100 CET',
+        'image': 'mariadb:10',
+        'mounts': '80cc052efbf24a902bc6ed67ac022e67e52fa97af8e86fd1cec461cce45d1fc4',
+        'names': 'gws_core_dev_db',
+        'networks': 'gencovery-network-dev',
+        'ports': '3306/tcp',
+        'runningFor': '2 days ago',
+        'size': '0B (virtual 410MB)',
+        'state': 'exited',
+        'status': 'Exited (255) 26 hours ago'
+      },
+      {
+        'id': 'f0593e930fcfeb938c29db7272c256dfb3425ed5102424b0e9e714019c2dd760',
+        'command': '/entrypoint.sh --run-glab',
+        'createdAt': '2022-01-04 17:42:01 +0100 CET',
+        'image': 'registry.gitlab.com/gencovery/infra/gpm/glab-cpu:latest',
+        'mounts': '',
+        'names': 'glab',
+        'networks': 'gencovery-network-prod',
+        'ports': '',
+        'runningFor': '2 days ago',
+        'size': '0B (virtual 7.64GB)',
+        'state': 'exited',
+        'status': 'Exited (2) 43 hours ago'
+      }]);
   }
 
   getLogs(): Promise<string> {
@@ -42,7 +82,9 @@ export class DockerCommandMock implements DockerCommandServiceI {
     return Promise.resolve('');
   }
 
-
+  dockerRun(image: string, containerName: string, options?: DockerRunOptions): Promise<boolean> {
+    return Promise.resolve(false);
+  }
 
 
 

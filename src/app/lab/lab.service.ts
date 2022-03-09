@@ -13,6 +13,7 @@ export class LabService {
     return {
       containersStatus: await this.dockerService.getContainersStatus(),
       currentTask: this.taskService.currentTask,
+      adminerRunning: await this.dockerService.adminerIsRunning()
     };
   }
 }

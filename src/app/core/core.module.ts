@@ -6,6 +6,7 @@ import {KeyGeneratorService} from './services/key-generator/key-generator.servic
 import {DockerCommandService} from './services/docker-command/docker-command.service';
 import {CommandService} from './services/command/command.service';
 import {TaskService} from './services/task/task.service';
+import {TraefikService} from './services/traefik/traefik.service';
 
 @Module({
   providers: [],
@@ -27,6 +28,7 @@ export class CoreModule {
         DockerCommandService,
         CommandService,
         TaskService,
+        TraefikService,
       ],
       exports: [
         FileService,
@@ -35,6 +37,7 @@ export class CoreModule {
         DockerCommandService,
         CommandService,
         TaskService,
+        TraefikService,
       ]
     };
   }

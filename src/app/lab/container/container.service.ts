@@ -12,6 +12,12 @@ export class ContainerService {
   private static readonly DB_GWS_BIOTA_DEV = 'gws_biota_dev_db';
   private static readonly DB_GWS_CORE_DEV_TEST = 'test_gws_dev_db';
 
+  public static readonly NETWORK_DEV = 'gencovery-network-dev';
+  public static readonly NETWORK_PROD = 'gencovery-network-prod';
+
+  public static readonly ADMINER_NAME = 'adminer';
+  public static readonly ADMINER_IMAGE: string = 'adminer:4.8.1';
+
   constructor() {
   }
 
