@@ -17,10 +17,12 @@ build-app:
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
+    # Read the version number form version.env file
+    - export VERSION=$(grep 'VERSION=' ./version.env | sed -n 's/^VERSION=//p')
     # Build the docker image from Dockerfile with a latest tag and a tag for the commit
-    - docker build --cache-from $CI_REGISTRY_IMAGE/$LAB_MANAGER_IMAGE:latest --tag $CI_REGISTRY_IMAGE/$LAB_MANAGER_IMAGE:$CI_COMMIT_SHA --tag $CI_REGISTRY_IMAGE/$LAB_MANAGER_IMAGE:latest . -f Dockerfile
+    - docker build --cache-from $CI_REGISTRY_IMAGE/$LAB_MANAGER_IMAGE:latest --tag $CI_REGISTRY_IMAGE/$LAB_MANAGER_IMAGE:$VERSION --tag $CI_REGISTRY_IMAGE/$LAB_MANAGER_IMAGE:latest . -f Dockerfile
     # Push both image in the registry
-    - docker push $CI_REGISTRY_IMAGE/$LAB_MANAGER_IMAGE:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE/$LAB_MANAGER_IMAGE:$VERSION
     - docker push $CI_REGISTRY_IMAGE/$LAB_MANAGER_IMAGE:latest
   only:
     - master
