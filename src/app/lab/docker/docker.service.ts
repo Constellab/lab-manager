@@ -41,9 +41,13 @@ export class DockerService {
     return this.dockerCommand.dockerPs();
   }
 
-  public async pullContainers(setEnvVariable: boolean = true): Promise<void> {
+  public async pullContainers(setEnvVariable: boolean = true, dockerLogin: boolean = true): Promise<void> {
     if (setEnvVariable) {
       await this.envVariableService.setEnvVariables();
+    }
+
+    if(dockerLogin){
+      await this.login();
     }
 
     const taskName = 'PULL_CONTAINERS';
@@ -82,6 +86,10 @@ export class DockerService {
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
       throw e;
+    }
+
+    if(options.pruneSystem){
+      await this.systemPrune();
     }
   }
 

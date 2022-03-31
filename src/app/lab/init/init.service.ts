@@ -44,7 +44,7 @@ export class InitService implements OnApplicationBootstrap {
       await this.biotaService.pullBiota(false);
 
       // PULL IMAGES
-      await this.dockerService.pullContainers(false);
+      await this.dockerService.pullContainers(false, false);
 
       // UP CONTAINERS
       await this.dockerService.upContainers({}, false);

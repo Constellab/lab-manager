@@ -13,8 +13,14 @@ export class DockerCommandService implements DockerCommandServiceI {
   constructor(private commandService: CommandService) {
   }
 
-  public composeUp(filePath: string = 'docker-compose.yml', options: string[] = []): Promise<string> {
-    const command: string = `docker-compose -f ${filePath} up -d ${options.join(' ')}`;
+  /**
+   * Call a docker compose up command
+   * @param filePath
+   * @param options
+   * @param containers if provided, only up the containers
+   */
+  public composeUp(filePath: string = 'docker-compose.yml', options: string[] = [], containers: string[] = []): Promise<string> {
+    const command: string = `docker-compose -f ${filePath} up -d ${options.join(' ')} ${containers.join(' ')}`;
     return this.commandService.execCommand(command);
   }
 
