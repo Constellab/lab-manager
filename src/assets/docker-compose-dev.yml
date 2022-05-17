@@ -13,6 +13,8 @@ services:
       - LAB_ENVIRONMENT=PROD
       - CENTRAL_API_KEY=${CENTRAL_API_KEY}
       - CENTRAL_API_URL=${CENTRAL_API_URL}
+      - FRONT_URL=http://localhost:4200
+      - FRONT_VERSION=${FRONT_VERSION}
       - CONDA_VERSION=latest
       - GPU=${GPU}
       - VIRTUAL_HOST=
@@ -35,6 +37,8 @@ services:
       - LAB_MODE=dev
       - LAB_ENVIRONMENT=PROD
       - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}
+      - FRONT_URL=http://localhost:4200
+      - FRONT_VERSION=${FRONT_VERSION}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
       - CONDA_VERSION=latest
