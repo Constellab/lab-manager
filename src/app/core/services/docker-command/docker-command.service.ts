@@ -68,7 +68,7 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
 
   public systemPrune(): Promise<string> {
-    return this.commandService.execCommand(`docker system prune -f`);
+    return this.commandService.execCommand(`docker system prune -f -a`);
   }
 
   public async dockerRun(image: string, containerName: string, options: DockerRunOptions = {}): Promise<boolean> {
