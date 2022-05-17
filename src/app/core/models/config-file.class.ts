@@ -49,6 +49,7 @@ export interface ConfigFileEnvGitPackage {
  * DTO used to update the config
  */
 export interface UpdateConfigDTO {
+  labName: string;
   frontVersion: string;
   bricks: SaveBrickDTO[];
 }

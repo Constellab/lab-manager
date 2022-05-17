@@ -34,6 +34,9 @@ export class ConfigFileService {
       config = this.getDefaultConfig();
     }
 
+    if (updateConfig.labName) {
+      config.name = updateConfig.labName;
+    }
     // set the front version
     config.front_version = updateConfig.frontVersion;
 
@@ -108,7 +111,7 @@ export class ConfigFileService {
 
   private getDefaultConfig(): ConfigFile {
     return {
-      name: 'app',
+      name: 'Lab',
       title: 'Gencovery Lab',
       description: 'Gencovery Digital Lab as a Service',
       app_dir: '/app',
