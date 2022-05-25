@@ -104,6 +104,7 @@ services:
       - CODE_SERVER_URL=https://codelab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - CENTRAL_FRONT_URL=${CENTRAL_FRONT_URL}
+      - HUB_FRONT_URL=${HUB_FRONT_URL}
     labels:
       - "traefik.enable=true"
       # Configure Host domain to port 81

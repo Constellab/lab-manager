@@ -57,6 +57,14 @@ export class CoreConfigService {
     }
   }
 
+  public getHubFrontUrl(): string {
+    if (this.getEnvironmentProfile() === 'prod') {
+      return 'https://hub.gencovery.com';
+    } else {
+      return 'https://hub-pre-prod.gencovery.com';
+    }
+  }
+
   public getDockerRegistryUrl(): string {
     return this.configService.get('DOCKER_REGISTRY_URL');
   }
