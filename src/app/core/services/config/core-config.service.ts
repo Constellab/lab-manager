@@ -81,6 +81,14 @@ export class CoreConfigService {
     return '/app';
   }
 
+  public getGwsDbFolder(): string {
+    return '/gws_db';
+  }
+
+  public getBiotaDbFolder(): string {
+    return this.getGwsDbFolder() + '/gws_biota';
+  }
+
   /**
    * Get the path of the volume.
    * @param path if path provided, there are join to the volume path

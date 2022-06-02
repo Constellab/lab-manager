@@ -26,7 +26,7 @@ export class BiotaService {
     }
 
     const file = this.fileService.getAssetPath(this.pullBiotaScript);
-    const destination = this.configService.getAppFolder();
+    const destination = this.configService.getBiotaDbFolder();
 
     const taskName = 'PULL_BIOTA_DB';
     this.taskService.newTask(taskName);

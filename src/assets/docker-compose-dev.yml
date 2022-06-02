@@ -24,7 +24,7 @@ services:
       - GWS_GIT_PWD=${GWS_GIT_PWD}
     depends_on:
       - gws_core_prod_db
-      - gws_biota_prod_db
+      - gws_biota_db
     networks:
       - gencovery-network-prod
     container_name: glab
@@ -48,7 +48,7 @@ services:
       - GWS_GIT_PWD=${GWS_GIT_PWD}
     depends_on:
       - gws_core_dev_db
-      - gws_biota_dev_db
+      - gws_biota_db
     networks:
       - gencovery-network-dev
     container_name: codelab
@@ -107,7 +107,7 @@ services:
     container_name: test_gws_dev_db
 
   # GWS Biota Production DB
-  gws_biota_prod_db:
+  gws_biota_db:
     image: mariadb:10
     command: --max_allowed_packet=256M
     environment:
@@ -117,20 +117,9 @@ services:
       - MYSQL_DATABASE=gws_biota
     networks:
       - gencovery-network-prod
-    container_name: gws_biota_prod_db
-
-  # GWS Biota Development DB
-  gws_biota_dev_db:
-    image: mariadb:10
-    command: --max_allowed_packet=256M
-    environment:
-      - MYSQL_ROOT_PASSWORD=gencovery
-      - MYSQL_USER=gws_biota
-      - MYSQL_PASSWORD=gencovery
-      - MYSQL_DATABASE=gws_biota
-    networks:
       - gencovery-network-dev
-    container_name: gws_biota_dev_db
+    container_name: gws_biota_db
+
 
 networks:
   gencovery-network-dev:

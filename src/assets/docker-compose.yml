@@ -22,13 +22,13 @@ services:
       - GWS_GIT_PWD=${GWS_GIT_PWD}
     depends_on:
       - gws_core_prod_db
-      - gws_biota_prod_db
+      - gws_biota_db
     volumes:
       - /app/prod/lab:/lab
       - /app/prod/logs:/logs
-      - /app/prod/data:/data
       - /app/prod/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
+      - /app/prod/data:/data
     labels:
       - "traefik.enable=true"
       # Config for the HTTPS glab domain to port 8080
@@ -62,7 +62,7 @@ services:
       - GWS_GIT_PWD=${GWS_GIT_PWD}
     depends_on:
       - gws_core_dev_db
-      - gws_biota_dev_db
+      - gws_biota_db
     volumes:
       - /app/dev/lab:/lab
       - /app/dev/logs:/logs
@@ -129,7 +129,7 @@ services:
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=gws_core
     volumes:
-      - /app/prod/data/gws_core/mariadb:/var/lib/mysql
+      - /gws_db/gws_core/prod/mariadb:/var/lib/mysql
     networks:
       - gencovery-network-prod
     container_name: gws_core_prod_db
@@ -144,7 +144,7 @@ services:
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=gws_core
     volumes:
-      - /app/dev/data/gws_core/mariadb:/var/lib/mysql
+      - /gws_db/gws_core/dev/mariadb:/var/lib/mysql
     networks:
       - gencovery-network-dev
     container_name: gws_core_dev_db
@@ -163,7 +163,7 @@ services:
     container_name: test_gws_dev_db
 
   # GWS Biota Production DB
-  gws_biota_prod_db:
+  gws_biota_db:
     image: mariadb:10
     command: --max_allowed_packet=256M
     environment:
@@ -172,25 +172,12 @@ services:
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=gws_biota
     volumes:
-      - /app/prod/data/gws_biota/mariadb:/var/lib/mysql
+      - /gws_db/gws_biota/mariadb:/var/lib/mysql
     networks:
       - gencovery-network-prod
-    container_name: gws_biota_prod_db
-
-  # GWS Biota Development DB
-  gws_biota_dev_db:
-    image: mariadb:10
-    command: --max_allowed_packet=256M
-    environment:
-      - MYSQL_ROOT_PASSWORD=gencovery
-      - MYSQL_USER=gws_biota
-      - MYSQL_PASSWORD=gencovery
-      - MYSQL_DATABASE=gws_biota
-    volumes:
-      - /app/dev/data/gws_biota/mariadb:/var/lib/mysql
-    networks:
       - gencovery-network-dev
-    container_name: gws_biota_dev_db
+    container_name: gws_biota_db
+
 
 networks:
   gencovery-network-dev:
