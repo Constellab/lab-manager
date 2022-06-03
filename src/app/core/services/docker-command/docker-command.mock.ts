@@ -40,7 +40,7 @@ export class DockerCommandMock implements DockerCommandServiceI {
         'id': '32154a0c511e03ce33214b595517625d06f9c5b79d84b4b8b2f647f220e20cfd',
         'command': 'docker-entrypoint.sh --max_allowed_packet=256M',
         'createdAt': '2022-01-04 17:42:01 +0100 CET',
-        'image': 'mariadb:10',
+        'image': 'mariadb:10.7.4',
         'mounts': '80cc052efbf24a902bc6ed67ac022e67e52fa97af8e86fd1cec461cce45d1fc4',
         'names': 'gws_core_dev_db',
         'networks': 'gencovery-network-dev',

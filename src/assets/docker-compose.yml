@@ -121,7 +121,7 @@ services:
 
   # GWS Core Production DB
   gws_core_prod_db:
-    image: mariadb:10
+    image: mariadb:10.7.4
     command: --max_allowed_packet=256M
     environment:
       - MYSQL_ROOT_PASSWORD=gencovery
@@ -136,7 +136,7 @@ services:
 
   # GWS Core Development DB
   gws_core_dev_db:
-    image: mariadb:10
+    image: mariadb:10.7.4
     command: --max_allowed_packet=256M
     environment:
       - MYSQL_ROOT_PASSWORD=gencovery
@@ -151,7 +151,7 @@ services:
 
   # GWS Test db
   test_gws_dev_db:
-    image: mariadb:10
+    image: mariadb:10.7.4
     command: --max_allowed_packet=256M
     environment:
       - MYSQL_ROOT_PASSWORD=gencovery
@@ -164,7 +164,7 @@ services:
 
   # GWS Biota Production DB
   gws_biota_db:
-    image: mariadb:10
+    image: mariadb:10.7.4
     command: --max_allowed_packet=256M
     environment:
       - MYSQL_ROOT_PASSWORD=gencovery
