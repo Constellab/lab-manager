@@ -44,7 +44,7 @@ export class EnvVariableService {
     CoreConfigService.setEnvVariable('FRONT_VERSION', configJson.front_version);
 
     // Data urls
-    CoreConfigService.setEnvVariable('BIOTA_MARIA_DB_URL', privateJson.db.gws_biota_mariadb_url);
+    CoreConfigService.setEnvVariable('BIOTA_MARIA_DB_URL', configJson.biota_maria_db_url);
     CoreConfigService.setEnvVariable('BIOTA_SQLITE3_DB_URL', privateJson.db.gws_biota_sqlite3db_url);
     CoreConfigService.setEnvVariable('OPENDATA_BIODATA_URL', privateJson.db.opendata_biodata_url);
     CoreConfigService.setEnvVariable('OPENDATA_GLOVE_URL', privateJson.db.opendata_glove_url);

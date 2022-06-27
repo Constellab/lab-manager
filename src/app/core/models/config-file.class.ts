@@ -7,6 +7,7 @@ export interface ConfigFile {
   app_dir: string;
   uri: string;
   front_version: string;
+  biota_maria_db_url: string;
   variables: Record<string, string>;
   environment: ConfigFileEnv;
 }
@@ -51,6 +52,7 @@ export interface ConfigFileEnvGitPackage {
 export interface UpdateConfigDTO {
   labName: string;
   frontVersion: string;
+  biotaMariaDbUrl: string;
   bricks: SaveBrickDTO[];
 }
 
@@ -61,6 +63,7 @@ export interface SaveBrickDTO {
   version: string;
   branch?: string;
   isHidden: boolean;
+  technicalInfo: Record<string, string>;
 }
 
 export interface LabConfigDTO {

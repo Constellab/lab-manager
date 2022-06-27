@@ -39,6 +39,8 @@ export class ConfigFileService {
     }
     // set the front version
     config.front_version = updateConfig.frontVersion;
+    // set the biota maria db url
+    config.biota_maria_db_url = updateConfig.biotaMariaDbUrl;
 
     const pipEnv: ConfigFileEnvPip[] = [];
     const gitEnv: ConfigFileEnvGit[] = [];
@@ -117,6 +119,7 @@ export class ConfigFileService {
       app_dir: '/app',
       uri: '91620768-2cdd-11eb-adc1-0242ac120002',
       front_version: null,
+      biota_maria_db_url: null,
       variables: {},
       environment: {
         pip: [],
