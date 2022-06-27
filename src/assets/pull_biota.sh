@@ -1,5 +1,6 @@
 apt-get -y install zip unzip
 PROD_BIOTA_DIR=$1
+MARIA_DB_URL=$2
 
 if [[ "$all_vars" == *" --up-biota"* ]]; then
   echo "Removing biota mariadb ..."
@@ -14,7 +15,7 @@ fi
 
 
 if [[ ! -d "${PROD_BIOTA_DIR}/mariadb" ]]; then
-  curl $BIOTA_MARIA_DB_URL -o "${PROD_BIOTA_DIR}/mariadb.zip"
+  curl $MARIA_DB_URL -o "${PROD_BIOTA_DIR}/mariadb.zip"
   echo "Decompressing biota mariadb ..."
   unzip -q "${PROD_BIOTA_DIR}/mariadb.zip" -d "${PROD_BIOTA_DIR}"
   rm -f "${PROD_BIOTA_DIR}/mariadb.zip"

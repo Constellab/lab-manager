@@ -4,6 +4,7 @@ import {FileService} from '../../core/services/file/file.service';
 import {CoreConfigService} from '../../core/services/config/core-config.service';
 import {TaskService} from '../../core/services/task/task.service';
 import {EnvVariableService} from '../env-variable/env-variable.service';
+import {ConfigFileService} from '../config-file/config-file.service';
 
 @Injectable()
 export class BiotaService {
@@ -16,6 +17,7 @@ export class BiotaService {
   constructor(private commandService: CommandService,
     private fileService: FileService,
     private configService: CoreConfigService,
+    private configFileService: ConfigFileService,
     private taskService: TaskService,
     private envVariableService: EnvVariableService) {
   }
@@ -29,10 +31,11 @@ export class BiotaService {
     const destination = this.configService.getBiotaDbFolder();
 
     const taskName = 'PULL_BIOTA_DB';
-    this.taskService.newTask(taskName);
+    const config = this.configFileService.readConfigFile();
+    this.taskService.newTask(taskName, `Pulling biota db from ${config.biota_maria_db_url} into ${destination}`);
 
     try {
-      await this.commandService.execCommand(`bash ${file} ${destination}`);
+      await this.commandService.execCommand(`bash ${file} ${destination} ${config.biota_maria_db_url}`);
       this.taskService.markTaskAsSuccess(taskName);
     } catch (e: any) {
       this.taskService.markTaskAsError(taskName, 'Error during the biota pull. Error : ' + e);

@@ -103,6 +103,10 @@ export class CoreConfigService {
     return join(volumePath, ...path);
   }
 
+  public static getEnvVariable(name: string): string {
+    return process.env[name];
+  }
+
   public static setEnvVariable(name: string, value: string): void {
     process.env[name] = value;
   }
