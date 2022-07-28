@@ -86,14 +86,14 @@ export class ConfigFileService {
       return {
         name: brickDTO.name,
         is_brick: true,
-        is_hidden: brickDTO.isHidden,
+        is_hidden: true, // force all bricks to be hidden
         version: brickDTO.version,
       };
     } else {
       return {
         name: brickDTO.name,
         is_brick: true,
-        is_hidden: brickDTO.isHidden,
+        is_hidden: true, // force all bricks to be hidden
         branch: brickDTO.branch,
         version: brickDTO.version
       };

@@ -62,7 +62,6 @@ export interface SaveBrickDTO {
   repoType: 'PIP' | 'GIT';
   version: string;
   branch?: string;
-  isHidden: boolean;
   technicalInfo: Record<string, string>;
 }
 
