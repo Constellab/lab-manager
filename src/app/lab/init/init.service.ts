@@ -85,7 +85,11 @@ export class InitService implements OnApplicationBootstrap {
 
     // configure central information a central api key
     privateJson.central.api_key = labInitConfig.centralApiKey;
-    privateJson.central.api_url = this.configService.getCentralApiUrl();
+    privateJson.central.api_url = labInitConfig.centralApiUrl;
+    privateJson.central.front_url = labInitConfig.centralFrontUrl;
+
+    // hub information
+    privateJson.hub.front_url = labInitConfig.hubFrontUrl;
 
     // set token
     privateJson.lab.token = labInitConfig.codelabToken;

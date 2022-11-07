@@ -32,8 +32,8 @@ export class EnvVariableService {
 
     CoreConfigService.setEnvVariable('CENTRAL_API_KEY', privateJson.central.api_key);
     CoreConfigService.setEnvVariable('CENTRAL_API_URL', privateJson.central.api_url);
-    CoreConfigService.setEnvVariable('CENTRAL_FRONT_URL', this.configService.getCentralFrontUrl());
-    CoreConfigService.setEnvVariable('HUB_FRONT_URL', this.configService.getHubFrontUrl());
+    CoreConfigService.setEnvVariable('CENTRAL_FRONT_URL', privateJson.central.front_url);
+    CoreConfigService.setEnvVariable('HUB_FRONT_URL', privateJson.hub.front_url);
 
     const isGpu: boolean = await this.isGpu();
     CoreConfigService.setEnvVariable('GPU', isGpu ? 'cuda' : '');

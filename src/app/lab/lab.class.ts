@@ -23,4 +23,7 @@ export interface LabStatus {
 export interface LabInitConfig{
   centralApiKey: string;
   codelabToken: string;
+  centralFrontUrl: string;
+  centralApiUrl: string;
+  hubFrontUrl: string;
 }

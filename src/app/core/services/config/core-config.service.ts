@@ -40,31 +40,6 @@ export class CoreConfigService {
     return this.configService.get('VIRTUAL_HOST');
   }
 
-
-  public getCentralApiUrl(): string {
-    if (this.getEnvironmentProfile() === 'prod') {
-      return 'https://central-back.constellab.gencovery.com';
-    } else {
-      return 'https://central-back-pre-prod.constellab-pre-prod.gencovery.com';
-    }
-  }
-
-  public getCentralFrontUrl(): string {
-    if (this.getEnvironmentProfile() === 'prod') {
-      return 'https://constellab.gencovery.com';
-    } else {
-      return 'https://constellab-pre-prod.gencovery.com';
-    }
-  }
-
-  public getHubFrontUrl(): string {
-    if (this.getEnvironmentProfile() === 'prod') {
-      return 'https://hub.gencovery.com';
-    } else {
-      return 'https://hub-pre-prod.gencovery.com';
-    }
-  }
-
   public getDockerRegistryUrl(): string {
     return this.configService.get('DOCKER_REGISTRY_URL');
   }
