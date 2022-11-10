@@ -56,6 +56,14 @@ export class CoreConfigService {
     return '/app';
   }
 
+  public getProdFolder(): string {
+    return `${this.getAppFolder()}/prod`;
+  }
+
+  public getProdDataFolder(): string {
+    return `${this.getProdFolder()}/data`;
+  }
+
   public getGwsDbFolder(): string {
     return '/gws_db';
   }

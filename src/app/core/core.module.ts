@@ -7,6 +7,7 @@ import {DockerCommandService} from './services/docker-command/docker-command.ser
 import {CommandService} from './services/command/command.service';
 import {TaskService} from './services/task/task.service';
 import {TraefikService} from './services/traefik/traefik.service';
+import {ObjectStorageService} from './services/object-storage/object-storage.service';
 
 @Module({
   providers: [],
@@ -29,6 +30,7 @@ export class CoreModule {
         CommandService,
         TaskService,
         TraefikService,
+        ObjectStorageService,
       ],
       exports: [
         FileService,
@@ -38,6 +40,7 @@ export class CoreModule {
         CommandService,
         TaskService,
         TraefikService,
+        ObjectStorageService,
       ]
     };
   }

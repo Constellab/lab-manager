@@ -11,6 +11,7 @@ import {AppController} from './app.controller';
 import {LabModule} from './app/lab/lab.module';
 import {CoreExceptionHandlerFilter} from './app/core/filters/core-exception-handler.filter';
 import {LabManagerModule} from './app/lab-manager/lab-manager.module';
+import {BackupModule} from './app/backup/backup.module';
 
 function configureWinstonLogger(configService: CoreConfigService): WinstonModuleOptions {
   const logConfig: LoggerConfig = {
@@ -39,6 +40,7 @@ function configureWinstonLogger(configService: CoreConfigService): WinstonModule
 
     LabModule,
     LabManagerModule,
+    BackupModule,
   ],
   controllers: [AppController],
   providers: [
