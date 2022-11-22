@@ -8,6 +8,7 @@ import {CommandService} from './services/command/command.service';
 import {TaskService} from './services/task/task.service';
 import {TraefikService} from './services/traefik/traefik.service';
 import {ObjectStorageService} from './services/object-storage/object-storage.service';
+import { RcloneService } from './services/rclone/rclone.service';
 
 @Module({
   providers: [],
@@ -31,6 +32,7 @@ export class CoreModule {
         TaskService,
         TraefikService,
         ObjectStorageService,
+        RcloneService,
       ],
       exports: [
         FileService,
@@ -41,6 +43,7 @@ export class CoreModule {
         TaskService,
         TraefikService,
         ObjectStorageService,
+        RcloneService,
       ]
     };
   }

@@ -1,10 +1,17 @@
-import {Injectable, Logger} from '@nestjs/common';
-import {exec, execFile, spawn} from 'child_process';
-import {Observable} from 'rxjs';
+import { Injectable, Logger } from '@nestjs/common';
+import { ChildProcess, exec, execFile, spawn } from 'child_process';
+import { timingSafeEqual } from 'crypto';
+import { Observable } from 'rxjs';
 
 export interface SpawnResult {
   status: 'success' | 'error';
   data: string;
+}
+
+
+export interface SpawnResponse {
+  childProcess: ChildProcess;
+  observable: Observable<SpawnResult>;
 }
 
 export enum ExecCommandMode {
@@ -27,6 +34,7 @@ export class CommandService {
    * @param mode mode to handle stderr
    */
   public execCommand(command: string, mode: ExecCommandMode = ExecCommandMode.STDERR_AS_WARNING): Promise<string> {
+
     return new Promise(((resolve, reject) => {
       exec(command,
         (error, stdout, stderr) => {
@@ -59,9 +67,11 @@ export class CommandService {
     }));
   }
 
-  public spawn(command: string, args: string[]): Observable<SpawnResult> {
-    return new Observable(subscriber => {
-      const spawnCommand = spawn(command, args);
+  public spawn(command: string, args: string[] = []): SpawnResponse {
+
+    const spawnCommand = spawn(command, args);
+    const obs: Observable<SpawnResult> = new Observable(subscriber => {
+      let lastError: string;
 
       spawnCommand.stdout.on('data', (data) => {
         subscriber.next({
@@ -75,13 +85,27 @@ export class CommandService {
           status: 'error',
           data: data.toString()
         });
+        lastError = data.toString();
       });
 
-      spawnCommand.on('exit', (code, signal) => {
+      spawnCommand.on('exit', (code: number, signal: NodeJS.Signals | null) => {
         console.log('EXIT ' + code, +' ' + signal);
-        subscriber.complete();
+
+        if (code === 0) {
+          subscriber.complete();
+        } else {
+          subscriber.error({
+            status: 'error',
+            data: `Code : ${code} - Signal : ${signal} - Error : ${lastError}`
+          });
+        }
       });
     });
+
+    return {
+      childProcess: spawnCommand,
+      observable: obs
+    };
   }
 
   public execFile(file: string, options: string[] = []): Promise<string> {

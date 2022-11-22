@@ -27,7 +27,7 @@ export class FileService {
   }
 
   public createPrivateFile(content: PrivateFile): void {
-    this.writeFile(this.privateFilePath, JSON.stringify(content));
+    this.writeJsonFile(this.privateFilePath, content);
   }
 
   public readPrivateFile(): PrivateFile {
@@ -85,6 +85,10 @@ export class FileService {
     }
 
     return readFileSync(path);
+  }
+
+  public writeJsonFile(path: string, content: any): void {
+    this.writeFile(path, JSON.stringify(content));
   }
 
   public writeFile(path: string, content: any): void {

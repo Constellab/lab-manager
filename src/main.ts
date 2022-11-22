@@ -4,7 +4,7 @@ import {WINSTON_MODULE_NEST_PROVIDER} from 'nest-winston';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
-  const port = 3010;
+  const port = 3080;
 
   // enable custom logger using winston
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));

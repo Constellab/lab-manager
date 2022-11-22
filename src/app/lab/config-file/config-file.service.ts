@@ -136,7 +136,7 @@ export class ConfigFileService {
   }
 
   public writeConfigFile(content: ConfigFile): void {
-    this.fileService.writeFile(this.configFilePath, JSON.stringify(content));
+    this.fileService.writeJsonFile(this.configFilePath, content);
   }
 
   public readConfigFile(): ConfigFile {
