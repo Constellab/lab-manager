@@ -39,7 +39,8 @@ RUN curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-c
 RUN chmod +x /usr/local/bin/docker-compose
 
 # Install rclone
-RUN curl https://rclone.org/install.sh | bash
+RUN apt install zip -y \
+ && curl https://rclone.org/install.sh | bash
 
 # Set UTC timezone for the docker
 ENV TZ=UTC
