@@ -34,6 +34,9 @@ export class ConfigFileService {
       config = this.getDefaultConfig();
     }
 
+    if (updateConfig.labId) {
+      config.labId = updateConfig.labId;
+    }
     if (updateConfig.labName) {
       config.name = updateConfig.labName;
     }
@@ -113,6 +116,7 @@ export class ConfigFileService {
 
   private getDefaultConfig(): ConfigFile {
     return {
+      labId: '',
       name: 'Lab',
       title: 'Gencovery Lab',
       description: 'Gencovery Digital Lab as a Service',

@@ -9,6 +9,8 @@ services:
       - LAB_NAME=${LAB_NAME}
       - LAB_MODE=prod
       - LAB_ENVIRONMENT=PROD
+      - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}
+      - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
       - CENTRAL_API_KEY=${CENTRAL_API_KEY}
       - CENTRAL_API_URL=${CENTRAL_API_URL}
       - FRONT_URL=https://front.${VIRTUAL_HOST}
@@ -47,10 +49,12 @@ services:
   codelab:
     image: registry.gitlab.com/gencovery/infra/gpm/codelab-${IMAGE_SUFFIX}:latest
     environment:
+      - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}
       - LAB_MODE=dev
       - LAB_ENVIRONMENT=PROD
       - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}
+      - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
       - FRONT_URL=https://front.${VIRTUAL_HOST}
       - FRONT_VERSION=${FRONT_VERSION}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
@@ -100,7 +104,7 @@ services:
     environment:
       - API_URL=https://glab.${VIRTUAL_HOST}/
       - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}/
-      - DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}/
+      - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}/
       - CODE_SERVER_URL=https://codelab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - CENTRAL_FRONT_URL=${CENTRAL_FRONT_URL}

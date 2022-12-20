@@ -1,6 +1,7 @@
 import {Brick} from './brick.class';
 
 export interface ConfigFile {
+  labId: string;
   name: string;
   title: string;
   description: string;
@@ -50,6 +51,7 @@ export interface ConfigFileEnvGitPackage {
  * DTO used to update the config
  */
 export interface UpdateConfigDTO {
+  labId: string;
   labName: string;
   frontVersion: string;
   biotaMariaDbUrl: string;

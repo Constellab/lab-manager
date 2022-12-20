@@ -27,6 +27,7 @@ export class EnvVariableService {
     const privateJson: PrivateFile = this.fileService.readPrivateFile();
 
     CoreConfigService.setEnvVariable('APP_DIR', configJson.app_dir);
+    CoreConfigService.setEnvVariable('LAB_ID', configJson.labId);
     CoreConfigService.setEnvVariable('LAB_NAME', configJson.name);
     CoreConfigService.setEnvVariable('LAB_TOKEN', privateJson.lab.token);
 
