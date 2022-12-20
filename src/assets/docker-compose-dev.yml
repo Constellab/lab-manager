@@ -49,6 +49,16 @@ services:
       - UPDATE_GIT_BRICKS=${UPDATE_GIT_BRICKS}
       - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
       - GWS_GIT_PWD=${GWS_GIT_PWD}
+    volumes:
+      # use the named volume lab to improve performance of the local docker-compose of dockerlab project
+      # volume is available at \\wsl.localhost\docker-desktop-data\version-pack-data\community\docker\volumes\local_lab\_data
+      - lab-app:/lab
+      - lab-data:/data
+      - lab-logs:/logs
+      - lab-settings:/conf/settings
+      # - lab-config:/conf/config.json:ro
+      # Share git credentials by sharing ssh private key
+      - C:\Users\benji\.ssh\gencovery-gitlab:/root/.ssh/id_rsa
     depends_on:
       - gws_core_dev_db
       - gws_biota_db
@@ -129,3 +139,10 @@ networks:
     external: true
   gencovery-network-prod:
     external: true
+
+volumes:
+  lab-app:
+  lab-data:
+  lab-logs:
+  lab-settings:
+  lab-config:

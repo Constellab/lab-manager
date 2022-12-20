@@ -38,6 +38,8 @@ ENV PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
 RUN curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 RUN chmod +x /usr/local/bin/docker-compose
 
+# Install rclone
+RUN apt install rclone=1.50.2-2ubuntu0.1 -y
 
 # Set UTC timezone for the docker
 ENV TZ=UTC
