@@ -6,6 +6,7 @@ services:
   glab:
     image: registry.gitlab.com/gencovery/infra/gpm/glab-${IMAGE_SUFFIX}:latest
     environment:
+      - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}
       - LAB_MODE=prod
       - LAB_ENVIRONMENT=PROD

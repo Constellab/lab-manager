@@ -8,6 +8,7 @@ services:
   glab_prod:
     image: registry.gitlab.com/gencovery/infra/gpm/glab-${IMAGE_SUFFIX}:latest
     environment:
+      - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}
       - LAB_MODE=prod
       - LAB_ENVIRONMENT=PROD
@@ -35,6 +36,7 @@ services:
   codelab:
     image: registry.gitlab.com/gencovery/infra/gpm/codelab-${IMAGE_SUFFIX}:latest
     environment:
+      - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}
       - LAB_MODE=dev
       - LAB_ENVIRONMENT=PROD
