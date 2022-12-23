@@ -1,7 +1,9 @@
 version: "3"
 
 services:
-
+  # /!\ WARNING /!\
+  # As docker execute inside a docker container, the volume here are relative to the host machine and not the container
+  # On /app/prod/lab:/lab, /app/prod/lab refers to the host machine and not the container that run the docker-compose
   # Production Glab
   glab:
     image: registry.gitlab.com/gencovery/infra/gpm/glab-${IMAGE_SUFFIX}:latest

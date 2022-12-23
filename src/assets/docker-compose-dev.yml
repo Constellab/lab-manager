@@ -5,31 +5,45 @@ version: "3"
 services:
 
   # Production Glab
-  glab_prod:
-    image: registry.gitlab.com/gencovery/infra/gpm/glab-${IMAGE_SUFFIX}:latest
+  glab:
+    image: glab:latest
     environment:
-      - LAB_ID=${LAB_ID}
-      - LAB_NAME=${LAB_NAME}
+      - LAB_ID=1
+      - LAB_NAME=MyLab
       - LAB_MODE=prod
       - LAB_ENVIRONMENT=PROD
-      - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}
-      - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
-      - CENTRAL_API_KEY=${CENTRAL_API_KEY}
-      - CENTRAL_API_URL=${CENTRAL_API_URL}
+      - LAB_PROD_API_URL=http://localhost:3000
+      - LAB_DEV_API_URL=http://localhost:3000
+      - CENTRAL_API_KEY=
+      - CENTRAL_API_URL=
       - FRONT_URL=http://localhost:4200
-      - FRONT_VERSION=${FRONT_VERSION}
+      - FRONT_VERSION=
       - CONDA_VERSION=latest
       - GPU=${GPU}
       - VIRTUAL_HOST=
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
-      - UPDATE_GIT_BRICKS=${UPDATE_GIT_BRICKS}
-      - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
-      - GWS_GIT_PWD=${GWS_GIT_PWD}
+      - UPDATE_GIT_BRICKS=1
+      - GWS_GIT_LOGIN=
+      - GWS_GIT_PWD=
     depends_on:
       - gws_core_prod_db
       - gws_biota_db
-    networks:
-      - gencovery-network-prod
+    volumes:
+      # - /var/log/apt:/lab
+      # - /app/prod/lab:/lab
+      # - /app/prod/logs:/logs
+      # - /app/prod/settings/glab:/conf/settings
+      # - /app/conf/config.json:/conf/config.json:ro
+      # - /app/prod/data:/data
+      # - C:\Users\benji\.ssh\gencovery-gitlab:/root/.ssh/id_rsa
+      - lab-app:/lab
+      # - lab-data:/data
+      # - lab-logs:/logs
+      # - lab-settings:/conf/settings
+      # - lab-config:/conf
+
+    # networks:
+      # - gencovery-network-prod
     container_name: glab
 
   # Codelab
@@ -60,12 +74,12 @@ services:
       - lab-settings:/conf/settings
       # - lab-config:/conf/config.json:ro
       # Share git credentials by sharing ssh private key
-      - C:\Users\benji\.ssh\gencovery-gitlab:/root/.ssh/id_rsa
+      # - C:\Users\benji\.ssh\gencovery-gitlab:/root/.ssh/id_rsa
     depends_on:
       - gws_core_dev_db
       - gws_biota_db
-    networks:
-      - gencovery-network-dev
+    # networks:
+    #   - gencovery-network-dev
     container_name: codelab
 
 
@@ -78,8 +92,8 @@ services:
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}/
       - CODE_SERVER_URL=https://codelab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=
-    networks:
-      - gencovery-network-prod
+    # networks:
+    #   - gencovery-network-prod
     container_name: front
 
   # GWS Core Production DB
@@ -91,8 +105,8 @@ services:
       - MYSQL_USER=gws_core
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=gws_core
-    networks:
-      - gencovery-network-prod
+    # networks:
+    #   - gencovery-network-prod
     container_name: gws_core_prod_db
 
   # GWS Core Development DB
@@ -104,8 +118,8 @@ services:
       - MYSQL_USER=gws_core
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=gws_core
-    networks:
-      - gencovery-network-dev
+    # networks:
+    #   - gencovery-network-dev
     container_name: gws_core_dev_db
 
   # GWS Test db
@@ -117,8 +131,8 @@ services:
       - MYSQL_USER=test_gws
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=test_gws
-    networks:
-      - gencovery-network-dev
+    # networks:
+    #   - gencovery-network-dev
     container_name: test_gws_dev_db
 
   # GWS Biota Production DB
@@ -130,17 +144,17 @@ services:
       - MYSQL_USER=gws_biota
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=gws_biota
-    networks:
-      - gencovery-network-prod
-      - gencovery-network-dev
+    # networks:
+    #   - gencovery-network-prod
+    #   - gencovery-network-dev
     container_name: gws_biota_db
 
 
-networks:
-  gencovery-network-dev:
-    external: true
-  gencovery-network-prod:
-    external: true
+# networks:
+#   gencovery-network-dev:
+#     external: true
+#   gencovery-network-prod:
+#     external: true
 
 volumes:
   lab-app:
@@ -148,3 +162,9 @@ volumes:
   lab-logs:
   lab-settings:
   lab-config:
+  # new new volume tt link to /var/log folder
+  lab-new-volume:
+    driver_opts:
+      type: none  
+      device: /var/log
+      o: bind
