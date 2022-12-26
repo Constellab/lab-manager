@@ -8,6 +8,7 @@ export interface ConfigFile {
   app_dir: string;
   uri: string;
   front_version: string;
+  glab_tag: 'latest' | 'beta' | string;
   biota_maria_db_url: string;
   variables: Record<string, string>;
   environment: ConfigFileEnv;
@@ -54,6 +55,7 @@ export interface UpdateConfigDTO {
   labId: string;
   labName: string;
   frontVersion: string;
+  glabTag: 'latest' | 'beta' | string;
   biotaMariaDbUrl: string;
   bricks: SaveBrickDTO[];
 }
@@ -69,4 +71,5 @@ export interface SaveBrickDTO {
 
 export interface LabConfigDTO {
   bricks: Brick[];
+  glabTag: 'latest' | 'beta' | string;
 }

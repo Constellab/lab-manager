@@ -48,7 +48,7 @@ services:
 
   # Codelab
   codelab:
-    image: registry.gitlab.com/gencovery/infra/gpm/codelab-${IMAGE_SUFFIX}:latest
+    image: registry.gitlab.com/gencovery/infra/gpm/codelab-${IMAGE_SUFFIX}:${GLAB_TAG}
     environment:
       - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}
@@ -165,6 +165,6 @@ volumes:
   # new new volume tt link to /var/log folder
   lab-new-volume:
     driver_opts:
-      type: none  
+      type: none
       device: /var/log
       o: bind

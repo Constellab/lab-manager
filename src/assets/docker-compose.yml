@@ -6,7 +6,7 @@ services:
   # On /app/prod/lab:/lab, /app/prod/lab refers to the host machine and not the container that run the docker-compose
   # Production Glab
   glab:
-    image: registry.gitlab.com/gencovery/infra/gpm/glab-${IMAGE_SUFFIX}:latest
+    image: registry.gitlab.com/gencovery/infra/gpm/glab-${IMAGE_SUFFIX}:${GLAB_TAG}
     environment:
       - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}
@@ -50,7 +50,7 @@ services:
 
   # Codelab
   codelab:
-    image: registry.gitlab.com/gencovery/infra/gpm/codelab-${IMAGE_SUFFIX}:latest
+    image: registry.gitlab.com/gencovery/infra/gpm/codelab-${IMAGE_SUFFIX}:${GLAB_TAG}
     environment:
       - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}

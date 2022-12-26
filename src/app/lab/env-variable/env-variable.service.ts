@@ -27,7 +27,9 @@ export class EnvVariableService {
     const privateJson: PrivateFile = this.fileService.readPrivateFile();
 
     CoreConfigService.setEnvVariable('APP_DIR', configJson.app_dir);
-    CoreConfigService.setEnvVariable('LAB_ID', configJson.labId);
+    if (configJson.labId != null) {
+      CoreConfigService.setEnvVariable('LAB_ID', configJson.labId);
+    }
     CoreConfigService.setEnvVariable('LAB_NAME', configJson.name);
     CoreConfigService.setEnvVariable('LAB_TOKEN', privateJson.lab.token);
 
@@ -43,6 +45,9 @@ export class EnvVariableService {
 
     // FRONT VERSION
     CoreConfigService.setEnvVariable('FRONT_VERSION', configJson.front_version);
+
+    // GLAB TAG
+    CoreConfigService.setEnvVariable('GLAB_TAG', configJson.glab_tag);
 
     // Data urls
     CoreConfigService.setEnvVariable('BIOTA_MARIA_DB_URL', configJson.biota_maria_db_url);

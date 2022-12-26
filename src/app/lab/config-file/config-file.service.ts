@@ -42,6 +42,9 @@ export class ConfigFileService {
     }
     // set the front version
     config.front_version = updateConfig.frontVersion;
+
+    // set the glab tag
+    config.glab_tag = updateConfig.glabTag;
     // set the biota maria db url
     config.biota_maria_db_url = updateConfig.biotaMariaDbUrl;
 
@@ -106,11 +109,16 @@ export class ConfigFileService {
   public getLabConfig(): LabConfigDTO {
     if (!this.configFileExists()) {
       return {
-        bricks: []
+        bricks: [],
+        glabTag: 'latest'
       };
     }
+
+    const config: ConfigFile = this.readConfigFile();
+
     return {
-      bricks: this.getBricks()
+      bricks: this.getBricks(),
+      glabTag: config.glab_tag
     };
   }
 
@@ -123,6 +131,7 @@ export class ConfigFileService {
       app_dir: '/app',
       uri: '91620768-2cdd-11eb-adc1-0242ac120002',
       front_version: null,
+      glab_tag: 'latest',
       biota_maria_db_url: null,
       variables: {},
       environment: {
