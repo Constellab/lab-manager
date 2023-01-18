@@ -19,11 +19,5 @@
     "opendata_biodata_url": "https://storage.gra.cloud.ovh.net/v1/AUTH_a0286631d7b24afba3f3cdebed2992aa/opendata/biodata/20210223-biodata.zip",
     "opendata_glove_url": "https://storage.gra.cloud.ovh.net/v1/AUTH_a0286631d7b24afba3f3cdebed2992aa/opendata/glove/glove.6B.300d.zip"
   },
-  "git": {
-    "name": "Astroboy",
-    "login": "astroboygencovery",
-    "credentials": "gAAAAABhtf0GChtie3-cjjd6ambpw7_om-aiNymL3_yhdpiujoJnAysvbybTsp-rdNDriz9aBvjn_OdZXcxNJWAy4Z28fGAmfhlK1cOEn__EKNEeSHMuQymiMXxaY_9si3CG1fS4pO--",
-    "key": "eLdBKr_bHAKWf56keuGN6lRPaL5y5C54tEPzUQ7HgPc="
-  },
   "version": 1
 }

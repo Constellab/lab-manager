@@ -19,10 +19,4 @@ export interface PrivateFile {
     opendata_biodata_url: string;
     opendata_glove_url: string;
   };
-  git: {
-    name: string;
-    login: string;
-    credentials: string;
-    key: string;
-  }
 }
