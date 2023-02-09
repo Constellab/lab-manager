@@ -94,6 +94,10 @@ export class InitService implements OnApplicationBootstrap {
     // set token
     privateJson.lab.token = labInitConfig.codelabToken;
 
+    // DB information
+    privateJson.db.gws_core_prod_password = labInitConfig.gwsCoreProdPassword;
+    privateJson.db.gws_core_dev_password = labInitConfig.gwsCoreDevPassword;
+
     this.fileService.createPrivateFile(privateJson);
     this.logger.log('private.json file generated');
   }

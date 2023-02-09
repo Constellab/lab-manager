@@ -25,6 +25,7 @@ services:
       - UPDATE_GIT_BRICKS=1
       - GWS_GIT_LOGIN=
       - GWS_GIT_PWD=
+      - GWS_CORE_DB_PASSWORD=
     depends_on:
       - gws_core_prod_db
       - gws_biota_db
@@ -65,6 +66,7 @@ services:
       - UPDATE_GIT_BRICKS=${UPDATE_GIT_BRICKS}
       - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
       - GWS_GIT_PWD=${GWS_GIT_PWD}
+      - GWS_CORE_DB_PASSWORD=
     volumes:
       # use the named volume lab to improve performance of the local docker-compose of dockerlab project
       # volume is available at \\wsl.localhost\docker-desktop-data\version-pack-data\community\docker\volumes\local_lab\_data

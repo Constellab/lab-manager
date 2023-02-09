@@ -25,6 +25,7 @@ services:
       - UPDATE_GIT_BRICKS=${UPDATE_GIT_BRICKS}
       - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
       - GWS_GIT_PWD=${GWS_GIT_PWD}
+      - GWS_CORE_DB_PASSWORD=${GWS_CORE_PROD_DB_PASSWORD}
     depends_on:
       - gws_core_prod_db
       - gws_biota_db
@@ -67,6 +68,7 @@ services:
       - UPDATE_GIT_BRICKS=${UPDATE_GIT_BRICKS}
       - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
       - GWS_GIT_PWD=${GWS_GIT_PWD}
+      - GWS_CORE_DB_PASSWORD=${GWS_CORE_DEV_DB_PASSWORD}
     depends_on:
       - gws_core_dev_db
       - gws_biota_db
@@ -132,9 +134,9 @@ services:
     image: mariadb:10.7.4
     command: --max_allowed_packet=256M
     environment:
-      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_ROOT_PASSWORD=${GWS_CORE_PROD_DB_PASSWORD}
       - MYSQL_USER=gws_core
-      - MYSQL_PASSWORD=gencovery
+      - MYSQL_PASSWORD=${GWS_CORE_PROD_DB_PASSWORD}
       - MYSQL_DATABASE=gws_core
     volumes:
       - /gws_db/gws_core/prod/mariadb:/var/lib/mysql
@@ -147,9 +149,9 @@ services:
     image: mariadb:10.7.4
     command: --max_allowed_packet=256M
     environment:
-      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_ROOT_PASSWORD=${GWS_CORE_DEV_DB_PASSWORD}
       - MYSQL_USER=gws_core
-      - MYSQL_PASSWORD=gencovery
+      - MYSQL_PASSWORD=${GWS_CORE_DEV_DB_PASSWORD}
       - MYSQL_DATABASE=gws_core
     volumes:
       - /gws_db/gws_core/dev/mariadb:/var/lib/mysql

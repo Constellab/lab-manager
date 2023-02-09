@@ -12,6 +12,8 @@ export interface PrivateFile {
     token: string;
   };
   db: {
+    gws_core_prod_password: string;
+    gws_core_dev_password: string;
     gws_biota_sqlite3db_url: string;
     gws_biota_mariadb_url: string;
     testdata_url: string;

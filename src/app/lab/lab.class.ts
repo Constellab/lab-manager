@@ -13,17 +13,19 @@ export interface ContainerStatusInfo {
 
 export interface LabStatus {
   containersStatus: ContainerStatusInfo;
-  currentTask ?: TaskStatusInfo;
+  currentTask?: TaskStatusInfo;
   adminerIsRunning: boolean;
 }
 
 /**
  * Object to config the lab manager required on init
  */
-export interface LabInitConfig{
+export interface LabInitConfig {
   centralApiKey: string;
   codelabToken: string;
   centralFrontUrl: string;
   centralApiUrl: string;
   hubFrontUrl: string;
+  gwsCoreProdPassword: string;
+  gwsCoreDevPassword: string;
 }

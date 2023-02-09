@@ -37,6 +37,8 @@ export class EnvVariableService {
     CoreConfigService.setEnvVariable('CENTRAL_API_URL', privateJson.central.api_url);
     CoreConfigService.setEnvVariable('CENTRAL_FRONT_URL', privateJson.central.front_url);
     CoreConfigService.setEnvVariable('HUB_FRONT_URL', privateJson.hub.front_url);
+    CoreConfigService.setEnvVariable('GWS_CORE_PROD_DB_PASSWORD', privateJson.db.gws_core_prod_password);
+    CoreConfigService.setEnvVariable('GWS_CORE_DEV_DB_PASSWORD', privateJson.db.gws_core_dev_password);
 
     const isGpu: boolean = await this.isGpu();
     CoreConfigService.setEnvVariable('GPU', isGpu ? 'cuda' : '');
