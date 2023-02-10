@@ -14,7 +14,6 @@ export interface DockerPs {
 }
 
 export interface ComposeUpOptions {
-  updateBricks?: boolean;
   updateContainers?: boolean;
   pruneSystem?: boolean;
 }

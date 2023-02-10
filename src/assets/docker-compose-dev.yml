@@ -22,7 +22,6 @@ services:
       - GPU=${GPU}
       - VIRTUAL_HOST=
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
-      - UPDATE_GIT_BRICKS=1
       - GWS_GIT_LOGIN=
       - GWS_GIT_PWD=
       - GWS_CORE_DB_PASSWORD=
@@ -63,7 +62,6 @@ services:
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
       - CONDA_VERSION=latest
       - GPU=${GPU}
-      - UPDATE_GIT_BRICKS=${UPDATE_GIT_BRICKS}
       - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
       - GWS_GIT_PWD=${GWS_GIT_PWD}
       - GWS_CORE_DB_PASSWORD=

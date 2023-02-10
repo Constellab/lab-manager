@@ -74,12 +74,6 @@ export class DockerService {
     const taskName = 'UP_CONTAINERS';
     this.taskService.newTask(taskName);
 
-    if (options.updateBricks) {
-      CoreConfigService.setEnvVariable('UPDATE_GIT_BRICKS', '1');
-    } else {
-      CoreConfigService.setEnvVariable('UPDATE_GIT_BRICKS', '0');
-    }
-
     try {
       const result = await this.dockerCommand.composeUp(this.fileService.dockerComposePath);
       this.taskService.markTaskAsSuccess(taskName, result);
