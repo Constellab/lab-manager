@@ -76,7 +76,7 @@ services:
       - /app/dev/lab:/lab
       - /app/dev/logs:/logs
       - /app/dev/data:/data
-      - /app/prod/settings/glab:/conf/settings
+      - /app/dev/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
     labels:
       - "traefik.enable=true"
