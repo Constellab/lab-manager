@@ -1,6 +1,6 @@
 import {Body, Controller, Get, Param, Post, Put} from '@nestjs/common';
 import {DockerService} from './docker/docker.service';
-import {ComposeUpOptions, DockerPs} from './docker.class';
+import {ComposeRestartOptions, ComposeUpOptions, DockerPs} from './docker.class';
 import {InitService} from './init/init.service';
 import {TaskService} from '../core/services/task/task.service';
 import {BiotaService} from './biota/biota.service';
@@ -41,7 +41,7 @@ export class LabController {
   }
 
   @Post('restart-containers')
-  restartContainers(@Body() options: ComposeUpOptions): Promise<void> {
+  restartContainers(@Body() options: ComposeRestartOptions): Promise<void> {
     return this.dockerService.restartContainers(options);
   }
 

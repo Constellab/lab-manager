@@ -16,7 +16,13 @@ export interface DockerPs {
 export interface ComposeUpOptions {
   updateContainers?: boolean;
   pruneSystem?: boolean;
+  destroyContainers?: boolean; // if true container will be destroyed and recreated
 }
+
+export interface ComposeRestartOptions extends ComposeUpOptions{
+  destroyContainers?: boolean; // if true container will be destroyed and recreated
+}
+
 
 export interface DockerRunOptions {
   networks?: string[];

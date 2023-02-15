@@ -1,6 +1,6 @@
 import {Injectable} from '@nestjs/common';
 import {DockerCommandService} from '../../core/services/docker-command/docker-command.service';
-import {ComposeUpOptions, DockerPs} from '../docker.class';
+import {ComposeRestartOptions, ComposeUpOptions, DockerPs} from '../docker.class';
 import {FileService} from '../../core/services/file/file.service';
 import {CoreConfigService} from '../../core/services/config/core-config.service';
 import {ContainerService} from '../container/container.service';
@@ -46,7 +46,7 @@ export class DockerService {
       await this.envVariableService.setEnvVariables();
     }
 
-    if(dockerLogin){
+    if (dockerLogin) {
       await this.login();
     }
 
@@ -71,6 +71,14 @@ export class DockerService {
       await this.pullContainers(setEnvVariable);
     }
 
+    await this.upContainerCommand();
+
+    if (options.pruneSystem) {
+      await this.systemPrune();
+    }
+  }
+
+  private async upContainerCommand(): Promise<void> {
     const taskName = 'UP_CONTAINERS';
     this.taskService.newTask(taskName);
 
@@ -80,10 +88,6 @@ export class DockerService {
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
       throw e;
-    }
-
-    if(options.pruneSystem){
-      await this.systemPrune();
     }
   }
 
@@ -113,11 +117,41 @@ export class DockerService {
     }
   }
 
-  public async restartContainers(options: ComposeUpOptions, setEnvVariable: boolean = true): Promise<any> {
-    await this.composeStop();
+  public async restartContainers(options: ComposeRestartOptions, setEnvVariable: boolean = true): Promise<void> {
+    if (setEnvVariable) {
+      await this.envVariableService.setEnvVariables();
+    }
 
-    return await this.upContainers(options, setEnvVariable);
+    if (options.updateContainers) {
+      await this.pullContainers(setEnvVariable);
+    }
+
+    if (options.destroyContainers) {
+      await this.composeStop();
+
+      await this.upContainerCommand();
+    } else {
+      await this.restartContainerCommand();
+    }
+
+    if (options.pruneSystem) {
+      await this.systemPrune();
+    }
   }
+
+  private async restartContainerCommand(): Promise<void> {
+    const taskName = 'RESTART_CONTAINERS';
+    this.taskService.newTask(taskName);
+
+    try {
+      const result = await this.dockerCommand.composeDown(this.fileService.dockerComposePath);
+      this.taskService.markTaskAsSuccess(taskName, result);
+    } catch (e) {
+      this.taskService.markTaskAsError(taskName, e.toString());
+      throw e;
+    }
+  }
+
 
   public async getLogs(containerName: string): Promise<string> {
     return await this.dockerCommand.getLogs(containerName);

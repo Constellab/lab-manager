@@ -34,6 +34,11 @@ export class DockerCommandService implements DockerCommandServiceI {
     return this.commandService.execCommand(command);
   }
 
+  public composeRestart(filePath: string = 'docker-compose.yml'): Promise<string> {
+    const command: string = `docker-compose -f ${filePath} restart`;
+    return this.commandService.execCommand(command);
+  }
+
   public composeStop(filePath: string = 'docker-compose.yml'): Promise<string> {
     const command: string = `docker-compose -f ${filePath} stop`;
     return this.commandService.execCommand(command);
