@@ -144,7 +144,7 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.composeDown(this.fileService.dockerComposePath);
+      const result = await this.dockerCommand.composeRestart(this.fileService.dockerComposePath);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
