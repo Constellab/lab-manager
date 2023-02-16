@@ -1,14 +1,5 @@
 import {BadRequestException, Injectable} from '@nestjs/common';
-import {Brick} from '../../core/models/brick.class';
-import {
-  ConfigBrickPackage,
-  ConfigFile,
-  ConfigFileEnvGit,
-  ConfigFileEnvPip,
-  LabConfigDTO,
-  SaveBrickDTO,
-  UpdateConfigDTO
-} from '../../core/models/config-file.class';
+import {ConfigFile} from '../../core/models/config-file.class';
 import {FileService} from '../../core/services/file/file.service';
 
 @Injectable()
@@ -23,133 +14,24 @@ export class ConfigFileService {
 
   /**
    * Update the config and store result in config file
-   * @param updateConfig
    */
-  public updateConfig(updateConfig: UpdateConfigDTO): void {
-    let config: ConfigFile;
-
-    if (this.configFileExists()) {
-      config = this.readConfigFile();
-    } else {
-      config = this.getDefaultConfig();
-    }
-
-    if (updateConfig.labId) {
-      config.labId = updateConfig.labId;
-    }
-    if (updateConfig.labName) {
-      config.name = updateConfig.labName;
-    }
-    // set the front version
-    config.front_version = updateConfig.frontVersion;
-
-    // set the glab tag
-    config.glab_tag = updateConfig.glabTag;
-    // set the biota maria db url
-    config.biota_maria_db_url = updateConfig.biotaMariaDbUrl;
-
-    const pipEnv: ConfigFileEnvPip[] = [];
-    const gitEnv: ConfigFileEnvGit[] = [];
-
-    for (const brick of updateConfig.bricks) {
-      if (brick.repoType !== 'GIT' && brick.repoType !== 'PIP') {
-        throw new BadRequestException(`The report type '${brick.repoType}' of brick '${brick.name}' is not supported. Expected PIP or GIT`);
-      }
-      const brickPackage: ConfigBrickPackage = this.convertSaveBrickDTOToBrick(brick);
-
-      // add the package to the right place
-      let packageEnvs: (ConfigFileEnvPip | ConfigFileEnvGit)[];
-
-      if (brick.repoType === 'GIT') {
-        packageEnvs = gitEnv;
-      } else {
-        packageEnvs = pipEnv;
-      }
-
-      // create the package env with the right source if it doesn't exist
-      if (packageEnvs.findIndex(git => git.source === brick.repo) < 0) {
-        packageEnvs.push({
-          source: brick.repo,
-          packages: []
-        });
-      }
-
-      // retrieve the package en with repo
-      const packageEnv = packageEnvs.find(git => git.source === brick.repo);
-      // add the brick into the repo
-      packageEnv.packages.push(brickPackage as any);
-    }
-
-    // override git and pip envs
-    config.environment.git = gitEnv;
-    config.environment.pip = pipEnv;
-
-    this.writeConfigFile(config);
+  public updateConfig(config: ConfigFile): void {
+    this.fileService.writeJsonFile(this.configFilePath, config);
   }
 
-  private convertSaveBrickDTOToBrick(brickDTO: SaveBrickDTO): ConfigBrickPackage {
-    if (brickDTO.repoType === 'PIP') {
-      return {
-        name: brickDTO.name,
-        is_brick: true,
-        is_hidden: true, // force all bricks to be hidden
-        version: brickDTO.version,
-      };
-    } else {
-      return {
-        name: brickDTO.name,
-        is_brick: true,
-        is_hidden: true, // force all bricks to be hidden
-        branch: brickDTO.branch,
-        version: brickDTO.version
-      };
-    }
-  }
-
-  public getLabConfig(): LabConfigDTO {
+  public getLabConfig(): ConfigFile {
     if (!this.configFileExists()) {
-      return {
-        bricks: [],
-        glabTag: 'latest'
-      };
+      return null;
     }
 
-    const config: ConfigFile = this.readConfigFile();
+    return this.readConfigFile();
 
-    return {
-      bricks: this.getBricks(),
-      glabTag: config.glab_tag
-    };
-  }
-
-  private getDefaultConfig(): ConfigFile {
-    return {
-      labId: '',
-      name: 'Lab',
-      title: 'Gencovery Lab',
-      description: 'Gencovery Digital Lab as a Service',
-      app_dir: '/app',
-      uri: '91620768-2cdd-11eb-adc1-0242ac120002',
-      front_version: null,
-      glab_tag: 'latest',
-      biota_maria_db_url: null,
-      variables: {},
-      environment: {
-        pip: [],
-        git: [],
-        variables: {}
-      }
-    };
   }
 
   ///////////////////////////// FILE  ///////////////////////////////
 
   public configFileExists(): boolean {
     return this.fileService.exists(this.configFilePath);
-  }
-
-  public writeConfigFile(content: ConfigFile): void {
-    this.fileService.writeJsonFile(this.configFilePath, content);
   }
 
   public readConfigFile(): ConfigFile {
@@ -164,52 +46,4 @@ export class ConfigFileService {
     return this.fileService.getVolumePath(this.configFileName);
   }
 
-
-  ///////////////////////////// BRICK ///////////////////////////////
-
-  public getBricks(): Brick[] {
-    const config: ConfigFile = this.readConfigFile();
-
-    const bricks: Brick[] = [];
-
-    for (const pipEnv of config.environment.pip) {
-      for (const brick of pipEnv.packages) {
-        if (brick.is_brick) {
-          bricks.push({
-            name: brick.name,
-            repoType: 'PIP',
-            version: brick.version,
-            repo: pipEnv.source,
-            isHidden: brick.is_hidden
-          });
-        }
-      }
-    }
-
-    // add git bricks
-    for (const gitEnv of config.environment.git) {
-      for (const brick of gitEnv.packages) {
-        if (brick.is_brick) {
-          bricks.push({
-            name: brick.name,
-            repoType: 'GIT',
-            version: brick.version,
-            branch: brick.branch,
-            repo: gitEnv.source,
-            isHidden: brick.is_hidden
-          });
-        }
-      }
-    }
-
-    return bricks;
-  }
-
-  public getBrick(brickName: string): Brick | null {
-    return this.getBricks().find(brick => brick.name === brickName);
-  }
-
-  public hasBrick(brickName: string): boolean {
-    return this.getBrick(brickName) != null;
-  }
 }

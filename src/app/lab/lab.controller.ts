@@ -6,7 +6,7 @@ import {TaskService} from '../core/services/task/task.service';
 import {BiotaService} from './biota/biota.service';
 import {LabInitConfig, LabStatus} from './lab.class';
 import {LabService} from './lab.service';
-import {LabConfigDTO, UpdateConfigDTO} from '../core/models/config-file.class';
+import {ConfigFile} from '../core/models/config-file.class';
 import {ConfigFileService} from './config-file/config-file.service';
 
 @Controller('lab')
@@ -81,12 +81,12 @@ export class LabController {
   }
 
   @Get('config')
-  getConfig(): LabConfigDTO {
+  getConfig(): ConfigFile {
     return this.configFileService.getLabConfig();
   }
 
   @Put('config')
-  updateConfig(@Body() updateConfig: UpdateConfigDTO): void {
+  updateConfig(@Body() updateConfig: ConfigFile): void {
     this.configFileService.updateConfig(updateConfig);
   }
 

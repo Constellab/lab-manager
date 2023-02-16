@@ -1,12 +1,6 @@
-import {Brick} from './brick.class';
-
 export interface ConfigFile {
-  labId: string;
+  lab_id: string;
   name: string;
-  title: string;
-  description: string;
-  app_dir: string;
-  uri: string;
   front_version: string;
   glab_tag: 'latest' | 'beta' | string;
   biota_maria_db_url: string;
@@ -15,61 +9,20 @@ export interface ConfigFile {
 }
 
 export interface ConfigFileEnv {
-  pip: ConfigFileEnvPip[];
-  git: ConfigFileEnvGit[];
+  pip: ConfigFileEnvRepository[];
+  git: ConfigFileEnvRepository[];
   variables: Record<string, string>;
 }
 
-export type ConfigBrickPackage = ConfigFileEnvPipPackage | ConfigFileEnvGitPackage
-
-export interface ConfigFileEnvPip {
+export interface ConfigFileEnvRepository {
   source: string;
-  packages: ConfigFileEnvPipPackage[];
+  packages: ConfigFileEnvPackage[];
 }
 
-export interface ConfigFileEnvPipPackage {
+export interface ConfigFileEnvPackage {
   name: string;
   version: string; // version supported by pip, can be empty, ==2.0 or >=2.1
   is_brick: boolean;
   is_hidden: boolean;
 }
 
-
-export interface ConfigFileEnvGit {
-  source: string;
-  packages: ConfigFileEnvGitPackage[];
-}
-
-export interface ConfigFileEnvGitPackage {
-  name: string;
-  branch: string;
-  is_brick: boolean;
-  is_hidden: boolean;
-  version: string;
-}
-
-/**
- * DTO used to update the config
- */
-export interface UpdateConfigDTO {
-  labId: string;
-  labName: string;
-  frontVersion: string;
-  glabTag: 'latest' | 'beta' | string;
-  biotaMariaDbUrl: string;
-  bricks: SaveBrickDTO[];
-}
-
-export interface SaveBrickDTO {
-  name: string;
-  repo: string;
-  repoType: 'PIP' | 'GIT';
-  version: string;
-  branch?: string;
-  technicalInfo: Record<string, string>;
-}
-
-export interface LabConfigDTO {
-  bricks: Brick[];
-  glabTag: 'latest' | 'beta' | string;
-}

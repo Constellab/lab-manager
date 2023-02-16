@@ -26,9 +26,8 @@ export class EnvVariableService {
     const configJson: ConfigFile = this.configFileService.readConfigFile();
     const privateJson: PrivateFile = this.fileService.readPrivateFile();
 
-    CoreConfigService.setEnvVariable('APP_DIR', configJson.app_dir);
-    if (configJson.labId != null) {
-      CoreConfigService.setEnvVariable('LAB_ID', configJson.labId);
+    if (configJson.lab_id != null) {
+      CoreConfigService.setEnvVariable('LAB_ID', configJson.lab_id);
     }
     CoreConfigService.setEnvVariable('LAB_NAME', configJson.name);
     CoreConfigService.setEnvVariable('LAB_TOKEN', privateJson.lab.token);
