@@ -24,6 +24,10 @@ export class CoreConfigService {
     return env === 'dev' || env === 'test';
   }
 
+  public getLabManagerVersion(): string {
+    return this.configService.get('LAB_MANAGER_VERSION');
+  }
+
   public getLogLevel(): LogLevel {
     return this.configService.get('LOG_LEVEL') ?? 'log';
   }

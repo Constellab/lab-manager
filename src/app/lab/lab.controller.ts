@@ -31,7 +31,7 @@ export class LabController {
   }
 
   @Get('status')
-  getCurrentTask(): Promise<LabStatus> {
+  getStatus(): Promise<LabStatus> {
     return this.labService.getStatus();
   }
 

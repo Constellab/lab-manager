@@ -15,6 +15,7 @@ export interface LabStatus {
   containersStatus: ContainerStatusInfo;
   currentTask?: TaskStatusInfo;
   adminerIsRunning: boolean;
+  labManagerVersion: string;
 }
 
 /**

@@ -46,6 +46,10 @@ ENV TZ=UTC
 
 COPY --from=builder /lab-manager/package.json /lab-manager/package-lock.json ./
 
+# set the version of the app form the arg of build
+ARG LAB_MANAGER_VERSION
+ENV LAB_MANAGER_VERSION=${LAB_MANAGER_VERSION}
+
 # dependency are needed and there are not build in chunck
 RUN npm ci --production
 
