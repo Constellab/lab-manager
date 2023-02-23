@@ -45,9 +45,15 @@ export class LabController {
     return this.dockerService.restartContainers(options);
   }
 
+  // TODO remove once all lab manager are v 1.0.1
   @Post('down-containers')
   downContainers(): Promise<void> {
-    return this.dockerService.downContainers();
+    return this.dockerService.deleteContainers();
+  }
+
+  @Post('delete-containers')
+  deleteContainers(): Promise<void> {
+    return this.dockerService.deleteContainers();
   }
 
   @Post('pull-containers')

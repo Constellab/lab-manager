@@ -68,7 +68,7 @@ export class DockerService {
     }
 
     if (options.updateContainers) {
-      await this.pullContainers(setEnvVariable);
+      await this.pullContainers(false);
     }
 
     await this.upContainerCommand();
@@ -91,8 +91,8 @@ export class DockerService {
     }
   }
 
-  public async downContainers(): Promise<void> {
-    const taskName = 'DOWN_CONTAINERS';
+  public async deleteContainers(): Promise<void> {
+    const taskName = 'DELETE_CONTAINERS';
     this.taskService.newTask(taskName);
 
     try {
@@ -123,15 +123,17 @@ export class DockerService {
     }
 
     if (options.updateContainers) {
-      await this.pullContainers(setEnvVariable);
+      await this.pullContainers(false);
     }
 
     if (options.destroyContainers) {
-      await this.composeStop();
+      await this.deleteContainers();
 
       await this.upContainerCommand();
     } else {
-      await this.restartContainerCommand();
+      // do a stop and a up because if a new image is available with same tag, restart doesn't update it. Stop and up does.
+      await this.composeStop();
+      await this.upContainerCommand();
     }
 
     if (options.pruneSystem) {
