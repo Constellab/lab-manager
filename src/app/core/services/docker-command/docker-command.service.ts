@@ -65,7 +65,7 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
 
   public getLogs(containerName: string): Promise<string> {
-    return this.commandService.execCommand(`docker logs ${containerName}`, ExecCommandMode.STDERR_AS_SUCCESS);
+    return this.commandService.execCommand(`docker logs --tail 2000 ${containerName}`, ExecCommandMode.STDERR_AS_SUCCESS);
   }
 
   public login(username: string, password: string, registryUrl: string): Promise<string> {
