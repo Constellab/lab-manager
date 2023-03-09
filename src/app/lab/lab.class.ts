@@ -16,6 +16,7 @@ export interface LabStatus {
   currentTask?: TaskStatusInfo;
   adminerIsRunning: boolean;
   labManagerVersion: string;
+  biotaDbUrl?: string;
 }
 
 /**
