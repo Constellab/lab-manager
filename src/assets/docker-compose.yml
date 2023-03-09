@@ -57,7 +57,7 @@ services:
       - "traefik.http.routers.glab-router.tls.certresolver=myresolver"
     networks:
       - gencovery-network-prod
-    restart: on-failure:10
+    restart: on-failure:5
     container_name: glab
 
   # Codelab
