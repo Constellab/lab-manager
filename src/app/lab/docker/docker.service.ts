@@ -1,4 +1,4 @@
-import {Injectable} from '@nestjs/common';
+import {Injectable, Logger} from '@nestjs/common';
 import {DockerCommandService} from '../../core/services/docker-command/docker-command.service';
 import {ComposeRestartOptions, ComposeUpOptions, DockerPs} from '../docker.class';
 import {FileService} from '../../core/services/file/file.service';
@@ -9,9 +9,17 @@ import {ContainerStatusInfo} from '../lab.class';
 import {EnvVariableService} from '../env-variable/env-variable.service';
 import {TraefikService} from '../../core/services/traefik/traefik.service';
 
+export interface BeforeDockerCommandOptions {
+  setEnvVariables?: boolean;
+  dockerLogin?: boolean;
+  generateComposeFile?: boolean;
+}
+
 
 @Injectable()
 export class DockerService {
+
+  private readonly logger = new Logger(DockerService.name);
 
   constructor(private dockerCommand: DockerCommandService,
     private fileService: FileService, private containerService: ContainerService,
@@ -41,14 +49,8 @@ export class DockerService {
     return this.dockerCommand.dockerPs();
   }
 
-  public async pullContainers(setEnvVariable: boolean = true, dockerLogin: boolean = true): Promise<void> {
-    if (setEnvVariable) {
-      await this.envVariableService.setEnvVariables();
-    }
-
-    if (dockerLogin) {
-      await this.login();
-    }
+  public async pullContainers(beforeOptions: BeforeDockerCommandOptions = {}): Promise<void> {
+    await this.beforeDockerCommand(beforeOptions);
 
     const taskName = 'PULL_CONTAINERS';
     this.taskService.newTask(taskName);
@@ -62,13 +64,11 @@ export class DockerService {
     }
   }
 
-  public async upContainers(options: ComposeUpOptions, setEnvVariable: boolean = true): Promise<void> {
-    if (setEnvVariable) {
-      await this.envVariableService.setEnvVariables();
-    }
+  public async upContainers(options: ComposeUpOptions, beforeOptions: BeforeDockerCommandOptions = {}): Promise<void> {
+    await this.beforeDockerCommand(beforeOptions);
 
     if (options.updateContainers) {
-      await this.pullContainers(false);
+      await this.pullContainers();
     }
 
     await this.upContainerCommand();
@@ -117,13 +117,11 @@ export class DockerService {
     }
   }
 
-  public async restartContainers(options: ComposeRestartOptions, setEnvVariable: boolean = true): Promise<void> {
-    if (setEnvVariable) {
-      await this.envVariableService.setEnvVariables();
-    }
+  public async restartContainers(options: ComposeRestartOptions, beforeOptions: BeforeDockerCommandOptions = {}): Promise<void> {
+    await this.beforeDockerCommand(beforeOptions);
 
     if (options.updateContainers) {
-      await this.pullContainers(false);
+      await this.pullContainers();
     }
 
     if (options.destroyContainers) {
@@ -138,19 +136,6 @@ export class DockerService {
 
     if (options.pruneSystem) {
       await this.systemPrune();
-    }
-  }
-
-  private async restartContainerCommand(): Promise<void> {
-    const taskName = 'RESTART_CONTAINERS';
-    this.taskService.newTask(taskName);
-
-    try {
-      const result = await this.dockerCommand.composeRestart(this.fileService.dockerComposePath);
-      this.taskService.markTaskAsSuccess(taskName, result);
-    } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
-      throw e;
     }
   }
 
@@ -222,6 +207,30 @@ export class DockerService {
       info: 'Containers are partially up'
     };
   }
+
+  public generateDockerCompose(): void {
+    const dockerComposeFileName = this.fileService.dockerComposeFileName;
+    this.logger.log(`Generating ${dockerComposeFileName} file`);
+    this.fileService.copyDockerCompose();
+    this.logger.log(`${dockerComposeFileName} file generated`);
+  }
+
+  private async beforeDockerCommand(options: BeforeDockerCommandOptions): Promise<void> {
+    if (!options) return;
+    if (options.generateComposeFile) {
+      this.generateDockerCompose();
+    }
+
+    if (options.setEnvVariables) {
+      await this.envVariableService.setEnvVariables();
+    }
+
+    if (options.dockerLogin) {
+      await this.login();
+    }
+  }
+
+  /////////////////////////////// ADMINER ///////////////////////////////
 
   public async adminerIsRunning(): Promise<boolean> {
     const container = await this.dockerCommand.dockerContainerInfo(ContainerService.ADMINER_NAME);

@@ -44,10 +44,10 @@ export class InitService implements OnApplicationBootstrap {
       await this.biotaService.pullBiota(false);
 
       // PULL IMAGES
-      await this.dockerService.pullContainers(false, false);
+      await this.dockerService.pullContainers();
 
       // UP CONTAINERS
-      await this.dockerService.upContainers({}, false);
+      await this.dockerService.upContainers({});
 
       this.logger.log('[INIT] Init ended successfully');
 
@@ -76,7 +76,7 @@ export class InitService implements OnApplicationBootstrap {
   private generateFiles(labInitConfig: LabInitConfig): void {
     this.generatePrivateFile(labInitConfig);
 
-    this.generateDockerCompose();
+    this.dockerService.generateDockerCompose();
   }
 
   private generatePrivateFile(labInitConfig: LabInitConfig): void {
@@ -100,13 +100,6 @@ export class InitService implements OnApplicationBootstrap {
 
     this.fileService.createPrivateFile(privateJson);
     this.logger.log('private.json file generated');
-  }
-
-  private generateDockerCompose(): void {
-    const dockerComposeFileName = this.fileService.dockerComposeFileName;
-    this.logger.log(`Generating ${dockerComposeFileName} file`);
-    this.fileService.copyDockerCompose();
-    this.logger.log(`${dockerComposeFileName} file generated`);
   }
 
   private async loginToDockerRegistry(): Promise<void> {

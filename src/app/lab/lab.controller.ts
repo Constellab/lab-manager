@@ -1,5 +1,5 @@
 import {Body, Controller, Get, Param, Post, Put} from '@nestjs/common';
-import {DockerService} from './docker/docker.service';
+import {BeforeDockerCommandOptions, DockerService} from './docker/docker.service';
 import {ComposeRestartOptions, ComposeUpOptions, DockerPs} from './docker.class';
 import {InitService} from './init/init.service';
 import {TaskService} from '../core/services/task/task.service';
@@ -8,6 +8,12 @@ import {LabInitConfig, LabStatus} from './lab.class';
 import {LabService} from './lab.service';
 import {ConfigFile} from '../core/models/config-file.class';
 import {ConfigFileService} from './config-file/config-file.service';
+
+const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
+  dockerLogin: true,
+  setEnvVariables: true,
+  generateComposeFile: true,
+};
 
 @Controller('lab')
 export class LabController {
@@ -37,12 +43,12 @@ export class LabController {
 
   @Post('up-containers')
   async upContainers(@Body() options: ComposeUpOptions): Promise<void> {
-    return await this.dockerService.upContainers(options);
+    return await this.dockerService.upContainers(options, initAllBeforeDockerCommand);
   }
 
   @Post('restart-containers')
   restartContainers(@Body() options: ComposeRestartOptions): Promise<void> {
-    return this.dockerService.restartContainers(options);
+    return this.dockerService.restartContainers(options, initAllBeforeDockerCommand);
   }
 
   // TODO remove once all lab manager are v 1.0.1
@@ -58,7 +64,7 @@ export class LabController {
 
   @Post('pull-containers')
   pullContainers(): Promise<void> {
-    return this.dockerService.pullContainers();
+    return this.dockerService.pullContainers(initAllBeforeDockerCommand);
   }
 
   @Get(':containerName/logs')
