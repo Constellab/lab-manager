@@ -24,7 +24,6 @@ services:
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
       - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
       - GWS_GIT_PWD=${GWS_GIT_PWD}
-      - GWS_CORE_DB_PASSWORD=${GWS_CORE_PROD_DB_PASSWORD}
       # GWS_CORE database
       - GWS_CORE_DB_HOST=gws_core_prod_db
       - GWS_CORE_DB_USER=gws_core
