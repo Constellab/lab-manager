@@ -24,7 +24,7 @@ export class DockerService {
   constructor(private dockerCommand: DockerCommandService,
     private fileService: FileService, private containerService: ContainerService,
     private taskService: TaskService, private configService: CoreConfigService,
-    private envVariableService: EnvVariableService, private traefikService: TraefikService) {
+    private envVariableService: EnvVariableService) {
   }
 
   public async login(): Promise<void> {
@@ -227,51 +227,6 @@ export class DockerService {
 
     if (options.dockerLogin) {
       await this.login();
-    }
-  }
-
-  /////////////////////////////// ADMINER ///////////////////////////////
-
-  public async adminerIsRunning(): Promise<boolean> {
-    const container = await this.dockerCommand.dockerContainerInfo(ContainerService.ADMINER_NAME);
-
-    if (container == null) {
-      return false;
-    }
-
-    return container.state === 'running';
-  }
-
-  public async startAdminerService(): Promise<boolean> {
-    const taskName = 'START ADMINER';
-    this.taskService.newTask(taskName);
-
-    try {
-      const labels = this.traefikService.getTraefikLabels(ContainerService.ADMINER_NAME, '8080');
-
-      const networks = [ContainerService.NETWORK_DEV, ContainerService.NETWORK_PROD];
-      const result = await this.dockerCommand.dockerRun(ContainerService.ADMINER_IMAGE, ContainerService.ADMINER_NAME, {
-        networks: networks, labels: labels
-      });
-      this.taskService.markTaskAsSuccess(taskName, 'Ok');
-      return result;
-    } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
-      throw e;
-    }
-  }
-
-  public async stopAdminerService(): Promise<boolean> {
-    const taskName = 'STOP ADMINER';
-    this.taskService.newTask(taskName);
-
-    try {
-      await this.dockerCommand.dockerRmContainer(ContainerService.ADMINER_NAME);
-      this.taskService.markTaskAsSuccess(taskName, 'Ok');
-      return true;
-    } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
-      throw e;
     }
   }
 }

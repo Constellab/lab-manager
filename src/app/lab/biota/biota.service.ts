@@ -1,17 +1,21 @@
-import {Injectable, Logger} from '@nestjs/common';
-import {CommandService} from '../../core/services/command/command.service';
-import {FileService} from '../../core/services/file/file.service';
-import {CoreConfigService} from '../../core/services/config/core-config.service';
-import {TaskService} from '../../core/services/task/task.service';
-import {EnvVariableService} from '../env-variable/env-variable.service';
-import {ConfigFileService} from '../config-file/config-file.service';
+import { Injectable, Logger } from '@nestjs/common';
+import { CommandService } from '../../core/services/command/command.service';
+import { FileService } from '../../core/services/file/file.service';
+import { CoreConfigService } from '../../core/services/config/core-config.service';
+import { TaskService } from '../../core/services/task/task.service';
+import { ConfigFileService } from '../config-file/config-file.service';
+import { HttpService } from '@nestjs/axios';
+import { createWriteStream } from 'fs';
+import { join } from 'path';
+import { ContainerService } from '../container/container.service';
 
 @Injectable()
 export class BiotaService {
 
-  private readonly pullBiotaScript = 'pull_biota.sh';
 
   private readonly logger = new Logger(BiotaService.name);
+
+  private readonly pullBiotaTaskName = 'PULL_BIOTA_DB';
 
 
   constructor(private commandService: CommandService,
@@ -19,30 +23,134 @@ export class BiotaService {
     private configService: CoreConfigService,
     private configFileService: ConfigFileService,
     private taskService: TaskService,
-    private envVariableService: EnvVariableService) {
+    private httpService: HttpService,
+    private containerService: ContainerService) {
   }
 
-  public async pullBiota(setEnvVariable: boolean = true): Promise<void> {
-    if (setEnvVariable) {
-      await this.envVariableService.setEnvVariables();
+  public async pullBiota(forceUpdate: boolean = false, restartBiota: boolean = false): Promise<void> {
+    const biotaDbFolder = this.getBiotaDbFolder();
+    const mariaDbFolder = this.getMariaDbFolder();
+    const biotaDbUrl = this.configFileService.readConfigFile().biota_maria_db_url;
+    const zipFilePath = join(biotaDbFolder, 'mariadb.zip');
+
+    this.fileService.createDirIfNotExists(biotaDbFolder);
+
+    // Check if the biota db is already downloaded in the right version
+    if (!forceUpdate && !this.checkIfBiotaDbNeedsToBePulled()) {
+      this.logger.log(`Biota db already downloaded in the right version : ${biotaDbUrl}. Skipping download`);
+      return;
     }
+    
+    // stop the biota container because the volume will be deleted
+    await this.containerService.deleteBiotaService();
 
-    const file = this.fileService.getAssetPath(this.pullBiotaScript);
-    const destination = this.configService.getBiotaDbFolder();
-
-    const taskName = 'PULL_BIOTA_DB';
-    const config = this.configFileService.readConfigFile();
-    this.taskService.newTask(taskName, `Pulling biota db from ${config.biota_maria_db_url} into ${destination}`);
+    this.taskService.newTask(this.pullBiotaTaskName, `Pulling biota db from ${biotaDbUrl} into ${biotaDbFolder}`);
 
     try {
-      await this.commandService.execCommand(`bash ${file} ${destination} ${config.biota_maria_db_url}`);
-      this.taskService.markTaskAsSuccess(taskName);
+      // delete existing zip if exists
+      this.fileService.deleteFileIfExist(zipFilePath);
+      await this.downloadFile(biotaDbUrl, zipFilePath);
+
+      // delete the old biota db folder
+      this.fileService.deleteFolderIfExist(mariaDbFolder);
+
+      // unzip the biota db
+      await this.unzipBiotaDb(zipFilePath, biotaDbFolder);
+
+      // update the private file to save the version of the biota db
+      this.saveVersionInPrivateFile(biotaDbUrl);
+
+      this.fileService.deleteFileIfExist(zipFilePath);
+      this.taskService.markTaskAsSuccess(this.pullBiotaTaskName, 'Biota db pulled successfully');
+
+      if (restartBiota) {
+        await this.containerService.startBiotaService();
+      }
     } catch (e: any) {
-      this.taskService.markTaskAsError(taskName, 'Error during the biota pull. Error : ' + e);
+      this.taskService.markTaskAsError(this.pullBiotaTaskName, 'Error during the biota pull. Error : ' + e);
       if (e.stack) {
         this.logger.error(e.stack);
       }
-      throw e;
     }
   }
+
+
+
+  public downloadFile(url: string, destination: string): Promise<void> {
+
+    return new Promise((resolve, reject) => {
+
+
+      const file = createWriteStream(destination);
+      const request = this.httpService.get(url, { responseType: 'stream' });
+
+      request.subscribe({
+        next: (response) => {
+          const contentLength = parseInt(response.headers['content-length']);
+
+          let loaded = 0;
+          let lastProgressLogged = 0;
+
+          // log progress
+          response.data.on('data', (chunk) => {
+            loaded += chunk.length;
+
+            // log progress every 3%
+            const progress = loaded / contentLength;
+            if (progress - lastProgressLogged >= 0.03) {
+              this.taskService.updateTaskInfo(this.pullBiotaTaskName, `Biota downloaded ${loaded} of ${contentLength} bytes. ${Math.round(progress * 100)}%`);
+              lastProgressLogged = progress;
+            }
+          });
+
+          // write to file
+          response.data.pipe(file);
+
+          // mark task as success when download is complete
+          response.data.on('end', () => resolve());
+
+          // mark task as error if download failed
+          response.data.on('error', (err) => reject(err));
+        },
+        error: (error) => reject(error),
+      });
+
+    });
+  }
+
+  private async unzipBiotaDb(zipPath: string, destination: string): Promise<any> {
+    try {
+      this.taskService.updateTaskInfo(this.pullBiotaTaskName, `Unzipping biota db from ${zipPath} into ${destination}`);
+
+      await this.commandService.execCommand(`unzip -q ${zipPath} -d ${destination}`);
+
+      this.taskService.markTaskAsSuccess(this.pullBiotaTaskName);
+    } catch (e: any) {
+      this.taskService.markTaskAsError(this.pullBiotaTaskName, 'Error during the biota unzip. Error : ' + e);
+      if (e.stack) {
+        this.logger.error(e.stack);
+      }
+    }
+  }
+
+  private saveVersionInPrivateFile(dbUrl: string): void {
+    const privateFile = this.fileService.readPrivateFile();
+    privateFile.db.biota_current_db_url_version = dbUrl;
+    this.fileService.createPrivateFile(privateFile);
+  }
+
+  private getBiotaDbFolder(): string {
+    return this.configService.getBiotaDbFolder();
+  }
+
+  private getMariaDbFolder(): string {
+    return join(this.getBiotaDbFolder(), 'mariadb');
+  }
+
+  public checkIfBiotaDbNeedsToBePulled(): boolean {
+    const privateFile = this.fileService.readPrivateFile();
+    const biotaDbUrl = this.configFileService.readConfigFile().biota_maria_db_url;
+    return this.fileService.exists(this.getMariaDbFolder()) && privateFile.db.biota_current_db_url_version !== biotaDbUrl;
+  }
+
 }

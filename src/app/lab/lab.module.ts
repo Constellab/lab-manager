@@ -7,6 +7,7 @@ import {LabService} from './lab.service';
 import {ConfigFileService} from './config-file/config-file.service';
 import {BiotaService} from './biota/biota.service';
 import {EnvVariableService} from './env-variable/env-variable.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   providers: [
@@ -18,7 +19,8 @@ import {EnvVariableService} from './env-variable/env-variable.service';
     BiotaService,
     EnvVariableService,
   ],
-  controllers: [LabController]
+  controllers: [LabController],
+  imports: [HttpModule],
 })
 export class LabModule {
 }

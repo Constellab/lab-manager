@@ -48,6 +48,10 @@ export class TaskService {
     this.updateTask(name, 'SUCCESS', info);
   }
 
+  public updateTaskInfo(name: string, info: string): void {
+    this.updateTask(name, this.currentTask.status, info);
+  }
+
   public updateTask(name: string, status: TaskStatus, info?: string): void {
     if (this.currentTask == null) {
       throw new BadRequestException(`There is no running task`);

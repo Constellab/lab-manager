@@ -8,6 +8,7 @@ import {LabInitConfig, LabStatus} from './lab.class';
 import {LabService} from './lab.service';
 import {ConfigFile} from '../core/models/config-file.class';
 import {ConfigFileService} from './config-file/config-file.service';
+import { ContainerService } from './container/container.service';
 
 const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
   dockerLogin: true,
@@ -23,7 +24,8 @@ export class LabController {
     private taskService: TaskService,
     private biotaService: BiotaService,
     private labService: LabService,
-    private configFileService: ConfigFileService) {
+    private configFileService: ConfigFileService,
+    private containerService: ContainerService) {
   }
 
   @Get('containers')
@@ -73,8 +75,8 @@ export class LabController {
   }
 
   @Post('pull-biota-db')
-  async pullBiotaDb(): Promise<void> {
-    return this.biotaService.pullBiota();
+  async pullBiotaDb(@Body() labInitConfig: {forceUpdate?: boolean} = {}): Promise<void> {
+    return this.biotaService.pullBiota(labInitConfig.forceUpdate, true);
   }
 
   @Post('registry-login')
@@ -104,11 +106,11 @@ export class LabController {
 
   @Put('adminer/start')
   startAdminer(): Promise<boolean> {
-    return this.dockerService.startAdminerService();
+    return this.containerService.startAdminerService();
   }
 
   @Put('adminer/stop')
   stopAdminer(): Promise<boolean> {
-    return this.dockerService.stopAdminerService();
+    return this.containerService.deleteAdminerService();
   }
 }

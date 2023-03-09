@@ -1,6 +1,6 @@
 import {Inject, Injectable} from '@nestjs/common';
 import {PrivateFile} from '../../models/private-file.class';
-import {copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync} from 'fs';
+import {copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync} from 'fs';
 
 import {dirname, join} from 'path';
 import {CORE_MODULE_PROVIDER, CoreModuleConfig} from '../../models/core-module-config.class';
@@ -130,4 +130,18 @@ export class FileService {
     if (this.exists(path)) return;
     this.createDir(path, recursive);
   }
+
+  public deleteFileIfExist(path: string): void {
+    if(this.exists){
+      unlinkSync(path);
+    }
+  }
+
+  public deleteFolderIfExist(path: string): void {
+    if(this.exists){
+      rmSync(path, { recursive: true, force: true });
+    }
+  }
+
+
 }

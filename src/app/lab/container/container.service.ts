@@ -1,4 +1,9 @@
-import {Injectable} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
+import { DockerCommandService } from 'src/app/core/services/docker-command/docker-command.service';
+import { FileService } from 'src/app/core/services/file/file.service';
+import { TaskService } from 'src/app/core/services/task/task.service';
+import { TraefikService } from 'src/app/core/services/traefik/traefik.service';
 
 @Injectable()
 export class ContainerService {
@@ -17,12 +22,89 @@ export class ContainerService {
   public static readonly ADMINER_NAME = 'adminer';
   public static readonly ADMINER_IMAGE: string = 'adminer:4.8.1';
 
-  constructor() {
+  constructor(private dockerCommand: DockerCommandService,
+    private taskService: TaskService,
+    private traefikService: TraefikService,
+    private fileService: FileService) {
   }
 
   public getContainersNames(): string[] {
     return [ContainerService.GLAB, ContainerService.CODELAB, ContainerService.FRONT, ContainerService.DB_GWS_CORE_PROD,
-      ContainerService.DB_GWS_BIOTA, ContainerService.DB_GWS_CORE_DEV,
-      ContainerService.DB_GWS_CORE_DEV_TEST];
+    ContainerService.DB_GWS_BIOTA, ContainerService.DB_GWS_CORE_DEV,
+    ContainerService.DB_GWS_CORE_DEV_TEST];
+  }
+
+  /////////////////////////////// CONTAINERS ///////////////////////////////
+  public async containerIsRunning(containerName: string): Promise<boolean> {
+    const container = await this.dockerCommand.dockerContainerInfo(containerName);
+
+    if (container == null) return false;
+
+    return container.state === 'running';
+  }
+
+  public async removeContainer(containerName: string): Promise<boolean> {
+    const taskName = `STOP ${containerName}`;
+    this.taskService.newTask(taskName);
+
+    try {
+      await this.dockerCommand.dockerRmContainer(containerName);
+      this.taskService.markTaskAsSuccess(taskName, 'Ok');
+      return true;
+    } catch (e) {
+      this.taskService.markTaskAsError(taskName, e.toString());
+      throw e;
+    }
+  }
+
+  /////////////////////////////// BIOTA ///////////////////////////////
+
+
+  public deleteBiotaService(): Promise<boolean> {
+    return this.removeContainer(ContainerService.DB_GWS_BIOTA);
+  }
+
+
+  public async startBiotaService(): Promise<void> {
+    const taskName = 'START BIOTA';
+    this.taskService.newTask(taskName);
+
+    try {
+      // start biota service from docker-compose
+      const result = await this.dockerCommand.composeUp(this.fileService.dockerComposePath, [], 
+        [ContainerService.DB_GWS_BIOTA])
+      this.taskService.markTaskAsSuccess(taskName, result);
+    } catch (e) {
+      this.taskService.markTaskAsError(taskName, e.toString());
+      throw e;
+    }
+  }
+
+  /////////////////////////////// ADMINER ///////////////////////////////
+  public async adminerIsRunning(): Promise<boolean> {
+    return this.containerIsRunning(ContainerService.ADMINER_NAME);
+  }
+
+  public async startAdminerService(): Promise<boolean> {
+    const taskName = 'START ADMINER';
+    this.taskService.newTask(taskName);
+
+    try {
+      const labels = this.traefikService.getTraefikLabels(ContainerService.ADMINER_NAME, '8080');
+
+      const networks = [ContainerService.NETWORK_DEV, ContainerService.NETWORK_PROD];
+      const result = await this.dockerCommand.dockerRun(ContainerService.ADMINER_IMAGE, ContainerService.ADMINER_NAME, {
+        networks: networks, labels: labels
+      });
+      this.taskService.markTaskAsSuccess(taskName, 'Ok');
+      return result;
+    } catch (e) {
+      this.taskService.markTaskAsError(taskName, e.toString());
+      throw e;
+    }
+  }
+
+  public async deleteAdminerService(): Promise<boolean> {
+    return this.removeContainer(ContainerService.ADMINER_NAME);
   }
 }

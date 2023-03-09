@@ -14,11 +14,8 @@ export interface PrivateFile {
   db: {
     gws_core_prod_password: string;
     gws_core_dev_password: string;
-    gws_biota_sqlite3db_url: string;
-    gws_biota_mariadb_url: string;
-    testdata_url: string;
-    opendata_url: string;
-    opendata_biodata_url: string;
-    opendata_glove_url: string;
+    // store the current version of the biota db
+    // can be different from the version of the biota version in config
+    biota_current_db_url_version: string;
   };
 }

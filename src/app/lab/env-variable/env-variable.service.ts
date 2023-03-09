@@ -1,4 +1,4 @@
-import {Injectable, Logger} from '@nestjs/common';
+import {BadRequestException, Injectable, Logger} from '@nestjs/common';
 import {ConfigFile} from '../../core/models/config-file.class';
 import {PrivateFile} from '../../core/models/private-file.class';
 import {CoreConfigService} from '../../core/services/config/core-config.service';
@@ -12,8 +12,7 @@ export class EnvVariableService {
 
   private readonly logger = new Logger(EnvVariableService.name);
 
-  constructor(private configService: CoreConfigService,
-    private fileService: FileService,
+  constructor(private fileService: FileService,
     private configFileService: ConfigFileService,
     private commandService: CommandService) {
   }
@@ -50,15 +49,9 @@ export class EnvVariableService {
     // GLAB TAG
     CoreConfigService.setEnvVariable('GLAB_TAG', configJson.glab_tag);
 
-    // Data urls
-    CoreConfigService.setEnvVariable('BIOTA_MARIA_DB_URL', configJson.biota_maria_db_url);
-    CoreConfigService.setEnvVariable('BIOTA_SQLITE3_DB_URL', privateJson.db.gws_biota_sqlite3db_url);
-    CoreConfigService.setEnvVariable('OPENDATA_BIODATA_URL', privateJson.db.opendata_biodata_url);
-    CoreConfigService.setEnvVariable('OPENDATA_GLOVE_URL', privateJson.db.opendata_glove_url);
-    CoreConfigService.setEnvVariable('OPENDATA_URL', privateJson.db.opendata_url);
-    CoreConfigService.setEnvVariable('TESTDATA_URL', privateJson.db.testdata_url);
-
-
+    if(privateJson.lab.token == null) {
+      throw new BadRequestException('Lab token is not set in the private file');
+    }
     // Generate the htpasswd for the Lab token for CODELAB using Bcrypt
     const hash = hashSync(privateJson.lab.token, 10);
     CoreConfigService.setEnvVariable('HT_PASSWD', `${privateJson.lab.username}:${hash}`);
