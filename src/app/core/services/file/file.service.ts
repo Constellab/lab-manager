@@ -132,13 +132,13 @@ export class FileService {
   }
 
   public deleteFileIfExist(path: string): void {
-    if(this.exists){
+    if(this.exists(path)){
       unlinkSync(path);
     }
   }
 
   public deleteFolderIfExist(path: string): void {
-    if(this.exists){
+    if(this.exists(path)){
       rmSync(path, { recursive: true, force: true });
     }
   }
