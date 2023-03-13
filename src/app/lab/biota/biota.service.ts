@@ -36,7 +36,7 @@ export class BiotaService {
     this.fileService.createDirIfNotExists(biotaDbFolder);
 
     // Check if the biota db is already downloaded in the right version
-    if (!forceUpdate && !this.checkIfBiotaDbNeedsToBePulled()) {
+    if (!forceUpdate && !this.biotaDbNeedsToBePulled()) {
       this.logger.log(`Biota db already downloaded in the right version : ${biotaDbUrl}. Skipping download`);
       return;
     }
@@ -123,8 +123,6 @@ export class BiotaService {
       this.taskService.updateTaskInfo(this.pullBiotaTaskName, `Unzipping biota db from ${zipPath} into ${destination}`);
 
       await this.commandService.execCommand(`unzip -q ${zipPath} -d ${destination}`);
-
-      this.taskService.markTaskAsSuccess(this.pullBiotaTaskName);
     } catch (e: any) {
       this.taskService.markTaskAsError(this.pullBiotaTaskName, 'Error during the biota unzip. Error : ' + e);
       if (e.stack) {
@@ -147,10 +145,10 @@ export class BiotaService {
     return join(this.getBiotaDbFolder(), 'mariadb');
   }
 
-  public checkIfBiotaDbNeedsToBePulled(): boolean {
+  private biotaDbNeedsToBePulled(): boolean {
     const privateFile = this.fileService.readPrivateFile();
     const biotaDbUrl = this.configFileService.readConfigFile().biota_maria_db_url;
-    return this.fileService.exists(this.getMariaDbFolder()) && privateFile.db.biota_current_db_url_version !== biotaDbUrl;
+    return !this.fileService.exists(this.getMariaDbFolder()) || privateFile.db.biota_current_db_url_version !== biotaDbUrl;
   }
 
 }
