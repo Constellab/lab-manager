@@ -1,13 +1,14 @@
-import {BadRequestException, Injectable, Logger, OnApplicationBootstrap} from '@nestjs/common';
-import {CoreConfigService} from '../../core/services/config/core-config.service';
-import {FileService} from '../../core/services/file/file.service';
-import {PrivateFile} from '../../core/models/private-file.class';
-import {DockerService} from '../docker/docker.service';
-import {BiotaService} from '../biota/biota.service';
-import {join} from 'path';
-import {EnvVariableService} from '../env-variable/env-variable.service';
-import {LabInitConfig} from '../lab.class';
-import {ConfigFileService} from '../config-file/config-file.service';
+import { BadRequestException, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { CoreConfigService } from '../../core/services/config/core-config.service';
+import { FileService } from '../../core/services/file/file.service';
+import { PrivateFile } from '../../core/models/private-file.class';
+import { DockerService } from '../docker/docker.service';
+import { BiotaService } from '../biota/biota.service';
+import { join } from 'path';
+import { EnvVariableService } from '../env-variable/env-variable.service';
+import { LabInitConfig } from '../lab.class';
+import { ConfigFileService } from '../config-file/config-file.service';
+import { TaskService } from 'src/app/core/services/task/task.service';
 
 @Injectable()
 export class InitService implements OnApplicationBootstrap {
@@ -19,7 +20,8 @@ export class InitService implements OnApplicationBootstrap {
     private fileService: FileService,
     private dockerService: DockerService,
     private biotaService: BiotaService,
-    private envVariableService: EnvVariableService) {
+    private envVariableService: EnvVariableService,
+    private taskService: TaskService) {
   }
 
   onApplicationBootstrap(): any {
@@ -60,17 +62,26 @@ export class InitService implements OnApplicationBootstrap {
   }
 
   private initAppVolume(): void {
-    this.logger.log('Generating app volumes');
+    const taskName = 'GENERATE_APP_VOLUME';
 
-    const appFolder = this.configService.getAppFolder();
+    try{
+      this.taskService.newTask(taskName, 'Generating app volume');
+    
+      const appFolder = this.configService.getAppFolder();
 
-    this.fileService.createDirIfNotExists(join(appFolder, 'prod', 'lab', '.sys'), true);
-    this.fileService.createDirIfNotExists(join(appFolder, 'prod', 'data'), true);
-    this.fileService.createDirIfNotExists(join(appFolder, 'dev', 'lab', '.sys'), true);
-    this.fileService.createDirIfNotExists(join(appFolder, 'dev', 'data'), true);
-    this.fileService.createDirIfNotExists(join(appFolder, 'conf'));
+      this.fileService.createDirIfNotExists(join(appFolder, 'prod', 'lab', '.sys'), true);
+      this.fileService.createDirIfNotExists(join(appFolder, 'prod', 'data'), true);
+      this.fileService.createDirIfNotExists(join(appFolder, 'dev', 'lab', '.sys'), true);
+      this.fileService.createDirIfNotExists(join(appFolder, 'dev', 'data'), true);
+      this.fileService.createDirIfNotExists(join(appFolder, 'conf'));
 
-    this.logger.log('App volume generated');
+      this.taskService.markTaskAsSuccess(taskName, 'App volume generated');
+    }
+    catch(e){
+      this.taskService.markTaskAsError(taskName, `Error while generating app volume : ${e.message}`);
+      throw e;
+    }
+
   }
 
   private generateFiles(labInitConfig: LabInitConfig): void {
@@ -80,32 +91,39 @@ export class InitService implements OnApplicationBootstrap {
   }
 
   private generatePrivateFile(labInitConfig: LabInitConfig): void {
-    this.logger.log('Generating private.json file');
-    const privateJson: PrivateFile = this.fileService.readPrivateTemplateFile();
+    const taskName = 'GENERATE_PRIVATE_FILE';
+    try {
+      this.taskService.newTask(taskName, 'Generating private.json file');
 
-    // configure central information a central api key
-    privateJson.central.api_key = labInitConfig.centralApiKey;
-    privateJson.central.api_url = labInitConfig.centralApiUrl;
-    privateJson.central.front_url = labInitConfig.centralFrontUrl;
+      const privateJson: PrivateFile = this.fileService.readPrivateTemplateFile();
 
-    // hub information
-    privateJson.hub.front_url = labInitConfig.hubFrontUrl;
+      // configure central information a central api key
+      privateJson.central.api_key = labInitConfig.centralApiKey;
+      privateJson.central.api_url = labInitConfig.centralApiUrl;
+      privateJson.central.front_url = labInitConfig.centralFrontUrl;
 
-    // set token
-    privateJson.lab.token = labInitConfig.codelabToken;
+      // hub information
+      privateJson.hub.front_url = labInitConfig.hubFrontUrl;
 
-    // DB information
-    privateJson.db.gws_core_prod_password = labInitConfig.gwsCoreProdPassword;
-    privateJson.db.gws_core_dev_password = labInitConfig.gwsCoreDevPassword;
+      // set token
+      privateJson.lab.token = labInitConfig.codelabToken;
 
-    // if the private file already exists, retrieve the data sub object from it
-    if(this.fileService.privateFileExists()){
-      const oldPrivateJson = this.fileService.readPrivateFile();
-      privateJson.data  = oldPrivateJson.data;
+      // DB information
+      privateJson.db.gws_core_prod_password = labInitConfig.gwsCoreProdPassword;
+      privateJson.db.gws_core_dev_password = labInitConfig.gwsCoreDevPassword;
+
+      // if the private file already exists, retrieve the data sub object from it
+      if (this.fileService.privateFileExists()) {
+        const oldPrivateJson = this.fileService.readPrivateFile();
+        privateJson.data = oldPrivateJson.data;
+      }
+
+      this.fileService.createPrivateFile(privateJson);
+      this.taskService.markTaskAsSuccess(taskName, 'private.json file generated');
+    } catch (e) {
+      this.taskService.markTaskAsError(taskName, `Error while generating private.json file : ${e.message}`);
+      throw e;
     }
-
-    this.fileService.createPrivateFile(privateJson);
-    this.logger.log('private.json file generated');
   }
 
   private async loginToDockerRegistry(): Promise<void> {

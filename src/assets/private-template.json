@@ -14,7 +14,7 @@
   },
   "db": {
     "gws_core_prod_password": null,
-    "gws_core_dev_password": null,
+    "gws_core_dev_password": null
   },
   "data": {
     "biota_current_data_url_version": null
