@@ -44,6 +44,10 @@ export class ContainerService {
   }
 
   public async removeContainer(containerName: string): Promise<boolean> {
+    // return false if the container is not running
+    if(!(await this.containerIsRunning(containerName))) return false;
+    
+    
     const taskName = `STOP ${containerName}`;
     this.taskService.newTask(taskName);
 
