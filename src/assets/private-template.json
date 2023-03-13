@@ -1,4 +1,5 @@
 {
+  "version": 1,
   "central": {
     "api_key": null,
     "api_url": null,
@@ -12,12 +13,10 @@
     "token": null
   },
   "db": {
-    "gws_biota_sqlite3db_url": "https://storage.gra.cloud.ovh.net/v1/AUTH_a0286631d7b24afba3f3cdebed2992aa/gws_biota/db/2021-09-15/gws_biota.sqlite3.zip",
-    "gws_biota_mariadb_url": "https://storage.gra.cloud.ovh.net/v1/AUTH_a0286631d7b24afba3f3cdebed2992aa/gws_biota/db/2021-12-15/mariadb.zip",
-    "testdata_url": "https://storage.gra.cloud.ovh.net/v1/AUTH_a0286631d7b24afba3f3cdebed2992aa/testdata",
-    "opendata_url": "https://storage.gra.cloud.ovh.net/v1/AUTH_a0286631d7b24afba3f3cdebed2992aa/opendata",
-    "opendata_biodata_url": "https://storage.gra.cloud.ovh.net/v1/AUTH_a0286631d7b24afba3f3cdebed2992aa/opendata/biodata/20210223-biodata.zip",
-    "opendata_glove_url": "https://storage.gra.cloud.ovh.net/v1/AUTH_a0286631d7b24afba3f3cdebed2992aa/opendata/glove/glove.6B.300d.zip"
+    "gws_core_prod_password": null,
+    "gws_core_dev_password": null,
   },
-  "version": 1
+  "data": {
+    "biota_current_data_url_version": null
+  }
 }

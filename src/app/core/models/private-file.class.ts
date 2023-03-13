@@ -1,4 +1,5 @@
 export interface PrivateFile {
+  version: number;
   central: {
     api_key: string;
     api_url: string;
@@ -14,8 +15,14 @@ export interface PrivateFile {
   db: {
     gws_core_prod_password: string;
     gws_core_dev_password: string;
-    // store the current version of the biota db
-    // can be different from the version of the biota version in config
-    biota_current_db_url_version: string;
   };
+  // contains some information about the current state of the lab
+  // thoses information are kept when private.json is updated
+  data: PrivateFileData;
+}
+
+export interface PrivateFileData {
+  // store the current version of the biota db
+  // can be different from the version of the biota version in config
+  biota_current_db_url_version: string;
 }

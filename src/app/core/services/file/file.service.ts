@@ -1,5 +1,5 @@
 import {Inject, Injectable} from '@nestjs/common';
-import {PrivateFile} from '../../models/private-file.class';
+import {PrivateFile, PrivateFileData} from '../../models/private-file.class';
 import {copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync} from 'fs';
 
 import {dirname, join} from 'path';
@@ -36,6 +36,16 @@ export class FileService {
 
   public readPrivateTemplateFile(): PrivateFile {
     return this.readJsonFile(this.privateTemplateFilePath);
+  }
+
+  public updatePrivateFileData(data: Partial<PrivateFileData>): void{
+    const privateFile = this.readPrivateFile();
+
+    const template: PrivateFileData = {
+      biota_current_db_url_version: null,
+    };
+    privateFile.data = {...template, ...privateFile.data, ...data};
+    this.createPrivateFile(privateFile);  
   }
 
   private get privateTemplateFilePath(): string {

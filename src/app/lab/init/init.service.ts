@@ -98,6 +98,12 @@ export class InitService implements OnApplicationBootstrap {
     privateJson.db.gws_core_prod_password = labInitConfig.gwsCoreProdPassword;
     privateJson.db.gws_core_dev_password = labInitConfig.gwsCoreDevPassword;
 
+    // if the private file already exists, retrieve the data sub object from it
+    if(this.fileService.privateFileExists()){
+      const oldPrivateJson = this.fileService.readPrivateFile();
+      privateJson.data  = oldPrivateJson.data;
+    }
+
     this.fileService.createPrivateFile(privateJson);
     this.logger.log('private.json file generated');
   }

@@ -19,7 +19,7 @@ export class LabService {
   public async getStatus(): Promise<LabStatus> {
     let biotaDbUrl: string = null;
     if(this.fileService.privateFileExists()){
-      biotaDbUrl = this.fileService.readPrivateFile().db.biota_current_db_url_version;
+      biotaDbUrl = this.fileService.readPrivateFile().data?.biota_current_db_url_version;
     }
     
     return {

@@ -58,7 +58,7 @@ export class BiotaService {
       await this.unzipBiotaDb(zipFilePath, biotaDbFolder);
 
       // update the private file to save the version of the biota db
-      this.saveVersionInPrivateFile(biotaDbUrl);
+      this.fileService.updatePrivateFileData({biota_current_db_url_version: biotaDbUrl});
 
       this.fileService.deleteFileIfExist(zipFilePath);
       this.taskService.markTaskAsSuccess(this.pullBiotaTaskName, 'Biota db pulled successfully');
@@ -131,12 +131,6 @@ export class BiotaService {
     }
   }
 
-  private saveVersionInPrivateFile(dbUrl: string): void {
-    const privateFile = this.fileService.readPrivateFile();
-    privateFile.db.biota_current_db_url_version = dbUrl;
-    this.fileService.createPrivateFile(privateFile);
-  }
-
   private getBiotaDbFolder(): string {
     return this.configService.getBiotaDbFolder();
   }
@@ -146,9 +140,9 @@ export class BiotaService {
   }
 
   private biotaDbNeedsToBePulled(): boolean {
-    const privateFile = this.fileService.readPrivateFile();
+    const currentBiotaUrl = this.fileService.readPrivateFile().data?.biota_current_db_url_version ?? null;
     const biotaDbUrl = this.configFileService.readConfigFile().biota_maria_db_url;
-    return !this.fileService.exists(this.getMariaDbFolder()) || privateFile.db.biota_current_db_url_version !== biotaDbUrl;
+    return !this.fileService.exists(this.getMariaDbFolder()) || currentBiotaUrl !== biotaDbUrl;
   }
 
 }
