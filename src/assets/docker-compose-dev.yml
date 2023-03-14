@@ -6,7 +6,7 @@ services:
 
   # Production Glab
   glab:
-    image: glab:latest
+    image: registry.gitlab.com/gencovery/infra/gpm/glab-${IMAGE_SUFFIX}:${GLAB_TAG}
     environment:
       - LAB_ID=1
       - LAB_NAME=MyLab
@@ -24,10 +24,21 @@ services:
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
       - GWS_GIT_LOGIN=
       - GWS_GIT_PWD=
-      - GWS_CORE_DB_PASSWORD=
+      # GWS_CORE database
+      - GWS_CORE_DB_HOST=local_gws_core_prod_db
+      - GWS_CORE_DB_USER=gws_core
+      - GWS_CORE_DB_PASSWORD=${GWS_CORE_DEV_DB_PASSWORD}
+      - GWS_CORE_DB_NAME=gws_core
+      - GWS_CORE_DB_PORT=3306
+      # GWS_BIOTA database
+      - GWS_BIOTA_DB_HOST=local_gws_biota_db
+      - GWS_BIOTA_DB_USER=gws_biota
+      - GWS_BIOTA_DB_PASSWORD=gencovery
+      - GWS_BIOTA_DB_NAME=gws_biota
+      - GWS_BIOTA_DB_PORT=3306
     depends_on:
-      - gws_core_prod_db
-      - gws_biota_db
+      - local_gws_core_prod_db
+      - local_gws_biota_db
     volumes:
       # - /var/log/apt:/lab
       # - /app/prod/lab:/lab
@@ -44,7 +55,7 @@ services:
 
     # networks:
       # - gencovery-network-prod
-    container_name: glab
+    container_name: local_glab
 
   # Codelab
   codelab:
@@ -56,7 +67,7 @@ services:
       - LAB_ENVIRONMENT=PROD
       - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
-      - FRONT_URL=http://localhost:4200
+      - FRONT_URL=http://localhost:80
       - FRONT_VERSION=${FRONT_VERSION}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
@@ -64,7 +75,24 @@ services:
       - GPU=${GPU}
       - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
       - GWS_GIT_PWD=${GWS_GIT_PWD}
-      - GWS_CORE_DB_PASSWORD=
+      # GWS_CORE database
+      - GWS_CORE_DB_HOST=local_gws_core_dev_db
+      - GWS_CORE_DB_USER=gws_core
+      - GWS_CORE_DB_PASSWORD=${GWS_CORE_DEV_DB_PASSWORD}
+      - GWS_CORE_DB_NAME=gws_core
+      - GWS_CORE_DB_PORT=3306
+      # Test database
+      - GWS_TEST_DB_HOST=local_test_gws_dev_db
+      - GWS_TEST_DB_USER=test_gws
+      - GWS_TEST_DB_PASSWORD=gencovery
+      - GWS_TEST_DB_NAME=test_gws
+      - GWS_TEST_DB_PORT=3306
+      # GWS_BIOTA database
+      - GWS_BIOTA_DB_HOST=local_gws_biota_db
+      - GWS_BIOTA_DB_USER=gws_biota
+      - GWS_BIOTA_DB_PASSWORD=gencovery
+      - GWS_BIOTA_DB_NAME=gws_biota
+      - GWS_BIOTA_DB_PORT=3306
     volumes:
       # use the named volume lab to improve performance of the local docker-compose of dockerlab project
       # volume is available at \\wsl.localhost\docker-desktop-data\version-pack-data\community\docker\volumes\local_lab\_data
@@ -72,29 +100,28 @@ services:
       - lab-data:/data
       - lab-logs:/logs
       - lab-settings:/conf/settings
-      # - lab-config:/conf/config.json:ro
-      # Share git credentials by sharing ssh private key
-      # - C:\Users\benji\.ssh\gencovery-gitlab:/root/.ssh/id_rsa
     depends_on:
-      - gws_core_dev_db
-      - gws_biota_db
+      - local_gws_core_dev_db
+      - local_gws_biota_db
     # networks:
     #   - gencovery-network-dev
-    container_name: codelab
+    container_name: local_codelab
 
 
   # Front
   front:
     image: registry.gitlab.com/gencovery/core/monorepo/lab-front:latest
     environment:
-      - API_URL=https://glab-prod.${VIRTUAL_HOST}/
-      - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}/
-      - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}/
-      - CODE_SERVER_URL=https://codelab.${VIRTUAL_HOST}
+      - API_URL=https://local_glab-prod.${VIRTUAL_HOST}/
+      - LAB_PROD_API_URL=https://local_glab-prod.${VIRTUAL_HOST}/
+      - LAB_DEV_API_URL=https://local_glab-dev.${VIRTUAL_HOST}/
+      - CODE_SERVER_URL=https://local_codelab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=
     # networks:
     #   - gencovery-network-prod
-    container_name: front
+    container_name: local_front
+    ports: 
+      - 80:81
 
   # GWS Core Production DB
   gws_core_prod_db:
@@ -107,7 +134,7 @@ services:
       - MYSQL_DATABASE=gws_core
     # networks:
     #   - gencovery-network-prod
-    container_name: gws_core_prod_db
+    container_name: local_gws_core_prod_db
 
   # GWS Core Development DB
   gws_core_dev_db:
@@ -120,7 +147,7 @@ services:
       - MYSQL_DATABASE=gws_core
     # networks:
     #   - gencovery-network-dev
-    container_name: gws_core_dev_db
+    container_name: local_gws_core_dev_db
 
   # GWS Test db
   test_gws_dev_db:
@@ -133,7 +160,7 @@ services:
       - MYSQL_DATABASE=test_gws
     # networks:
     #   - gencovery-network-dev
-    container_name: test_gws_dev_db
+    container_name: local_test_gws_dev_db
 
   # GWS Biota Production DB
   gws_biota_db:
@@ -147,7 +174,7 @@ services:
     # networks:
     #   - gencovery-network-prod
     #   - gencovery-network-dev
-    container_name: gws_biota_db
+    container_name: local_gws_biota_db
 
 
 # networks:

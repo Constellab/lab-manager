@@ -6,11 +6,8 @@ import {CoreConfigService} from '../../core/services/config/core-config.service'
 import {ContainerService} from '../container/container.service';
 import {TaskService} from '../../core/services/task/task.service';
 import {ContainerStatusInfo} from '../lab.class';
-import {EnvVariableService} from '../env-variable/env-variable.service';
-import {TraefikService} from '../../core/services/traefik/traefik.service';
 
 export interface BeforeDockerCommandOptions {
-  setEnvVariables?: boolean;
   dockerLogin?: boolean;
   generateComposeFile?: boolean;
 }
@@ -23,8 +20,7 @@ export class DockerService {
 
   constructor(private dockerCommand: DockerCommandService,
     private fileService: FileService, private containerService: ContainerService,
-    private taskService: TaskService, private configService: CoreConfigService,
-    private envVariableService: EnvVariableService) {
+    private taskService: TaskService, private configService: CoreConfigService) {
   }
 
   public async login(): Promise<void> {
@@ -56,7 +52,7 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.composePull(this.fileService.dockerComposePath);
+      const result = await this.dockerCommand.composePull();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -83,7 +79,7 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.composeUp(this.fileService.dockerComposePath);
+      const result = await this.dockerCommand.composeUp();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -96,7 +92,7 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.composeDown(this.fileService.dockerComposePath);
+      const result = await this.dockerCommand.composeDown();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -109,7 +105,7 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.composeStop(this.fileService.dockerComposePath);
+      const result = await this.dockerCommand.composeStop();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -219,10 +215,6 @@ export class DockerService {
     if (!options) return;
     if (options.generateComposeFile) {
       this.generateDockerCompose();
-    }
-
-    if (options.setEnvVariables) {
-      await this.envVariableService.setEnvVariables();
     }
 
     if (options.dockerLogin) {

@@ -2,6 +2,7 @@ import {BadRequestException, Injectable} from '@nestjs/common';
 import {DockerCommandServiceI} from './docker-command.class';
 import {CommandService, ExecCommandMode} from '../command/command.service';
 import {DockerPs, DockerRunOptions} from '../../../lab/docker.class';
+import { FileService } from '../file/file.service';
 
 /**
  * Service to execute docker command and get result
@@ -10,8 +11,11 @@ import {DockerPs, DockerRunOptions} from '../../../lab/docker.class';
 export class DockerCommandService implements DockerCommandServiceI {
 
 
-  constructor(private commandService: CommandService) {
+  constructor(private commandService: CommandService,
+    private fileService: FileService) {
   }
+
+  //////////////////////////////// DOCKER COMPOSE ////////////////////////////////
 
   /**
    * Call a docker compose up command
@@ -19,30 +23,33 @@ export class DockerCommandService implements DockerCommandServiceI {
    * @param options
    * @param containers if provided, only up the containers
    */
-  public composeUp(filePath: string = 'docker-compose.yml', options: string[] = [], containers: string[] = []): Promise<string> {
-    const command: string = `docker-compose -f ${filePath} up -d ${options.join(' ')} ${containers.join(' ')}`;
-    return this.commandService.execCommand(command);
+  public composeUp(options: string[] = [], containers: string[] = []): Promise<string> {
+    return this.execDockerComposeCommand(`up -d ${options.join(' ')} ${containers.join(' ')}`);
   }
 
-  public composePull(filePath: string = 'docker-compose.yml'): Promise<string> {
-    const command: string = `docker-compose -f ${filePath} pull`;
-    return this.commandService.execCommand(command);
+  public composePull(): Promise<string> {
+    return this.execDockerComposeCommand(`pull`);
   }
 
-  public composeDown(filePath: string = 'docker-compose.yml'): Promise<string> {
-    const command: string = `docker-compose -f ${filePath} down`;
-    return this.commandService.execCommand(command);
+  public composeRestart(): Promise<string> {
+    return this.commandService.execCommand('restart');
+  }
+  
+  public composeStop(): Promise<string> {
+    return this.commandService.execCommand('stop');
+  }
+  
+  public composeDown(): Promise<string> {
+    return this.commandService.execCommand('down');
   }
 
-  public composeRestart(filePath: string = 'docker-compose.yml'): Promise<string> {
-    const command: string = `docker-compose -f ${filePath} restart`;
+  private execDockerComposeCommand(options: string): Promise<string> {
+    const composePath = this.fileService.dockerComposePath;
+    const envPath = this.fileService.envFilePath;
+    const command: string = `docker-compose -f ${composePath} --env-file ${envPath} ${options}`;
     return this.commandService.execCommand(command);
   }
-
-  public composeStop(filePath: string = 'docker-compose.yml'): Promise<string> {
-    const command: string = `docker-compose -f ${filePath} stop`;
-    return this.commandService.execCommand(command);
-  }
+  //////////////////////////////// DOCKER ////////////////////////////////
 
   public async dockerPs(): Promise<DockerPs[]> {
     // return a json like with each line separated with e_o_f\n
@@ -54,14 +61,6 @@ export class DockerCommandService implements DockerCommandServiceI {
   public async dockerContainerInfo(containerName: string): Promise<DockerPs> {
     const containers = await this.dockerPs();
     return containers.find(container => container.names === containerName);
-  }
-
-  public dockerPull(image: string): Promise<string> {
-    return this.commandService.execCommand(`docker pull ${image}`);
-  }
-
-  public forceRestart(container: string, dockerRunCommand: string): Promise<string> {
-    return this.commandService.execCommand(`docker stop ${container} && docker rm ${container} && ${dockerRunCommand}`);
   }
 
   public getLogs(containerName: string): Promise<string> {

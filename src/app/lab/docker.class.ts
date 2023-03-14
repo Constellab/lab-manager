@@ -28,3 +28,7 @@ export interface DockerRunOptions {
   networks?: string[];
   labels?: string[];
 }
+
+export interface PullBiotaDbOptions {
+  forceUpdate?: boolean;
+}

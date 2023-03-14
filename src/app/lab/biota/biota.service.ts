@@ -140,9 +140,18 @@ export class BiotaService {
   }
 
   private biotaDbNeedsToBePulled(): boolean {
-    const currentBiotaUrl = this.fileService.readPrivateFile().data?.biota_current_db_url_version ?? null;
+    const currentBiotaUrl = this.getCurrentVersionUrl();
     const biotaDbUrl = this.configFileService.readConfigFile().biota_maria_db_url;
-    return !this.fileService.exists(this.getMariaDbFolder()) || currentBiotaUrl !== biotaDbUrl;
+    return !this.biotaDbExists() || currentBiotaUrl !== biotaDbUrl;
   }
+
+  public getCurrentVersionUrl(): string {
+    return this.fileService.readPrivateFile().data?.biota_current_db_url_version ?? null;
+  }
+
+  public biotaDbExists(): boolean {
+    return this.fileService.exists(this.getMariaDbFolder());
+  }
+
 
 }

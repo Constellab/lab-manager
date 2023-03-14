@@ -38,7 +38,8 @@ export class InitService implements OnApplicationBootstrap {
 
 
       this.generateFiles(labInitConfig);
-      await this.envVariableService.setEnvVariables();
+      await this.envVariableService.setAllEnvVariables(this.configFileService.readConfigFile(),
+        this.fileService.readPrivateFile());
 
       await this.loginToDockerRegistry();
 
@@ -49,7 +50,10 @@ export class InitService implements OnApplicationBootstrap {
       await this.dockerService.pullContainers();
 
       // UP CONTAINERS
-      await this.dockerService.upContainers({});
+      await this.dockerService.restartContainers({});
+
+      // save the init version
+      this.fileService.updatePrivateFileData({lastInitManagerVersion: this.configService.getLabManagerVersion()})
 
       this.logger.log('[INIT] Init ended successfully');
 
@@ -64,9 +68,9 @@ export class InitService implements OnApplicationBootstrap {
   private initAppVolume(): void {
     const taskName = 'GENERATE_APP_VOLUME';
 
-    try{
+    try {
       this.taskService.newTask(taskName, 'Generating app volume');
-    
+
       const appFolder = this.configService.getAppFolder();
 
       this.fileService.createDirIfNotExists(join(appFolder, 'prod', 'lab', '.sys'), true);
@@ -77,7 +81,7 @@ export class InitService implements OnApplicationBootstrap {
 
       this.taskService.markTaskAsSuccess(taskName, 'App volume generated');
     }
-    catch(e){
+    catch (e) {
       this.taskService.markTaskAsError(taskName, `Error while generating app volume : ${e.message}`);
       throw e;
     }
@@ -95,7 +99,7 @@ export class InitService implements OnApplicationBootstrap {
     try {
       this.taskService.newTask(taskName, 'Generating private.json file');
 
-      const privateJson: PrivateFile = this.fileService.readPrivateTemplateFile();
+      const privateJson: PrivateFile = this.fileService.getPrivateFileTemplate();
 
       // configure central information a central api key
       privateJson.central.api_key = labInitConfig.centralApiKey;

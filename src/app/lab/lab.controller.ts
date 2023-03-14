@@ -1,41 +1,14 @@
-import {Body, Controller, Get, Param, Post, Put} from '@nestjs/common';
-import {BeforeDockerCommandOptions, DockerService} from './docker/docker.service';
-import {ComposeRestartOptions, ComposeUpOptions, DockerPs} from './docker.class';
-import {InitService} from './init/init.service';
-import {TaskService} from '../core/services/task/task.service';
-import {BiotaService} from './biota/biota.service';
-import {LabInitConfig, LabStatus} from './lab.class';
-import {LabService} from './lab.service';
-import {ConfigFile} from '../core/models/config-file.class';
-import {ConfigFileService} from './config-file/config-file.service';
-import { ContainerService } from './container/container.service';
-
-const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
-  dockerLogin: true,
-  setEnvVariables: true,
-  generateComposeFile: true,
-};
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { BeforeDockerCommandOptions } from './docker/docker.service';
+import { ComposeRestartOptions, ComposeUpOptions, DockerPs, PullBiotaDbOptions } from './docker.class';
+import { LabInitConfig, LabStatus } from './lab.class';
+import { LabService } from './lab.service';
+import { ConfigFile } from '../core/models/config-file.class';
 
 @Controller('lab')
 export class LabController {
 
-  constructor(private dockerService: DockerService,
-    private initService: InitService,
-    private taskService: TaskService,
-    private biotaService: BiotaService,
-    private labService: LabService,
-    private configFileService: ConfigFileService,
-    private containerService: ContainerService) {
-  }
-
-  @Get('containers')
-  listContainers(): Promise<DockerPs[]> {
-    return this.dockerService.listContainers();
-  }
-
-  @Post('init-all')
-  initAll(@Body() labInitConfig: LabInitConfig): Promise<void> {
-    return this.initService.initAll(labInitConfig);
+  constructor(private labService: LabService) {
   }
 
   @Get('status')
@@ -43,74 +16,79 @@ export class LabController {
     return this.labService.getStatus();
   }
 
+  @Post('stop-current-task')
+  async stopCurrentTask(): Promise<void> {
+    return this.labService.stopCurrentTask();
+  }
+
+  @Get('containers')
+  listContainers(): Promise<DockerPs[]> {
+    return this.labService.listContainers();
+  }
+
+  @Post('init-all')
+  initAll(@Body() labInitConfig: LabInitConfig): Promise<void> {
+    return this.labService.initLab(labInitConfig);
+  }
+
+
   @Post('up-containers')
   async upContainers(@Body() options: ComposeUpOptions): Promise<void> {
-    return await this.dockerService.upContainers(options, initAllBeforeDockerCommand);
+    return await this.labService.upContainers(options);
   }
 
   @Post('restart-containers')
   restartContainers(@Body() options: ComposeRestartOptions): Promise<void> {
-    return this.dockerService.restartContainers(options, initAllBeforeDockerCommand);
-  }
-
-  // TODO remove once all lab manager are v 1.0.1
-  @Post('down-containers')
-  downContainers(): Promise<void> {
-    return this.dockerService.deleteContainers();
+    return this.labService.restartContainers(options);
   }
 
   @Post('delete-containers')
   deleteContainers(): Promise<void> {
-    return this.dockerService.deleteContainers();
+    return this.labService.deleteContainers();
   }
 
   @Post('pull-containers')
   pullContainers(): Promise<void> {
-    return this.dockerService.pullContainers(initAllBeforeDockerCommand);
+    return this.labService.pullContainers();
   }
 
   @Get(':containerName/logs')
   getLogs(@Param('containerName') containerName: string): Promise<string> {
-    return this.dockerService.getLogs(containerName);
+    return this.labService.getLogs(containerName);
   }
 
   @Post('pull-biota-db')
-  async pullBiotaDb(@Body() labInitConfig: {forceUpdate?: boolean} = {}): Promise<void> {
-    return this.biotaService.pullBiota(labInitConfig.forceUpdate, true);
+  async pullBiotaDb(@Body() labInitConfig: PullBiotaDbOptions = {}): Promise<void> {
+    return this.labService.pullBiotaDb(labInitConfig);
   }
 
   @Post('registry-login')
   async registryLogin(): Promise<void> {
-    return this.dockerService.login();
+    return this.labService.registryLogin();
   }
 
   @Post('system-prune')
   async systemPrune(): Promise<void> {
-    return this.dockerService.systemPrune();
-  }
-
-  @Post('stop-current-task')
-  async stopCurrentTask(): Promise<void> {
-    return this.taskService.forceStopCurrentTask();
+    return this.labService.systemPrune();
   }
 
   @Get('config')
   getConfig(): ConfigFile {
-    return this.configFileService.getLabConfig();
+    return this.labService.getConfig();
   }
 
   @Put('config')
   updateConfig(@Body() updateConfig: ConfigFile): void {
-    this.configFileService.updateConfig(updateConfig);
+    this.labService.updateConfig(updateConfig);
   }
 
   @Put('adminer/start')
   startAdminer(): Promise<boolean> {
-    return this.containerService.startAdminerService();
+    return this.labService.startAdminer();
   }
 
   @Put('adminer/stop')
   stopAdminer(): Promise<boolean> {
-    return this.containerService.deleteAdminerService();
+    return this.labService.stopAdminer();
   }
 }

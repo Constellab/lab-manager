@@ -11,9 +11,9 @@ export class FileService {
 
   private readonly assets = 'assets';
 
-  private readonly privateTemplateFileName = 'private-template.json';
-
   private readonly privateFileName = 'private.json';
+
+  private readonly envFileName = 'lab-manager.env';
 
 
   constructor(@Inject(CORE_MODULE_PROVIDER) private config: CoreModuleConfig,
@@ -34,22 +34,19 @@ export class FileService {
     return this.readJsonFile(this.privateFilePath);
   }
 
-  public readPrivateTemplateFile(): PrivateFile {
-    return this.readJsonFile(this.privateTemplateFilePath);
+  public getPrivateFileTemplate(): PrivateFile {
+    return this.getPrivateFileTemplate();
   }
 
   public updatePrivateFileData(data: Partial<PrivateFileData>): void{
     const privateFile = this.readPrivateFile();
 
-    const template: PrivateFileData = {
+    const dataTemplate: PrivateFileData = {
       biota_current_db_url_version: null,
+      lastInitManagerVersion: null,
     };
-    privateFile.data = {...template, ...privateFile.data, ...data};
+    privateFile.data = {...dataTemplate, ...privateFile.data, ...data};
     this.createPrivateFile(privateFile);  
-  }
-
-  private get privateTemplateFilePath(): string {
-    return this.getAssetPath(this.privateTemplateFileName);
   }
 
   private get privateFilePath(): string {
@@ -73,6 +70,16 @@ export class FileService {
     } else {
       return 'docker-compose.yml';
     }
+  }
+
+  //////////////////////// ENV FILE //////////////////////
+
+  public get envFilePath(): string {
+    return this.getVolumePath(this.envFileName);
+  }
+
+  public updateEnvFile(env: string): void {
+    this.writeFile(this.envFilePath, env);
   }
 
   //////////////////////// GENERIC ///////////////////////////////////

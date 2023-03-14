@@ -1,10 +1,21 @@
-import {Injectable} from '@nestjs/common';
-import {LabStatus} from './lab.class';
-import {DockerService} from './docker/docker.service';
+import {BadRequestException, Injectable} from '@nestjs/common';
+import {LabInitConfig, LabStatus} from './lab.class';
+import {BeforeDockerCommandOptions, DockerService} from './docker/docker.service';
 import {TaskService} from '../core/services/task/task.service';
 import {CoreConfigService} from '../core/services/config/core-config.service';
 import { ContainerService } from './container/container.service';
 import { FileService } from '../core/services/file/file.service';
+import { ConfigFileService } from './config-file/config-file.service';
+import { BiotaService } from './biota/biota.service';
+import { InitService } from './init/init.service';
+import { ConfigFile } from '../core/models/config-file.class';
+import { ComposeRestartOptions, ComposeUpOptions, DockerPs, PullBiotaDbOptions } from './docker.class';
+import { EnvVariableService } from './env-variable/env-variable.service';
+
+const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
+  dockerLogin: true,
+  generateComposeFile: true,
+};
 
 @Injectable()
 export class LabService {
@@ -13,21 +24,116 @@ export class LabService {
     private taskService: TaskService,
     private configService: CoreConfigService,
     private containerService: ContainerService,
-    private fileService: FileService) {
+    private fileService: FileService,
+    private configFileService: ConfigFileService,
+    private biotaService: BiotaService,
+    private initService: InitService,
+    private envVariableService: EnvVariableService) {
   }
 
   public async getStatus(): Promise<LabStatus> {
-    let biotaDbUrl: string = null;
-    if(this.fileService.privateFileExists()){
-      biotaDbUrl = this.fileService.readPrivateFile().data?.biota_current_db_url_version;
-    }
-    
+
     return {
       containersStatus: await this.dockerService.getContainersStatus(),
       currentTask: this.taskService.currentTask,
       adminerIsRunning: await this.containerService.adminerIsRunning(),
       labManagerVersion: this.configService.getLabManagerVersion(),
-      biotaDbUrl: biotaDbUrl,
+      biota: {
+        exists: this.biotaService.biotaDbExists(),
+        dbUrl: this.biotaService.getCurrentVersionUrl(),
+      },
+      labIsConfigured: this.configFileService.configFileExists(),
+      labIsInitialized: this.fileService.privateFileExists(),
     };
+  }
+
+  public initLab(labInitConfig: LabInitConfig): Promise<void> {
+    return this.initService.initAll(labInitConfig);
+  }
+
+  public stopCurrentTask(): void {
+    this.taskService.forceStopCurrentTask();
+  }
+
+  private async checkLabIsConfigured(): Promise<void> {
+    if (!this.configFileService.configFileExists()) {
+      throw new BadRequestException('The lab bricks are not configured. Please configure the lab before calling this method');
+    }
+
+    if (!this.fileService.privateFileExists()) {
+      throw new BadRequestException('The lab is not initialized. Please initialize the lab before calling this method');
+    }
+
+    if (!this.biotaService.biotaDbExists()) {
+      throw new BadRequestException('The biota db is not initialized. Please initialize the lab (or download biota db) before calling this method');
+    }
+  }
+
+  //////////////////////////// CONTAINERS ////////////////////////////
+
+  public async listContainers(): Promise<DockerPs[]> {
+    return this.dockerService.listContainers();
+  }
+
+  public async upContainers(options: ComposeUpOptions): Promise<void> {
+    await this.checkLabIsConfigured();
+    return this.dockerService.upContainers(options, initAllBeforeDockerCommand);
+  }
+
+
+  public async restartContainers(options: ComposeRestartOptions): Promise<void> {
+    await this.checkLabIsConfigured();
+    return this.dockerService.restartContainers(options, initAllBeforeDockerCommand);
+  }
+
+  public async deleteContainers(): Promise<void> {
+    await this.checkLabIsConfigured();
+    return this.dockerService.deleteContainers();
+  }
+
+  public pullContainers(): Promise<void> {
+    return this.dockerService.pullContainers(initAllBeforeDockerCommand);
+  }
+
+  public async getLogs(containerName: string): Promise<string> {
+    return this.dockerService.getLogs(containerName);
+  }
+
+  public async registryLogin(): Promise<void> {
+    return this.dockerService.login();
+  }
+
+  public async systemPrune(): Promise<void> {
+    return this.dockerService.systemPrune();
+  }
+
+  //////////////////////////// BIOTA ////////////////////////////
+
+  public async pullBiotaDb(options: PullBiotaDbOptions = {}): Promise<void> {
+    return this.biotaService.pullBiota(options.forceUpdate, true);
+  }
+
+
+  //////////////////////////// CONFIG ////////////////////////////
+  public getConfig(): ConfigFile {
+    return this.configFileService.getConfig();
+  }
+
+  public async updateConfig(config: ConfigFile): Promise<void> {
+    await this.configFileService.updateConfig(config);
+
+    // if the private file exists, we update the env variables
+    if(this.fileService.privateFileExists()){
+      this.envVariableService.setAllEnvVariables(config, this.fileService.readPrivateFile());
+    }
+  }
+
+  //////////////////////////// ADMINER ////////////////////////////
+  public async startAdminer(): Promise<boolean> {
+    return this.containerService.startAdminerService();
+  }
+
+  public async stopAdminer(): Promise<boolean> {
+    return this.containerService.deleteAdminerService();
   }
 }

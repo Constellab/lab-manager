@@ -7,11 +7,11 @@ import {DockerPs, DockerRunOptions} from '../../../lab/docker.class';
 
 export interface DockerCommandServiceI {
 
-  composeUp(filePath?: string, options?: string[]): Promise<string>;
+  composeUp(options?: string[]): Promise<string>;
 
-  composeDown(filePath?: string): Promise<string>;
+  composeDown(): Promise<string>;
 
-  composePull(filePath: string): Promise<string>;
+  composePull(): Promise<string>;
 
   dockerPs(): Promise<DockerPs[]>;
 

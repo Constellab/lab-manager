@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
 import { DockerCommandService } from 'src/app/core/services/docker-command/docker-command.service';
-import { FileService } from 'src/app/core/services/file/file.service';
 import { TaskService } from 'src/app/core/services/task/task.service';
 import { TraefikService } from 'src/app/core/services/traefik/traefik.service';
 
@@ -25,29 +24,44 @@ export class ContainerService {
   constructor(private dockerCommand: DockerCommandService,
     private taskService: TaskService,
     private traefikService: TraefikService,
-    private fileService: FileService) {
+    private configService: CoreConfigService) {
   }
 
   public getContainersNames(): string[] {
-    return [ContainerService.GLAB, ContainerService.CODELAB, ContainerService.FRONT, ContainerService.DB_GWS_CORE_PROD,
-    ContainerService.DB_GWS_BIOTA, ContainerService.DB_GWS_CORE_DEV,
-    ContainerService.DB_GWS_CORE_DEV_TEST];
+    return [
+      this.getContainerName(ContainerService.GLAB),
+      this.getContainerName(ContainerService.CODELAB),
+      this.getContainerName(ContainerService.FRONT),
+      this.getContainerName(ContainerService.DB_GWS_CORE_PROD),
+      this.getContainerName(ContainerService.DB_GWS_BIOTA),
+      this.getContainerName(ContainerService.DB_GWS_CORE_DEV),
+      this.getContainerName(ContainerService.DB_GWS_CORE_DEV_TEST)];
+  }
+
+  public getContainerName(serviceName: string): string {
+    if (this.configService.isLocal()) {
+      return `dev_${serviceName}`;
+    } else {
+      return serviceName;
+    }
   }
 
   /////////////////////////////// CONTAINERS ///////////////////////////////
-  public async containerIsRunning(containerName: string): Promise<boolean> {
-    const container = await this.dockerCommand.dockerContainerInfo(containerName);
+  public async containerIsRunning(serviceName: string): Promise<boolean> {
+    const container = await this.dockerCommand.dockerContainerInfo(
+      this.getContainerName(serviceName));
 
     if (container == null) return false;
 
     return container.state === 'running';
   }
 
-  public async removeContainer(containerName: string): Promise<boolean> {
+  public async removeContainer(serviceName: string): Promise<boolean> {
+    const containerName = this.getContainerName(serviceName);
     // return false if the container is not running
-    if(!(await this.containerIsRunning(containerName))) return false;
-    
-    
+    if (!(await this.containerIsRunning(containerName))) return false;
+
+
     const taskName = `STOP ${containerName}`;
     this.taskService.newTask(taskName);
 
@@ -75,7 +89,7 @@ export class ContainerService {
 
     try {
       // start biota service from docker-compose
-      const result = await this.dockerCommand.composeUp(this.fileService.dockerComposePath, [], 
+      const result = await this.dockerCommand.composeUp([], 
         [ContainerService.DB_GWS_BIOTA])
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
@@ -94,10 +108,11 @@ export class ContainerService {
     this.taskService.newTask(taskName);
 
     try {
-      const labels = this.traefikService.getTraefikLabels(ContainerService.ADMINER_NAME, '8080');
+      const containerName = this.getContainerName(ContainerService.ADMINER_NAME);
+      const labels = this.traefikService.getTraefikLabels(containerName, '8080');
 
       const networks = [ContainerService.NETWORK_DEV, ContainerService.NETWORK_PROD];
-      const result = await this.dockerCommand.dockerRun(ContainerService.ADMINER_IMAGE, ContainerService.ADMINER_NAME, {
+      const result = await this.dockerCommand.dockerRun(ContainerService.ADMINER_IMAGE, containerName, {
         networks: networks, labels: labels
       });
       this.taskService.markTaskAsSuccess(taskName, 'Ok');

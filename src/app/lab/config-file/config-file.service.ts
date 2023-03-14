@@ -19,7 +19,7 @@ export class ConfigFileService {
     this.fileService.writeJsonFile(this.configFilePath, config);
   }
 
-  public getLabConfig(): ConfigFile {
+  public getConfig(): ConfigFile {
     if (!this.configFileExists()) {
       return null;
     }
@@ -36,7 +36,7 @@ export class ConfigFileService {
 
   public readConfigFile(): ConfigFile {
     if (!this.configFileExists()) {
-      throw new BadRequestException('the config file does not exist. You must configure the bricks before calling init');
+      throw new BadRequestException('The config file does not exist. You must configure the bricks.');
     }
     return this.fileService.readJsonFile(this.configFilePath);
   }
