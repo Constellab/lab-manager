@@ -1,5 +1,5 @@
 import {Inject, Injectable} from '@nestjs/common';
-import {PrivateFile, PrivateFileData} from '../../models/private-file.class';
+import {getPrivateFileTemplate, PrivateFile, PrivateFileData} from '../../models/private-file.class';
 import {copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync} from 'fs';
 
 import {dirname, join} from 'path';
@@ -35,7 +35,7 @@ export class FileService {
   }
 
   public getPrivateFileTemplate(): PrivateFile {
-    return this.getPrivateFileTemplate();
+    return getPrivateFileTemplate();
   }
 
   public updatePrivateFileData(data: Partial<PrivateFileData>): void{

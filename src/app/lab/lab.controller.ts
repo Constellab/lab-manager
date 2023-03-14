@@ -1,5 +1,4 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
-import { BeforeDockerCommandOptions } from './docker/docker.service';
 import { ComposeRestartOptions, ComposeUpOptions, DockerPs, PullBiotaDbOptions } from './docker.class';
 import { LabInitConfig, LabStatus } from './lab.class';
 import { LabService } from './lab.service';

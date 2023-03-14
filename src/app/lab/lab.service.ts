@@ -65,7 +65,15 @@ export class LabService {
     }
 
     if (!this.biotaService.biotaDbExists()) {
-      throw new BadRequestException('The biota db is not initialized. Please initialize the lab (or download biota db) before calling this method');
+      throw new BadRequestException('The biota db is not initialized. Please initialize the lab before calling this method');
+    }
+
+    if(!this.fileService.exists(this.fileService.dockerComposePath)){
+      throw new BadRequestException('The docker compose file was not generated. Please initialize the lab before calling this method');
+    }
+
+    if(!this.fileService.exists(this.fileService.envFilePath)){
+      throw new BadRequestException('The env file was not generated. Please initialize the lab before calling this method');
     }
   }
 
@@ -91,7 +99,8 @@ export class LabService {
     return this.dockerService.deleteContainers();
   }
 
-  public pullContainers(): Promise<void> {
+  public async pullContainers(): Promise<void> {
+    await this.checkLabIsConfigured();
     return this.dockerService.pullContainers(initAllBeforeDockerCommand);
   }
 
@@ -110,6 +119,7 @@ export class LabService {
   //////////////////////////// BIOTA ////////////////////////////
 
   public async pullBiotaDb(options: PullBiotaDbOptions = {}): Promise<void> {
+    await this.checkLabIsConfigured();
     return this.biotaService.pullBiota(options.forceUpdate, true);
   }
 

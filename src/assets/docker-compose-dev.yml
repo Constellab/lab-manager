@@ -37,24 +37,14 @@ services:
       - GWS_BIOTA_DB_NAME=gws_biota
       - GWS_BIOTA_DB_PORT=3306
     depends_on:
-      - local_gws_core_prod_db
-      - local_gws_biota_db
+      - gws_core_prod_db
+      - gws_biota_db
     volumes:
-      # - /var/log/apt:/lab
-      # - /app/prod/lab:/lab
-      # - /app/prod/logs:/logs
-      # - /app/prod/settings/glab:/conf/settings
-      # - /app/conf/config.json:/conf/config.json:ro
-      # - /app/prod/data:/data
-      # - C:\Users\benji\.ssh\gencovery-gitlab:/root/.ssh/id_rsa
-      - lab-app:/lab
-      # - lab-data:/data
-      # - lab-logs:/logs
-      # - lab-settings:/conf/settings
-      # - lab-config:/conf
+      - lab-manager-config:/conf
+      - lab-manager-prod-lab:/lab
 
-    # networks:
-      # - gencovery-network-prod
+    networks:
+      - local_gencovery-network-prod
     container_name: local_glab
 
   # Codelab
@@ -94,17 +84,13 @@ services:
       - GWS_BIOTA_DB_NAME=gws_biota
       - GWS_BIOTA_DB_PORT=3306
     volumes:
-      # use the named volume lab to improve performance of the local docker-compose of dockerlab project
-      # volume is available at \\wsl.localhost\docker-desktop-data\version-pack-data\community\docker\volumes\local_lab\_data
-      - lab-app:/lab
-      - lab-data:/data
-      - lab-logs:/logs
-      - lab-settings:/conf/settings
+      - lab-manager-config:/conf
+      - lab-manager-dev-lab:/lab
     depends_on:
-      - local_gws_core_dev_db
-      - local_gws_biota_db
-    # networks:
-    #   - gencovery-network-dev
+      - gws_core_dev_db
+      - gws_biota_db
+    networks:
+      - local_gencovery-network-dev
     container_name: local_codelab
 
 
@@ -117,11 +103,11 @@ services:
       - LAB_DEV_API_URL=https://local_glab-dev.${VIRTUAL_HOST}/
       - CODE_SERVER_URL=https://local_codelab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=
-    # networks:
-    #   - gencovery-network-prod
+    networks:
+      - local_gencovery-network-prod
     container_name: local_front
-    ports: 
-      - 80:81
+    # ports: 
+    #   - 80:81
 
   # GWS Core Production DB
   gws_core_prod_db:
@@ -132,8 +118,8 @@ services:
       - MYSQL_USER=gws_core
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=gws_core
-    # networks:
-    #   - gencovery-network-prod
+    networks:
+      - local_gencovery-network-prod
     container_name: local_gws_core_prod_db
 
   # GWS Core Development DB
@@ -145,8 +131,8 @@ services:
       - MYSQL_USER=gws_core
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=gws_core
-    # networks:
-    #   - gencovery-network-dev
+    networks:
+      - local_gencovery-network-dev
     container_name: local_gws_core_dev_db
 
   # GWS Test db
@@ -158,8 +144,8 @@ services:
       - MYSQL_USER=test_gws
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=test_gws
-    # networks:
-    #   - gencovery-network-dev
+    networks:
+      - local_gencovery-network-dev
     container_name: local_test_gws_dev_db
 
   # GWS Biota Production DB
@@ -171,27 +157,27 @@ services:
       - MYSQL_USER=gws_biota
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=gws_biota
-    # networks:
-    #   - gencovery-network-prod
-    #   - gencovery-network-dev
+    networks:
+      - local_gencovery-network-prod
+      - local_gencovery-network-dev
     container_name: local_gws_biota_db
+    volumes:
+      - lab-manager-biota:/var/lib/mysql
 
 
-# networks:
-#   gencovery-network-dev:
-#     external: true
-#   gencovery-network-prod:
-#     external: true
+networks:
+  local_gencovery-network-dev:
+    external: false
+  local_gencovery-network-prod:
+    external: false
 
+# the volume names are the same as the one in the dockerlab local docker-compose.yml
 volumes:
-  lab-app:
-  lab-data:
-  lab-logs:
-  lab-settings:
-  lab-config:
-  # new new volume tt link to /var/log folder
-  lab-new-volume:
-    driver_opts:
-      type: none
-      device: /var/log
-      o: bind
+  lab-manager-config:
+    external: true
+  lab-manager-biota:
+    external: true
+  lab-manager-prod-lab:
+    external: true
+  lab-manager-dev-lab:
+    external: true

@@ -40,7 +40,7 @@ export class ContainerService {
 
   public getContainerName(serviceName: string): string {
     if (this.configService.isLocal()) {
-      return `dev_${serviceName}`;
+      return `local_${serviceName}`;
     } else {
       return serviceName;
     }
