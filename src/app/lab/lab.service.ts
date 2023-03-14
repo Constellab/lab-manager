@@ -32,6 +32,10 @@ export class LabService {
   }
 
   public async getStatus(): Promise<LabStatus> {
+    let lastInitManagerVersion: string = null;
+    if(this.fileService.privateFileExists()){
+      lastInitManagerVersion = this.fileService.readPrivateFile().data.last_init_manager_version;
+    }
 
     return {
       containersStatus: await this.dockerService.getContainersStatus(),
@@ -44,6 +48,7 @@ export class LabService {
       },
       labIsConfigured: this.configFileService.configFileExists(),
       labIsInitialized: this.fileService.privateFileExists(),
+      lastInitManagerVersion: lastInitManagerVersion
     };
   }
 

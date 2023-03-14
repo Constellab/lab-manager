@@ -27,7 +27,7 @@ export interface PrivateFileData {
   biota_current_db_url_version: string;
 
   // version of the manager that has been used to init the lab
-  lastInitManagerVersion: string;
+  last_init_manager_version: string;
 }
 
 export function getPrivateFileTemplate(): PrivateFile {
@@ -51,7 +51,7 @@ export function getPrivateFileTemplate(): PrivateFile {
     },
     data: {
       biota_current_db_url_version: null,
-      lastInitManagerVersion: null,
+      last_init_manager_version: null,
     },
   };
 }

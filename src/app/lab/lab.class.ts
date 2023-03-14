@@ -22,6 +22,8 @@ export interface LabStatus {
   };
   labIsConfigured: boolean;
   labIsInitialized: boolean;
+  // version of the lab manager that has been used to init the lab
+  lastInitManagerVersion: string;
 }
 
 /**

@@ -22,12 +22,12 @@ services:
       - GPU=${GPU}
       - VIRTUAL_HOST=
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
-      - GWS_GIT_LOGIN=
-      - GWS_GIT_PWD=
+      - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
+      - GWS_GIT_PWD=${GWS_GIT_PWD}
       # GWS_CORE database
       - GWS_CORE_DB_HOST=local_gws_core_prod_db
       - GWS_CORE_DB_USER=gws_core
-      - GWS_CORE_DB_PASSWORD=${GWS_CORE_DEV_DB_PASSWORD}
+      - GWS_CORE_DB_PASSWORD=gencovery
       - GWS_CORE_DB_NAME=gws_core
       - GWS_CORE_DB_PORT=3306
       # GWS_BIOTA database
@@ -68,7 +68,7 @@ services:
       # GWS_CORE database
       - GWS_CORE_DB_HOST=local_gws_core_dev_db
       - GWS_CORE_DB_USER=gws_core
-      - GWS_CORE_DB_PASSWORD=${GWS_CORE_DEV_DB_PASSWORD}
+      - GWS_CORE_DB_PASSWORD=gencovery
       - GWS_CORE_DB_NAME=gws_core
       - GWS_CORE_DB_PORT=3306
       # Test database
@@ -92,6 +92,8 @@ services:
     networks:
       - local_gencovery-network-dev
     container_name: local_codelab
+    ports: 
+      - 8083:8080
 
 
   # Front
@@ -106,8 +108,8 @@ services:
     networks:
       - local_gencovery-network-prod
     container_name: local_front
-    # ports: 
-    #   - 80:81
+    ports: 
+      - 89:81
 
   # GWS Core Production DB
   gws_core_prod_db:
@@ -172,6 +174,7 @@ networks:
     external: false
 
 # the volume names are the same as the one in the dockerlab local docker-compose.yml
+# this is because volume are relative to host machine and not docker image
 volumes:
   lab-manager-config:
     external: true
