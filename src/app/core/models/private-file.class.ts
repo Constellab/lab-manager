@@ -42,7 +42,7 @@ export function getPrivateFileTemplate(): PrivateFile {
       front_url: null,
     },
     lab: {
-      username: null,
+      username: 'codelab',
       token: null,
     },
     db: {

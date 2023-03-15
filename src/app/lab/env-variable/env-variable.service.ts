@@ -54,6 +54,10 @@ export class EnvVariableService {
         throw new BadRequestException('The private file was not provided. Was the lab initiliazed ?');
       }
 
+      if (privateJson.lab.token == null) {
+        throw new BadRequestException('Lab token is not set in the private file');
+      }
+
 
       // FROM CONFIG
       envVariables.addEnvVariable('LAB_ID', configJson.lab_id);
@@ -94,20 +98,6 @@ export class EnvVariableService {
       this.taskService.markTaskAsError(taskName, `Error while setting env variables: ${error.message}`);
       throw error;
     }
-  }
-
-  private setConfigEnvVariables(configJson: ConfigFile, envVariables: EnvVariables): void {
-    
-  }
-
-  private async setPrivateEnvVariables(privateJson: PrivateFile, envVariables: EnvVariables): Promise<void> {
-    if (privateJson.lab.token == null) {
-      throw new BadRequestException('Lab token is not set in the private file');
-    }
-
-  
-    
-
   }
 
   private async isGpu(): Promise<boolean> {
