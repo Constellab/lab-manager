@@ -15,15 +15,15 @@ export interface LabStatus {
   containersStatus: ContainerStatusInfo;
   currentTask?: TaskStatusInfo;
   adminerIsRunning: boolean;
-  labManagerVersion: string;
+  version: string;
   biota: {
     exists: boolean;
     dbUrl ?: string;
   };
-  labIsConfigured: boolean;
-  labIsInitialized: boolean;
+  isConfigured: boolean;
+  isInitialized: boolean;
   // version of the lab manager that has been used to init the lab
-  lastInitManagerVersion: string;
+  lastInitVersion: string;
 }
 
 /**

@@ -26,8 +26,8 @@ export class LabController {
   }
 
   @Post('init-all')
-  initAll(@Body() labInitConfig: LabInitConfig): Promise<void> {
-    return this.labService.initLab(labInitConfig);
+  initAll(@Body() labInitConfig: LabInitConfig): void {
+    this.labService.initLab(labInitConfig);
   }
 
 

@@ -1,4 +1,4 @@
-import {BadRequestException, Injectable} from '@nestjs/common';
+import {BadRequestException, Injectable, Logger} from '@nestjs/common';
 import {LabInitConfig, LabStatus} from './lab.class';
 import {BeforeDockerCommandOptions, DockerService} from './docker/docker.service';
 import {TaskService} from '../core/services/task/task.service';
@@ -19,6 +19,9 @@ const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
 
 @Injectable()
 export class LabService {
+
+  private readonly logger = new Logger(LabService.name);
+
 
   constructor(private dockerService: DockerService,
     private taskService: TaskService,
@@ -41,19 +44,25 @@ export class LabService {
       containersStatus: await this.dockerService.getContainersStatus(),
       currentTask: this.taskService.currentTask,
       adminerIsRunning: await this.containerService.adminerIsRunning(),
-      labManagerVersion: this.configService.getLabManagerVersion(),
+      version: this.configService.getLabManagerVersion(),
       biota: {
         exists: this.biotaService.biotaDbExists(),
         dbUrl: this.biotaService.getCurrentVersionUrl(),
       },
-      labIsConfigured: this.configFileService.configFileExists(),
-      labIsInitialized: this.fileService.privateFileExists(),
-      lastInitManagerVersion: lastInitManagerVersion
+      isConfigured: this.configFileService.configFileExists(),
+      isInitialized: this.fileService.privateFileExists(),
+      lastInitVersion: lastInitManagerVersion
     };
   }
 
-  public initLab(labInitConfig: LabInitConfig): Promise<void> {
-    return this.initService.initAll(labInitConfig);
+  public initLab(labInitConfig: LabInitConfig): void {
+    const currentTask = this.taskService.currentTask;
+    if(currentTask && currentTask.status === 'RUNNING'){
+      throw new BadRequestException(`The task ${currentTask.name} is running, please wait for this task to finish before running a new task`);
+    }
+    this.initService.initAll(labInitConfig).catch((err) => {
+      this.logger.error(err);
+    });
   }
 
   public stopCurrentTask(): void {
