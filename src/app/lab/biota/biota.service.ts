@@ -146,6 +146,7 @@ export class BiotaService {
   }
 
   public getCurrentVersionUrl(): string {
+    if(!this.fileService.privateFileExists()) return null;
     return this.fileService.readPrivateFile().data?.biota_current_db_url_version ?? null;
   }
 
