@@ -27,7 +27,7 @@ services:
       # GWS_CORE database
       - GWS_CORE_DB_HOST=gws_core_prod_db
       - GWS_CORE_DB_USER=gws_core
-      - GWS_CORE_DB_PASSWORD=${GWS_CORE_DEV_DB_PASSWORD}
+      - GWS_CORE_DB_PASSWORD=${GWS_CORE_PROD_DB_PASSWORD}
       - GWS_CORE_DB_NAME=gws_core
       - GWS_CORE_DB_PORT=3306
       # GWS_BIOTA database
