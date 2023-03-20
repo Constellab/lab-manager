@@ -45,7 +45,7 @@ export class FileService {
       biota_current_db_url_version: null,
       last_init_manager_version: null,
     };
-    privateFile.data = {...dataTemplate, ...privateFile.data, ...data};
+    privateFile.data = {...dataTemplate, ...privateFile.data ?? {}, ...data};
     this.createPrivateFile(privateFile);  
   }
 
