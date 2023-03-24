@@ -68,9 +68,6 @@ export class EnvVariableService {
       // GLAB TAG
       envVariables.addEnvVariable('GLAB_TAG', configJson.glab_tag);
 
-      // FROM PRIVATE
-      envVariables.addEnvVariable('LAB_TOKEN', privateJson.lab.token);
-
       envVariables.addEnvVariable('CENTRAL_API_KEY', privateJson.central.api_key);
       envVariables.addEnvVariable('CENTRAL_API_URL', privateJson.central.api_url);
       envVariables.addEnvVariable('CENTRAL_FRONT_URL', privateJson.central.front_url);

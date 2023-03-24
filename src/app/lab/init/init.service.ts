@@ -102,6 +102,13 @@ export class InitService implements OnApplicationBootstrap {
 
       const privateJson: PrivateFile = this.fileService.getPrivateFileTemplate();
 
+      let oldPrivateJson: PrivateFile = null;
+      // if the private file already exists, retrieve the data sub object from it
+      if (this.fileService.privateFileExists()) {
+        oldPrivateJson = this.fileService.readPrivateFile();
+        privateJson.data = oldPrivateJson.data;
+      }
+
       // configure central information a central api key
       privateJson.central.api_key = labInitConfig.centralApiKey;
       privateJson.central.api_url = labInitConfig.centralApiUrl;
@@ -113,7 +120,11 @@ export class InitService implements OnApplicationBootstrap {
       // set token, only update the hash when the token has changed.
       // otherwise a new hash is created each time and as the hash is used 
       // as env variable for codelab, this would force re-creation.
-      if(privateJson.lab.token !== labInitConfig.codelabToken){
+      // if the token has not changed and the hash was already set
+      if(oldPrivateJson && oldPrivateJson.lab.token === labInitConfig.codelabToken && oldPrivateJson.lab.hashToken){
+        privateJson.lab.token = oldPrivateJson.lab.token;
+        privateJson.lab.hashToken = oldPrivateJson.lab.hashToken;
+      }else{
         privateJson.lab.token = labInitConfig.codelabToken;
         // Generate the htpasswd for the Lab token for CODELAB using Bcrypt
         privateJson.lab.hashToken = hashSync(privateJson.lab.token, 10);
@@ -123,11 +134,6 @@ export class InitService implements OnApplicationBootstrap {
       privateJson.db.gws_core_prod_password = labInitConfig.gwsCoreProdPassword;
       privateJson.db.gws_core_dev_password = labInitConfig.gwsCoreDevPassword;
 
-      // if the private file already exists, retrieve the data sub object from it
-      if (this.fileService.privateFileExists()) {
-        const oldPrivateJson = this.fileService.readPrivateFile();
-        privateJson.data = oldPrivateJson.data;
-      }
 
       this.fileService.createPrivateFile(privateJson);
       this.taskService.markTaskAsSuccess(taskName, 'private.json file generated');
