@@ -42,7 +42,8 @@ export class DockerService {
   }
 
   public async listContainers(): Promise<DockerPs[]> {
-    return this.dockerCommand.dockerPs();
+    const containers = await this.dockerCommand.dockerPs();
+    return containers.sort((a, b) => a.names.localeCompare(b.names));
   }
 
   public async pullContainers(beforeOptions: BeforeDockerCommandOptions = {}): Promise<void> {
