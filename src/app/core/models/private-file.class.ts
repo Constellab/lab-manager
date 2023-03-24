@@ -45,6 +45,7 @@ export function getPrivateFileTemplate(): PrivateFile {
     lab: {
       username: 'codelab',
       token: null,
+      hashToken: null,
     },
     db: {
       gws_core_prod_password: null,
