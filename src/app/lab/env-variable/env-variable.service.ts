@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigFile } from '../../core/models/config-file.class';
 import { PrivateFile } from '../../core/models/private-file.class';
-import { hashSync } from 'bcrypt';
 import { FileService } from '../../core/services/file/file.service';
 import { CommandService } from '../../core/services/command/command.service';
 import { TaskService } from 'src/app/core/services/task/task.service';
@@ -79,9 +78,7 @@ export class EnvVariableService {
       envVariables.addEnvVariable('GWS_CORE_PROD_DB_PASSWORD', privateJson.db.gws_core_prod_password);
       envVariables.addEnvVariable('GWS_CORE_DEV_DB_PASSWORD', privateJson.db.gws_core_dev_password);
 
-      // Generate the htpasswd for the Lab token for CODELAB using Bcrypt
-      const hash = hashSync(privateJson.lab.token, 10);
-      envVariables.addEnvVariable('HT_PASSWD', `${privateJson.lab.username}:${hash}`);
+      envVariables.addEnvVariable('HT_PASSWD', `${privateJson.lab.username}:${privateJson.lab.hashToken}`);
 
       // OTHERS
       const isGpu: boolean = await this.isGpu();

@@ -9,6 +9,7 @@ import { EnvVariableService } from '../env-variable/env-variable.service';
 import { LabInitConfig } from '../lab.class';
 import { ConfigFileService } from '../config-file/config-file.service';
 import { TaskService } from 'src/app/core/services/task/task.service';
+import { hashSync } from 'bcrypt';
 
 @Injectable()
 export class InitService implements OnApplicationBootstrap {
@@ -109,8 +110,14 @@ export class InitService implements OnApplicationBootstrap {
       // hub information
       privateJson.hub.front_url = labInitConfig.hubFrontUrl;
 
-      // set token
-      privateJson.lab.token = labInitConfig.codelabToken;
+      // set token, only update the hash when the token has changed.
+      // otherwise a new hash is created each time and as the hash is used 
+      // as env variable for codelab, this would force re-creation.
+      if(privateJson.lab.token !== labInitConfig.codelabToken){
+        privateJson.lab.token = labInitConfig.codelabToken;
+        // Generate the htpasswd for the Lab token for CODELAB using Bcrypt
+        privateJson.lab.hashToken = hashSync(privateJson.lab.token, 10);
+      }
 
       // DB information
       privateJson.db.gws_core_prod_password = labInitConfig.gwsCoreProdPassword;

@@ -11,6 +11,7 @@ export interface PrivateFile {
   lab: {
     username: string;
     token: string;
+    hashToken: string;
   };
   db: {
     gws_core_prod_password: string;
