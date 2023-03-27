@@ -11,7 +11,7 @@ export class RcloneService {
   }
 
 
-  public syncFolder(config: BucketConfig, pathToSync: string): SpawnResponse {
+  public syncFolder(config: BucketConfig, pathToSync: string, destinationFolder: string = ''): SpawnResponse {
     return this.commandService.spawn('rclone',
       [
         '-P',
@@ -22,7 +22,7 @@ export class RcloneService {
         '--drive-chunk-size', '128M',
         '--transfers', '16',
         'sync', pathToSync, 
-        ':s3:' +config.bucket // prefix with :s3: to force s3 backend
+        ':s3:' + config.bucket + destinationFolder // prefix with :s3: to force s3 backend,
       ]);
   }
 }

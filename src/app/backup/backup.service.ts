@@ -5,17 +5,23 @@ import { SpawnResult } from '../core/services/command/command.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
 import { FileService } from '../core/services/file/file.service';
 import { RcloneService } from '../core/services/rclone/rclone.service';
-import { CreateBackupDto, LabBackup, LabBackupHistory } from './backup.class';
+import { CreateBackupDto, LabBackup, LabBackupHistory, LabBackupStorage } from './backup.class';
 
+type BackupType = 'DATA' | 'DB';
 
 @Injectable()
 export class BackupService {
 
-  private backupHistoryFilename = 'backup-history.json';
+  private readonly backupHistoryFilename = 'backup-history.json';
+
+  // destination folder for the backup is s3
+  private readonly dataFolderDestination = '/data';
+  private readonly dbFolderDestination = '/db'
 
 
   private currentBackupStatus: LabBackup;
   private currentBackupProcess: ChildProcess;
+
 
   private static readonly MAX_BACKUP_HISTORY = 30;
 
@@ -31,22 +37,14 @@ export class BackupService {
     }
 
     // init backup status
-    this.currentBackupStatus = {
-      status: 'IN_PROGRESS',
-      message: 'Backup started',
-      storages: [{
-        bucket: createBackup.bucket,
-        region: createBackup.region,
-        endpoint: createBackup.endpoint,
-        status: 'IN_PROGRESS',
-        message: 'Backup started',
-        startUploadAt: new Date(),
-      }],
-    }
+    this.currentBackupStatus = new LabBackup();
 
-    const dataFolder = this.configService.getProdDataFolder()
+    // add the unique storage
+    this.currentBackupStatus.addStorage(
+      new LabBackupStorage(createBackup.region, createBackup.bucket, createBackup.endpoint)
+    );
 
-    const config: BucketConfig = {
+    const bucketConfig: BucketConfig = {
       bucket: createBackup.bucket,
       endpoint: createBackup.endpoint,
       region: createBackup.region,
@@ -54,48 +52,59 @@ export class BackupService {
       secretAccessKey: createBackup.credentials.secretAccessKey,
     }
 
+    // Synchronize the DB
+    const dbFolder = this.configService.getGwsCoreDbFolder();
+    this.callSync(bucketConfig, dbFolder, this.dbFolderDestination, 'DB');
 
-    const response = this.rcloneService.syncFolder(config, dataFolder);
+    // Synchronize the data
+    const dataFolder = this.configService.getProdDataFolder();
+    this.callSync(bucketConfig, dataFolder, this.dataFolderDestination, 'DATA');
+
+    return this.currentBackupStatus;
+  }
+
+  private callSync(bucketConfig: BucketConfig, pathToSync: string,
+    destinationFolder: string, backupType: BackupType): void {
+    const response = this.rcloneService.syncFolder(bucketConfig, pathToSync, destinationFolder);
     // store process
     this.currentBackupProcess = response.childProcess;
 
     // listen to progress
     response.observable.subscribe(
       {
-        next: (spawnResult: SpawnResult) => this.updateCurrentStatusMessage(spawnResult.data),
-        error: (error: SpawnResult) => this.updateCurrentStatusStorageErrorMessage(error.data),
-        complete: () => this.uploadCompleted(),
+        next: (spawnResult: SpawnResult) => this.onProgress(spawnResult.data, backupType),
+        error: (error: SpawnResult) => this.updateCurrentStatusStorageErrorMessage(error.data, backupType),
+        complete: () => this.uploadCompleted(backupType),
       });
-
-
-    return this.currentBackupStatus;
   }
 
-  private updateCurrentStatusMessage(message: string): void {
+  private onProgress(message: string, backupType: BackupType): void {
     if (!this.currentBackupProcess) return;
-    this.currentBackupStatus.message = message;
-    this.currentBackupStatus.storages[0].message = message;
+    // filter useful to only get the progess messages
+    if (message.startsWith('Transferred') && message.includes('%')) {
+      this.currentBackupStatus.updateMessage(backupType, 'IN_PROGRESS', message);
+    }
   }
 
-  private updateCurrentStatusStorageErrorMessage(message: string): void {
+  private updateCurrentStatusStorageErrorMessage(message: string, backupType: BackupType): void {
     if (!this.currentBackupProcess) return;
-    this.currentBackupStatus.message = message;
-    this.currentBackupStatus.storages[0].message = message;
-    this.currentBackupStatus.status = 'ERROR';
-    this.currentBackupStatus.storages[0].status = 'ERROR';
-    this.currentBackupStatus.storages[0].endUploadAt = new Date();
-    this.saveBackupStatus(this.currentBackupStatus);
+    this.onCompleted(backupType, 'ERROR', message);
   }
 
-  private uploadCompleted(): void {
+  private uploadCompleted(backupType: BackupType): void {
     if (!this.currentBackupProcess) return;
-    this.currentBackupStatus.message = 'Backup completed';
-    this.currentBackupStatus.storages[0].message = 'Backup completed';
-    this.currentBackupStatus.status = 'DONE';
-    this.currentBackupStatus.storages[0].status = 'DONE';
-    this.currentBackupStatus.storages[0].endUploadAt = new Date();
-    this.currentBackupProcess = null;
-    this.saveBackupStatus(this.currentBackupStatus);
+    this.onCompleted(backupType, 'SUCCESS', 'Backup completed');
+  }
+
+  private onCompleted(backupType: BackupType, status: 'SUCCESS' | 'ERROR', message: string): void {
+
+    this.currentBackupStatus.updateMessage(backupType, status, message);
+
+    // when all backup are completed, save the status
+    if (this.currentBackupStatus.isFinished()) {
+      this.currentBackupProcess = null;
+      this.saveBackupStatus(this.currentBackupStatus);
+    }
   }
 
 
