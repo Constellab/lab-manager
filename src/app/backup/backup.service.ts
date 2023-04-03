@@ -82,6 +82,11 @@ export class BackupService {
     if (!this.currentBackupProcess) return;
     // filter useful to only get the progess messages
     if (message.startsWith('Transferred') && message.includes('%')) {
+      // remove the part of the message after text : 'Error'
+      const index = message.indexOf('Error');
+      if (index > 0) {
+        message = message.substring(0, index);
+      }
       this.currentBackupStatus.updateMessage(backupType, 'IN_PROGRESS', message);
     }
   }
