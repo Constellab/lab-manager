@@ -3,6 +3,7 @@ import { CoreConfigService } from 'src/app/core/services/config/core-config.serv
 import { DockerCommandService } from 'src/app/core/services/docker-command/docker-command.service';
 import { TaskService } from 'src/app/core/services/task/task.service';
 import { TraefikService } from 'src/app/core/services/traefik/traefik.service';
+import { ConfigFileService } from '../config-file/config-file.service';
 
 @Injectable()
 export class ContainerService {
@@ -24,18 +25,24 @@ export class ContainerService {
   constructor(private dockerCommand: DockerCommandService,
     private taskService: TaskService,
     private traefikService: TraefikService,
-    private configService: CoreConfigService) {
+    private configService: CoreConfigService,
+    private configFileService: ConfigFileService) {
   }
 
   public getContainersNames(): string[] {
-    return [
+    const containers = [
       this.getContainerName(ContainerService.GLAB),
       this.getContainerName(ContainerService.CODELAB),
       this.getContainerName(ContainerService.FRONT),
       this.getContainerName(ContainerService.DB_GWS_CORE_PROD),
-      this.getContainerName(ContainerService.DB_GWS_BIOTA),
       this.getContainerName(ContainerService.DB_GWS_CORE_DEV),
       this.getContainerName(ContainerService.DB_GWS_CORE_DEV_TEST)];
+
+    // add biota container only if biota is active
+    if(this.configFileService.biotaIsActive()){
+      containers.push(this.getContainerName(ContainerService.DB_GWS_BIOTA));
+    }
+    return containers;
   }
 
   public getContainerName(serviceName: string): string {

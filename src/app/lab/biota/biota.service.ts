@@ -16,7 +16,7 @@ export class BiotaService {
   private readonly logger = new Logger(BiotaService.name);
 
   private readonly pullBiotaTaskName = 'PULL_BIOTA_DB';
-
+  
 
   constructor(private commandService: CommandService,
     private fileService: FileService,
@@ -28,9 +28,15 @@ export class BiotaService {
   }
 
   public async pullBiota(forceUpdate: boolean = false, restartBiota: boolean = false): Promise<void> {
+    if(this.configFileService.biotaIsActive()) {
+      this.logger.log('No biota db url found in the config file. Skipping pull biota');
+      return;
+    }
+
     const biotaDbFolder = this.getBiotaDbFolder();
     const mariaDbFolder = this.getMariaDbFolder();
     const biotaDbUrl = this.configFileService.readConfigFile().biota_maria_db_url;
+
     const zipFilePath = join(biotaDbFolder, 'mariadb.zip');
 
     this.fileService.createDirIfNotExists(biotaDbFolder);

@@ -19,7 +19,6 @@ export class DockerCommandService implements DockerCommandServiceI {
 
   /**
    * Call a docker compose up command
-   * @param filePath
    * @param options
    * @param containers if provided, only up the containers
    */

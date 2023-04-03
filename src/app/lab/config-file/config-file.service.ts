@@ -41,6 +41,10 @@ export class ConfigFileService {
     return this.fileService.readJsonFile(this.configFilePath);
   }
 
+  public biotaIsActive(): boolean {
+    return this.readConfigFile().biota_maria_db_url != null;
+  }
+
 
   private get configFilePath(): string {
     return this.fileService.getVolumePath(this.configFileName);

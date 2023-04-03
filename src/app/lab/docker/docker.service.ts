@@ -80,7 +80,8 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.composeUp();
+      const containers = this.containerService.getContainersNames();
+      const result = await this.dockerCommand.composeUp([], containers);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
