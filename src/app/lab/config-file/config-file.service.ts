@@ -42,6 +42,10 @@ export class ConfigFileService {
   }
 
   public biotaIsActive(): boolean {
+    // if the config file does not exist, we consider biota not active
+    if (!this.configFileExists()) {
+      return false;
+    }
     return this.readConfigFile().biota_maria_db_url != null;
   }
 
