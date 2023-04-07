@@ -22,8 +22,10 @@ services:
       - GPU=${GPU}
       - VIRTUAL_HOST=
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
-      - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
-      - GWS_GIT_PWD=${GWS_GIT_PWD}
+      # COMMUNITY
+      - COMMUNITY_API_URL=https://hub-back-pre-prod.constellab-pre-prod.gencovery.com
+      - COMMUNITY_FRONT_URL=https://hub-pre-prod.gencovery.com/
+      - COMMUNITY_API_KEY= # no need for the key, we will not download private bricks
       # GWS_CORE database
       - GWS_CORE_DB_HOST=local_gws_core_prod_db
       - GWS_CORE_DB_USER=gws_core
@@ -63,8 +65,10 @@ services:
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
       - CONDA_VERSION=latest
       - GPU=${GPU}
-      - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
-      - GWS_GIT_PWD=${GWS_GIT_PWD}
+      # COMMUNITY
+      - COMMUNITY_API_URL=https://hub-back-pre-prod.constellab-pre-prod.gencovery.com
+      - COMMUNITY_FRONT_URL=https://hub-pre-prod.gencovery.com/
+      - COMMUNITY_API_KEY=${COMMUNITY_API_KEY}
       # GWS_CORE database
       - GWS_CORE_DB_HOST=local_gws_core_dev_db
       - GWS_CORE_DB_USER=gws_core
@@ -100,11 +104,15 @@ services:
   front:
     image: registry.gitlab.com/gencovery/core/monorepo/lab-front:latest
     environment:
-      - API_URL=https://local_glab-prod.${VIRTUAL_HOST}/
-      - LAB_PROD_API_URL=https://local_glab-prod.${VIRTUAL_HOST}/
-      - LAB_DEV_API_URL=https://local_glab-dev.${VIRTUAL_HOST}/
+      - API_URL=https://local_glab-prod.${VIRTUAL_HOST}
+      - LAB_PROD_API_URL=https://local_glab-prod.${VIRTUAL_HOST}
+      - LAB_DEV_API_URL=https://local_glab-dev.${VIRTUAL_HOST}
       - CODE_SERVER_URL=https://local_codelab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=
+      - CENTRAL_FRONT_URL=https://preconstellab.space
+      - CENTRAL_API_URL=https://api.preconstellab.com
+      - COMMUNITY_FRONT_URL=https://hub-pre-prod.gencovery.com
+      - COMMUNITY_API_URL=https://hub-back-pre-prod.constellab-pre-prod.gencovery.com
     networks:
       - local_gencovery-network-prod
     container_name: local_front

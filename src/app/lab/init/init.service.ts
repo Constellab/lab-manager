@@ -114,8 +114,10 @@ export class InitService implements OnApplicationBootstrap {
       privateJson.central.api_url = labInitConfig.centralApiUrl;
       privateJson.central.front_url = labInitConfig.centralFrontUrl;
 
-      // hub information
-      privateJson.hub.front_url = labInitConfig.hubFrontUrl;
+      // Community information
+      privateJson.community.front_url = labInitConfig.hubFrontUrl || labInitConfig.communityFrontUrl;
+      privateJson.community.api_url = labInitConfig.communityApiUrl;
+      privateJson.community.api_key = labInitConfig.communityApiKey;
 
       // set token, only update the hash when the token has changed.
       // otherwise a new hash is created each time and as the hash is used 

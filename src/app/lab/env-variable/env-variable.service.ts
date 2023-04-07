@@ -71,7 +71,11 @@ export class EnvVariableService {
       envVariables.addEnvVariable('CENTRAL_API_KEY', privateJson.central.api_key);
       envVariables.addEnvVariable('CENTRAL_API_URL', privateJson.central.api_url);
       envVariables.addEnvVariable('CENTRAL_FRONT_URL', privateJson.central.front_url);
-      envVariables.addEnvVariable('HUB_FRONT_URL', privateJson.hub.front_url);
+      
+      envVariables.addEnvVariable('COMMUNITY_FRONT_URL', privateJson.community.front_url);
+      envVariables.addEnvVariable('COMMUNITY_API_URL', privateJson.community.api_url);
+      envVariables.addEnvVariable('COMMUNITY_API_KEY', privateJson.community.api_key);
+      
       envVariables.addEnvVariable('GWS_CORE_PROD_DB_PASSWORD', privateJson.db.gws_core_prod_password);
       envVariables.addEnvVariable('GWS_CORE_DEV_DB_PASSWORD', privateJson.db.gws_core_dev_password);
 

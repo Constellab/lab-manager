@@ -22,8 +22,10 @@ services:
       - GPU=${GPU}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
-      - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
-      - GWS_GIT_PWD=${GWS_GIT_PWD}
+      # COMMUNITY
+      - COMMUNITY_API_URL=${COMMUNITY_API_URL}
+      - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}
+      - COMMUNITY_API_KEY=${COMMUNITY_API_KEY}
       # GWS_CORE database
       - GWS_CORE_DB_HOST=gws_core_prod_db
       - GWS_CORE_DB_USER=gws_core
@@ -74,8 +76,10 @@ services:
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
       - CONDA_VERSION=latest
       - GPU=${GPU}
-      - GWS_GIT_LOGIN=${GWS_GIT_LOGIN}
-      - GWS_GIT_PWD=${GWS_GIT_PWD}
+      # COMMUNITY
+      - COMMUNITY_API_URL=${COMMUNITY_API_URL}
+      - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}
+      - COMMUNITY_API_KEY=${COMMUNITY_API_KEY}
       # GWS_CORE database
       - GWS_CORE_DB_HOST=gws_core_dev_db
       - GWS_CORE_DB_USER=gws_core
@@ -131,14 +135,15 @@ services:
   front:
     image: registry.gitlab.com/gencovery/core/monorepo/lab-front:${FRONT_VERSION}
     environment:
-      - API_URL=https://glab.${VIRTUAL_HOST}/
-      - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}/
-      - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}/
-      - CODE_SERVER_URL=https://codelab.${VIRTUAL_HOST}
+      - API_URL=https://glab.${VIRTUAL_HOST}
+      - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}
+      - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
+      - CODELAB_URL=https://codelab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - CENTRAL_FRONT_URL=${CENTRAL_FRONT_URL}
       - CENTRAL_API_URL=${CENTRAL_API_URL}
-      - HUB_FRONT_URL=${HUB_FRONT_URL}
+      - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}
+      - COMMUNITY_API_URL=${COMMUNITY_FRONT_URL}
     labels:
       - "traefik.enable=true"
       # Configure Host domain to port 81
