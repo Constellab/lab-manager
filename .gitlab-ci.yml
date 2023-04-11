@@ -11,7 +11,7 @@ variables:
 stages:
   - build-app
 
-# Push lab-front image to the docker registry using Dockerfile of the lab-front
+# Build and push image to public registry
 build-app:
   stage: build-app
   before_script:

@@ -6,7 +6,7 @@ services:
 
   # Production Glab
   glab:
-    image: registry.gitlab.com/gencovery/infra/gpm/glab-${IMAGE_SUFFIX}:${GLAB_TAG}
+    image: registry.gitlab.com/constellab/public/docker-registry/glab-${IMAGE_SUFFIX}:${GLAB_TAG}
     environment:
       - LAB_ID=1
       - LAB_NAME=MyLab
@@ -51,7 +51,7 @@ services:
 
   # Codelab
   codelab:
-    image: registry.gitlab.com/gencovery/infra/gpm/codelab-${IMAGE_SUFFIX}:${GLAB_TAG}
+    image: registry.gitlab.com/constellab/public/docker-registry/codelab-${IMAGE_SUFFIX}:${GLAB_TAG}
     environment:
       - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}
@@ -102,7 +102,7 @@ services:
 
   # Front
   front:
-    image: registry.gitlab.com/gencovery/core/monorepo/lab-front:latest
+    image: registry.gitlab.com/constellab/public/docker-registry/lab-front:latest
     environment:
       - API_URL=https://local_glab-prod.${VIRTUAL_HOST}
       - LAB_PROD_API_URL=https://local_glab-prod.${VIRTUAL_HOST}
