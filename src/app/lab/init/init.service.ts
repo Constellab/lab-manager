@@ -119,6 +119,12 @@ export class InitService implements OnApplicationBootstrap {
       privateJson.community.api_url = labInitConfig.communityApiUrl;
       privateJson.community.api_key = labInitConfig.communityApiKey;
 
+      // Docker registry info
+      privateJson.docker_registry.url = labInitConfig.dockerRegistry.url;
+      privateJson.docker_registry.username = labInitConfig.dockerRegistry.username;
+      privateJson.docker_registry.password = labInitConfig.dockerRegistry.password;
+
+
       // set token, only update the hash when the token has changed.
       // otherwise a new hash is created each time and as the hash is used 
       // as env variable for codelab, this would force re-creation.

@@ -1,0 +1,16 @@
+# This is to lower the transfer of the daemon context
+
+# Ignore git folder
+.git
+
+# Ignore the idea
+.idea
+
+# Ignore the tests
+e2e
+
+# Ignore the current node modules
+node_modules
+
+# Ignore dist folder
+dist

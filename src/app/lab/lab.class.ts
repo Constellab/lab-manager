@@ -40,4 +40,9 @@ export interface LabInitConfig {
   communityApiKey: string;
   gwsCoreProdPassword: string;
   gwsCoreDevPassword: string;
+  dockerRegistry: {
+    url: string;
+    username: string;
+    password: string;
+  }
 }

@@ -6,6 +6,7 @@ import {CoreConfigService} from '../../core/services/config/core-config.service'
 import {ContainerService} from '../container/container.service';
 import {TaskService} from '../../core/services/task/task.service';
 import {ContainerStatusInfo} from '../lab.class';
+import { PrivateFile } from 'src/app/core/models/private-file.class';
 
 export interface BeforeDockerCommandOptions {
   dockerLogin?: boolean;
@@ -27,16 +28,19 @@ export class DockerService {
     const taskName = 'DOCKER_LOGIN';
     this.taskService.newTask(taskName);
 
+
     try {
+
+      const privateFile: PrivateFile = this.fileService.readPrivateFile();
       await this.dockerCommand.login(
-        this.configService.getDockerRegistryUsername(),
-        this.configService.getDockerRegistryPassword(),
-        this.configService.getDockerRegistryUrl()
+        privateFile.docker_registry.username,
+        privateFile.docker_registry.password,
+        privateFile.docker_registry.url
       );
       this.taskService.markTaskAsSuccess(taskName);
     } catch (e: any) {
       // eslint-disable-next-line max-len
-      this.taskService.markTaskAsError(taskName, `Can't log in to the docker registry '${this.configService.getDockerRegistryUrl()}' with user ${this.configService.getDockerRegistryUsername()}`);
+      this.taskService.markTaskAsError(taskName, `Can't log in to the docker registry. Error: ${e.message}`);
       throw e;
     }
   }

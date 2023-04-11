@@ -44,18 +44,6 @@ export class CoreConfigService {
     return this.configService.get('VIRTUAL_HOST');
   }
 
-  public getDockerRegistryUrl(): string {
-    return this.configService.get('DOCKER_REGISTRY_URL');
-  }
-
-  public getDockerRegistryUsername(): string {
-    return this.configService.get('DOCKER_REGISTRY_USERNAME');
-  }
-
-  public getDockerRegistryPassword(): string {
-    return this.configService.get('DOCKER_REGISTRY_PWD');
-  }
-
   public getAppFolder(): string {
     return '/app';
   }
