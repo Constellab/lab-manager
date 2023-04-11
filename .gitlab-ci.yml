@@ -16,8 +16,11 @@ build-app:
   stage: build-app
   before_script:
     # Push image in the registry
-    - docker login -u $DOCKER_PUBLIC_USERNAME -p $DOCKER_PUBLIC_PASSWORD $CI_REGISTRY
+    - docker login -u $DOCKER_PUBLIC_USERNAME -p $DOCKER_PUBLIC_PASSWORD $DOCKER_PUBLIC_REGISTRY
   script:
+    - echo $DOCKER_PUBLIC_REGISTRY
+    - echo $DOCKER_PUBLIC_USERNAME
+    - echo $DOCKER_PUBLIC_PASSWORD
     # Read the commit tag
     - export VERSION=$CI_COMMIT_TAG
     # Build the docker image from Dockerfile with the tag of the git tag
