@@ -9,20 +9,12 @@ export interface ConfigFile {
 }
 
 export interface ConfigFileEnv {
-  pip: ConfigFileEnvRepository[];
-  git: ConfigFileEnvRepository[];
+  bricks: ConfigFileBrick[];
   variables: Record<string, string>;
 }
 
-export interface ConfigFileEnvRepository {
-  source: string;
-  packages: ConfigFileEnvPackage[];
-}
-
-export interface ConfigFileEnvPackage {
+export interface ConfigFileBrick{
   name: string;
-  version: string; // version supported by pip, can be empty, ==2.0 or >=2.1
-  is_brick: boolean;
-  is_hidden: boolean;
+  version: string;
 }
 
