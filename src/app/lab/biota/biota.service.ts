@@ -28,7 +28,7 @@ export class BiotaService {
   }
 
   public async pullBiota(forceUpdate: boolean = false, restartBiota: boolean = false): Promise<void> {
-    if(this.configFileService.biotaIsActive()) {
+    if(!this.configFileService.biotaIsActive()) {
       this.logger.log('No biota db url found in the config file. Skipping pull biota');
       return;
     }
