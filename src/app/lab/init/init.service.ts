@@ -56,6 +56,9 @@ export class InitService implements OnApplicationBootstrap {
       // save the init version
       this.fileService.updatePrivateFileData({last_init_manager_version: this.configService.getLabManagerVersion()})
 
+      // clean unused docker images
+      await this.dockerService.systemPrune()
+
       this.logger.log('[INIT] Init ended successfully');
 
     } catch (e) {
