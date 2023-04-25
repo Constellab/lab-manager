@@ -1,4 +1,4 @@
-import {Inject, Injectable} from '@nestjs/common';
+import {BadRequestException, Inject, Injectable} from '@nestjs/common';
 import {getPrivateFileTemplate, PrivateFile, PrivateFileData} from '../../models/private-file.class';
 import {copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync} from 'fs';
 
@@ -31,6 +31,10 @@ export class FileService {
   }
 
   public readPrivateFile(): PrivateFile {
+    if (!this.privateFileExists()) {
+      throw new BadRequestException('The private file does not exist. You must initialize the lab once.');
+    }
+
     return this.readJsonFile(this.privateFilePath);
   }
 
@@ -52,6 +56,8 @@ export class FileService {
   private get privateFilePath(): string {
     return this.getVolumePath(this.privateFileName);
   }
+
+
 
   //////////////////////// DOCKER COMPOSE //////////////////////
 

@@ -1,5 +1,10 @@
 
-export interface CreateBackupDto {
+export interface BackupInfoDto {
+  buckets: BackupBucketDto[];
+}
+
+
+export interface BackupBucketDto {
   credentials: {
     accessKeyId: string;
     secretAccessKey: string;
@@ -40,6 +45,26 @@ export class LabBackup {
 
   public isFinished(): boolean {
     return this.status !== 'IN_PROGRESS';
+  }
+
+  public getFinishDate(): Date | null {
+    if (this.isFinished()) {
+      // return the most recent date
+      return this.storages.reduce((previousValue, currentValue) => {
+        if (currentValue.endUploadAt && currentValue.endUploadAt > previousValue) {
+          return currentValue.endUploadAt;
+        }
+        return previousValue;
+      }, new Date(0));
+    }
+    return null;
+  }
+
+  public static fromJson(json: any): LabBackup {
+    const labBackup = new LabBackup();
+    labBackup.status = json.status;
+    labBackup.storages = json.storages.map(s => LabBackupStorage.fromJson(s));
+    return labBackup;
   }
 }
 
@@ -95,9 +120,38 @@ export class LabBackupStorage {
     return this.status !== 'IN_PROGRESS';
   }
 
+  public static fromJson(json: any): LabBackupStorage {
+    const storage = new LabBackupStorage(json.region, json.bucket, json.endpoint);
+    storage.startUploadAt = new Date(json.startUploadAt);
+    storage.endUploadAt = json.endUploadAt ? new Date(json.endUploadAt) : null;
+    storage.status = json.status;
+    storage.dataStatus = json.dataStatus;
+    storage.dbStatus = json.dbStatus;
+    return storage;
+  }
 }
 
 export class LabBackupHistory {
   version: number;
   backups: LabBackup[];
+
+  constructor() {
+    this.version = 1;
+    this.backups = [];
+  }
+
+  public static fromJson(json: any): LabBackupHistory {
+    const history = new LabBackupHistory();
+    history.version = json.version;
+    history.backups = json.backups.map((backup: any) => LabBackup.fromJson(backup));
+    return history;
+  }
+
+  public getLastBackup(): LabBackup | null {
+    if (this.backups.length > 0) {
+      return this.backups[this.backups.length - 1];
+    }
+    return null;
+  }
+
 }

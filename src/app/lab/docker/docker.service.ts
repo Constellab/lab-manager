@@ -21,7 +21,7 @@ export class DockerService {
 
   constructor(private dockerCommand: DockerCommandService,
     private fileService: FileService, private containerService: ContainerService,
-    private taskService: TaskService, private configService: CoreConfigService) {
+    private taskService: TaskService) {
   }
 
   public async login(): Promise<void> {

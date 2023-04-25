@@ -12,6 +12,7 @@ import {LabModule} from './app/lab/lab.module';
 import {CoreExceptionHandlerFilter} from './app/core/filters/core-exception-handler.filter';
 import {LabManagerModule} from './app/lab-manager/lab-manager.module';
 import {BackupModule} from './app/backup/backup.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 function configureWinstonLogger(configService: CoreConfigService): WinstonModuleOptions {
   const logConfig: LoggerConfig = {
@@ -37,6 +38,8 @@ function configureWinstonLogger(configService: CoreConfigService): WinstonModule
       useFactory: configureWinstonLogger,
       inject: [CoreConfigService],
     }),
+    // to enable cron jobs
+    ScheduleModule.forRoot(),
 
     LabModule,
     LabManagerModule,

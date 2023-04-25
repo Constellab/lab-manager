@@ -57,7 +57,7 @@ export class CoreConfigService {
   }
 
   public getProdSettingsFolder(): string {
-    return `${this.getProdFolderPath()}/setting`;
+    return `${this.getProdFolderPath()}/settings/glab`;
   }
 
   public getGwsDbFolder(): string {

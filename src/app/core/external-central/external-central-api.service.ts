@@ -1,0 +1,64 @@
+import { Injectable } from '@nestjs/common';
+import { lastValueFrom } from 'rxjs';
+import { ApiService } from 'src/app/core/services/api/api.service';
+import { ApiHttpOption } from 'src/app/core/services/api/api.class';
+import { FileService } from 'src/app/core/services/file/file.service';
+import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
+import { BackupInfoDto } from 'src/app/backup/backup.class';
+
+
+/**
+ * Class to call route of central using central api
+ */
+@Injectable()
+export class ExternalCentralApiService {
+
+  private static readonly API_KEY_HEADER = 'Authorization';
+  private static readonly API_KEY_SCHEMA = 'api-key';
+
+  private static readonly BASE_API_ROUTE = 'external-labs-manager';
+
+  constructor(private apiService: ApiService,
+    private fileService: FileService,
+    private configService: CoreConfigService) { }
+
+
+
+  public getBackupInfo(): Promise<BackupInfoDto> {
+    return lastValueFrom(
+      this.apiService.get(this.constructRoute('lab/backup-info'), this.getRequestOptions({}))
+    );
+  }
+
+
+
+  ////////////////// METHODS TO BUILD THE REQUEST //////////////////
+
+  private constructRoute(route: string): string {
+    const isLocal = this.configService.isLocal();
+    let url: string;
+    if (isLocal) {
+      url = 'http://host.docker.internal:3001'
+    } else {
+      const privateFile = this.fileService.readPrivateFile();
+      url = privateFile.central.api_url;
+    }
+
+    return `${url}/${ExternalCentralApiService.BASE_API_ROUTE}/${route}`;
+  }
+
+  // get the axios request config with the api key in the header
+  private getRequestOptions(options: ApiHttpOption): ApiHttpOption {
+    const apiKey = this.configService.getLabManagerApiKey();
+
+    return Object.assign(options, { headers: this.getHeader(apiKey) });
+  }
+
+  // get the header with api key
+  private getHeader(apiKey: string): any {
+    const header: any = {};
+    header[ExternalCentralApiService.API_KEY_HEADER] = `${ExternalCentralApiService.API_KEY_SCHEMA} ${apiKey}`;
+    return header;
+  }
+
+}

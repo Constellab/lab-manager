@@ -1,6 +1,6 @@
 import { Body } from '@nestjs/common';
 import { Controller, Get, Post } from '@nestjs/common';
-import { CreateBackupDto, LabBackup, LabBackupHistory } from './backup.class';
+import { BackupInfoDto, LabBackup, LabBackupHistory } from './backup.class';
 import { BackupService } from './backup.service';
 
 
@@ -13,8 +13,8 @@ export class BackupController {
 
 
   @Post('prod')
-  createProdBackup(@Body() createBackup: CreateBackupDto): LabBackup {
-    return this.backupService.createProdBackup(createBackup);
+  createProdBackup(@Body() createBackup: BackupInfoDto): Promise<LabBackup> {
+    return this.backupService.checkAndCreateProdBackup(createBackup);
   }
 
 

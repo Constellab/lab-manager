@@ -9,6 +9,10 @@ import {TaskService} from './services/task/task.service';
 import {TraefikService} from './services/traefik/traefik.service';
 import {ObjectStorageService} from './services/object-storage/object-storage.service';
 import { RcloneService } from './services/rclone/rclone.service';
+import { ApiService } from './services/api/api.service';
+import { ExternalLabApiService } from './services/external-lab/external-lab-api.service';
+import { ExternalCentralApiService } from './external-central/external-central-api.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   providers: [],
@@ -19,6 +23,7 @@ export class CoreModule {
     return {
       global: true,
       module: CoreModule,
+      imports: [HttpModule],
       providers: [
         {
           provide: CORE_MODULE_PROVIDER,
@@ -33,6 +38,9 @@ export class CoreModule {
         TraefikService,
         ObjectStorageService,
         RcloneService,
+        ApiService,
+        ExternalLabApiService,
+        ExternalCentralApiService,
       ],
       exports: [
         FileService,
@@ -44,7 +52,10 @@ export class CoreModule {
         TraefikService,
         ObjectStorageService,
         RcloneService,
-      ]
+        ApiService,
+        ExternalLabApiService,
+        ExternalCentralApiService,
+      ],
     };
   }
 }
