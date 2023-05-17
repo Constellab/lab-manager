@@ -78,10 +78,6 @@ export class LabService {
       throw new BadRequestException('The lab is not initialized. Please initialize the lab before calling this method');
     }
 
-    if (!this.biotaService.biotaDbExists()) {
-      throw new BadRequestException('The biota db is not initialized. Please initialize the lab before calling this method');
-    }
-
     if(!this.fileService.exists(this.fileService.dockerComposePath)){
       throw new BadRequestException('The docker compose file was not generated. Please initialize the lab before calling this method');
     }
