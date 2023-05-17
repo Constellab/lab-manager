@@ -3,9 +3,9 @@
  * Object that represent the current global activity of a lab
  */
 export class LabGlobalActivity{
-    "running_experiments": number;
-    "queued_experiments": number;
-    "last_activity": LabActivity;
+    running_experiments: number;
+    queued_experiments: number;
+    last_activity: LabActivity;
 }
 
 export class LabActivity {

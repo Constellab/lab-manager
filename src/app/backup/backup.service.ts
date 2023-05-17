@@ -220,6 +220,15 @@ export class BackupService {
     return this.currentBackupStatus;
   }
 
+  public getLastBackupStatus(): LabBackup {
+    const current = this.getCurrentBackupStatus();
+    if (current) {
+      return current;
+    } 
+
+    return this.getLastBackup();
+  }
+  
   public getBackupHistory(): LabBackupHistory {
     const filePath = this.backupHistoryPath();
     if (this.fileService.exists(filePath)) {

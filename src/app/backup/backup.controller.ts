@@ -23,9 +23,15 @@ export class BackupController {
     return this.backupService.stopCurrentBackup();
   }
 
+  @Get('last-status')
+  getLastBackup(): LabBackup {
+    return this.backupService.getLastBackupStatus();
+  }
+
+  // deprecated to remove once all labs uses v1.3.0
   @Get('current-status')
-  getCurrentStatus(): LabBackup {
-    return this.backupService.getCurrentBackupStatus();
+  currentStatus(): LabBackup {
+    return this.backupService.getLastBackupStatus();
   }
 
   @Get('history')
