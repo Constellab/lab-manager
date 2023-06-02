@@ -13,6 +13,7 @@ import { ApiService } from './services/api/api.service';
 import { ExternalLabApiService } from './services/external-lab/external-lab-api.service';
 import { ExternalCentralApiService } from './external-central/external-central-api.service';
 import { HttpModule } from '@nestjs/axios';
+import { GPUService } from './services/gpu/gpu.service';
 
 @Module({
   providers: [],
@@ -41,6 +42,7 @@ export class CoreModule {
         ApiService,
         ExternalLabApiService,
         ExternalCentralApiService,
+        GPUService,
       ],
       exports: [
         FileService,
@@ -55,6 +57,7 @@ export class CoreModule {
         ApiService,
         ExternalLabApiService,
         ExternalCentralApiService,
+        GPUService,
       ],
     };
   }

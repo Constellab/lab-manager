@@ -2,11 +2,11 @@ import {Injectable, Logger} from '@nestjs/common';
 import {DockerCommandService} from '../../core/services/docker-command/docker-command.service';
 import {ComposeRestartOptions, ComposeUpOptions, DockerPs} from '../docker.class';
 import {FileService} from '../../core/services/file/file.service';
-import {CoreConfigService} from '../../core/services/config/core-config.service';
 import {ContainerService} from '../container/container.service';
 import {TaskService} from '../../core/services/task/task.service';
 import {ContainerStatusInfo} from '../lab.class';
 import { PrivateFile } from 'src/app/core/models/private-file.class';
+import { GPUService } from 'src/app/core/services/gpu/gpu.service';
 
 export interface BeforeDockerCommandOptions {
   dockerLogin?: boolean;
@@ -21,7 +21,7 @@ export class DockerService {
 
   constructor(private dockerCommand: DockerCommandService,
     private fileService: FileService, private containerService: ContainerService,
-    private taskService: TaskService) {
+    private taskService: TaskService, private gpuService: GPUService) {
   }
 
   public async login(): Promise<void> {
@@ -210,10 +210,16 @@ export class DockerService {
     };
   }
 
-  public generateDockerCompose(): void {
+  public async generateDockerCompose(): Promise<void> {
     const dockerComposeFileName = this.fileService.dockerComposeFileName;
     this.logger.log(`Generating ${dockerComposeFileName} file`);
-    this.fileService.copyDockerCompose();
+    let dockerComposeContent = this.fileService.readDockerComposeTemplate();
+
+    // replace the GPU config in the docker-compose file
+    const gpuConfig = await this.gpuService.getDockerComposeGpuConfig();
+    dockerComposeContent = dockerComposeContent.replace(/#GPU_CONFIG#/g, gpuConfig);
+    
+    this.fileService.writeDockerCompose(dockerComposeContent)
     this.logger.log(`${dockerComposeFileName} file generated`);
   }
 

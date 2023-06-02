@@ -4,6 +4,7 @@ import { PrivateFile } from '../../core/models/private-file.class';
 import { FileService } from '../../core/services/file/file.service';
 import { CommandService } from '../../core/services/command/command.service';
 import { TaskService } from 'src/app/core/services/task/task.service';
+import { GPUService } from 'src/app/core/services/gpu/gpu.service';
 
 
 /**
@@ -29,7 +30,7 @@ class EnvVariables {
 export class EnvVariableService {
 
   constructor(private fileService: FileService,
-    private commandService: CommandService,
+    private gpuService: GPUService,
     private taskService: TaskService) {
   }
 
@@ -84,7 +85,7 @@ export class EnvVariableService {
       envVariables.addEnvVariable('HT_PASSWD', `${privateJson.lab.username}:${privateJson.lab.hashToken}`);
 
       // OTHERS
-      const isGpu: boolean = await this.isGpu();
+      const isGpu: boolean = await this.gpuService.isGpu();
       envVariables.addEnvVariable('GPU', isGpu ? 'cuda' : '');
       // set the IMAGE_SUFFIX to use the correct image based on if GPU is on
       envVariables.addEnvVariable('IMAGE_SUFFIX', isGpu ? 'gpu' : 'cpu');
@@ -97,16 +98,6 @@ export class EnvVariableService {
     catch (error) {
       this.taskService.markTaskAsError(taskName, `Error while setting env variables: ${error.message}`);
       throw error;
-    }
-  }
-
-  private async isGpu(): Promise<boolean> {
-    try {
-      // to check if this is a GPU server, check if nvidia is installed
-      const nvidia = await this.commandService.execCommand('lspci | grep -i nvidia');
-      return nvidia != '';
-    } catch (_) {
-      return false;
     }
   }
 }

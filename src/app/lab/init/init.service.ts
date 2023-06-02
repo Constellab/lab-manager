@@ -42,22 +42,22 @@ export class InitService implements OnApplicationBootstrap {
       await this.envVariableService.setAllEnvVariables(this.configFileService.readConfigFile(),
         this.fileService.readPrivateFile());
 
-      await this.loginToDockerRegistry();
+      // await this.loginToDockerRegistry();
 
-      // PULL BIOTA DB
-      await this.biotaService.pullBiota();
+      // // PULL BIOTA DB
+      // await this.biotaService.pullBiota();
 
-      // PULL IMAGES
-      await this.dockerService.pullContainers();
+      // // PULL IMAGES
+      // await this.dockerService.pullContainers();
 
-      // UP CONTAINERS
-      await this.dockerService.restartContainers({});
+      // // UP CONTAINERS
+      // await this.dockerService.restartContainers({});
 
-      // save the init version
-      this.fileService.updatePrivateFileData({last_init_manager_version: this.configService.getLabManagerVersion()})
+      // // save the init version
+      // this.fileService.updatePrivateFileData({last_init_manager_version: this.configService.getLabManagerVersion()})
 
-      // clean unused docker images
-      await this.dockerService.systemPrune()
+      // // clean unused docker images
+      // await this.dockerService.systemPrune()
 
       this.logger.log('[INIT] Init ended successfully');
 

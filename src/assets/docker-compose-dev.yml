@@ -48,6 +48,7 @@ services:
     networks:
       - local_gencovery-network-prod
     container_name: local_glab
+    #GPU_CONFIG#
 
   # Codelab
   codelab:
@@ -98,7 +99,7 @@ services:
     container_name: local_codelab
     ports: 
       - 8083:8080
-
+    #GPU_CONFIG#
 
   # Front
   front:

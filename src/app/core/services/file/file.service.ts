@@ -66,6 +66,15 @@ export class FileService {
     this.copyFile(templatePath, this.dockerComposePath);
   }
 
+  public readDockerComposeTemplate(): string {
+    const templatePath = this.getAssetPath(this.dockerComposeFileName);
+    return this.readFile(templatePath);
+  }
+
+  public writeDockerCompose(content: string): void {
+    this.writeFile(this.dockerComposePath, content);
+  }
+
   public get dockerComposePath(): string {
     return this.getVolumePath(this.dockerComposeFileName);
   }
@@ -102,12 +111,12 @@ export class FileService {
   /**
    * read a file with a path relative to dist folder
    */
-  private readFile(path: string): Buffer {
+  private readFile(path: string): string {
     if (!this.exists(path)) {
       throw new Error(`The file '${path}' does not exist`);
     }
 
-    return readFileSync(path);
+    return readFileSync(path, {encoding: 'utf-8'});
   }
 
   public writeJsonFile(path: string, content: any): void {

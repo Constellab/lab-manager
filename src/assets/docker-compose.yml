@@ -59,6 +59,7 @@ services:
       - gencovery-network-prod
     restart: on-failure:5
     container_name: glab
+    #GPU_CONFIG#
 
   # Codelab
   codelab:
@@ -129,6 +130,7 @@ services:
     networks:
       - gencovery-network-dev
     container_name: codelab
+    #GPU_CONFIG#
 
 
   # Front
