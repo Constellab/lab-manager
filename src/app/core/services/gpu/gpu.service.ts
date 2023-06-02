@@ -28,11 +28,11 @@ export class GPUService {
     // config for the docker-compose file, tabulation is important
     return `# GPU configuration
     deploy:
-    resources:
-      reservations:
-        devices:
-          - driver: nvidia
-            count: 1
-            capabilities: [gpu]`;
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]`;
   }
 }
