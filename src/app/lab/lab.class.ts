@@ -45,4 +45,5 @@ export interface LabInitConfig {
     username: string;
     password: string;
   }
+  captchaSiteKey: string;
 }

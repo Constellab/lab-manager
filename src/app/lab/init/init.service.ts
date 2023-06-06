@@ -145,6 +145,8 @@ export class InitService implements OnApplicationBootstrap {
       privateJson.db.gws_core_prod_password = labInitConfig.gwsCoreProdPassword;
       privateJson.db.gws_core_dev_password = labInitConfig.gwsCoreDevPassword;
 
+      // captcha site key
+      privateJson.lab.captchaSiteKey = labInitConfig.captchaSiteKey;
 
       this.fileService.createPrivateFile(privateJson);
       this.taskService.markTaskAsSuccess(taskName, 'private.json file generated');

@@ -14,6 +14,7 @@ export interface PrivateFile {
     username: string;
     token: string;
     hashToken: string;
+    captchaSiteKey: string;
   };
   db: {
     gws_core_prod_password: string;

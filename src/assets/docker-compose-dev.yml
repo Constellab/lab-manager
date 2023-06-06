@@ -114,6 +114,7 @@ services:
       - CENTRAL_API_URL=https://api.preconstellab.com
       - COMMUNITY_FRONT_URL=https://hub-pre-prod.gencovery.com
       - COMMUNITY_API_URL=https://hub-back-pre-prod.constellab-pre-prod.gencovery.com
+      - CAPTCHA_SITE_KEY=${CAPTCHA_SITE_KEY}
     networks:
       - local_gencovery-network-prod
     container_name: local_front
