@@ -11,7 +11,7 @@ services:
       - LAB_ID=1
       - LAB_NAME=MyLab
       - LAB_MODE=prod
-      - LAB_ENVIRONMENT=PROD
+      - LAB_ENVIRONMENT=ON_CLOUD
       - LAB_PROD_API_URL=http://localhost:3000
       - LAB_DEV_API_URL=http://localhost:3000
       - CENTRAL_API_KEY=
@@ -57,7 +57,7 @@ services:
       - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}
       - LAB_MODE=dev
-      - LAB_ENVIRONMENT=PROD
+      - LAB_ENVIRONMENT=ON_CLOUD
       - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
       - FRONT_URL=http://localhost:80
