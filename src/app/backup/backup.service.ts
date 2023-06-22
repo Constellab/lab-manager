@@ -97,6 +97,9 @@ export class BackupService {
     }
 
 
+    // simple check to see if the lab was not encrypted by a ransomware
+    this.checkRansomware();
+
     try {
       const backupInfo = await this.externalCentralService.getBackupInfo();
       // we can do the backup
@@ -286,6 +289,23 @@ export class BackupService {
 
   private initBackupHistory(): LabBackupHistory {
     return new LabBackupHistory();
+  }
+
+  // Simple check to see if the lab was not encrypted by a ransomware
+  // We check if we can read the private file and docker-compose file 
+  private checkRansomware(): void {
+    try{
+      this.fileService.readPrivateFile();
+    }
+    catch(e){
+      throw new BadRequestException('The private file does not exist, or could not be read. Maybe it has been encrypted by a ransomware');
+    }
+
+    const dockerCompose = this.fileService.readDockerComposeTemplate();
+
+    if(!dockerCompose.includes('image')){
+      throw new BadRequestException('The docker-compose file does not contain any image, please check your docker-compose file. Maybe it has been encrypted by a ransomware');
+    }
   }
 }
 
