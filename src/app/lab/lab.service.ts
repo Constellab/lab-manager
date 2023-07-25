@@ -9,7 +9,7 @@ import { ConfigFileService } from './config-file/config-file.service';
 import { BiotaService } from './biota/biota.service';
 import { InitService } from './init/init.service';
 import { ConfigFile } from '../core/models/config-file.class';
-import { ComposeRestartOptions, ComposeUpOptions, DockerPs, PullBiotaDbOptions } from './docker.class';
+import { ComposeRestartOptions, ComposeUpOptions, DockerPsFull, PullBiotaDbOptions } from './docker.class';
 import { EnvVariableService } from './env-variable/env-variable.service';
 
 const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
@@ -89,7 +89,7 @@ export class LabService {
 
   //////////////////////////// CONTAINERS ////////////////////////////
 
-  public async listContainers(): Promise<DockerPs[]> {
+  public async listContainers(): Promise<DockerPsFull[]> {
     return this.dockerService.listContainers();
   }
 

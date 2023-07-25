@@ -1,6 +1,6 @@
 import {Injectable} from '@nestjs/common';
 import {DockerCommandServiceI} from './docker-command.class';
-import {DockerPs, DockerRunOptions} from '../../../lab/docker.class';
+import {DockerPsFull, DockerRunOptions} from '../../../lab/docker.class';
 
 /*  eslint-disable max-len */
 /**
@@ -20,7 +20,7 @@ export class DockerCommandMock implements DockerCommandServiceI {
     return Promise.resolve('');
   }
 
-  dockerPs(): Promise<DockerPs[]> {
+  dockerPsFull(): Promise<DockerPsFull[]> {
     return Promise.resolve([
       {
         'id': '4f8364e6037b348a9eff4768cf9694d6490c803923433326cac87ee6a5ee61e9',

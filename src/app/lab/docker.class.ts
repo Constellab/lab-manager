@@ -1,4 +1,10 @@
 export interface DockerPs {
+  names: string;
+  state: 'running' | 'exited';
+}
+
+
+export interface DockerPsFull extends DockerPs{
   command: string;
   createdAt: string;
   id: string;

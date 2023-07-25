@@ -1,6 +1,6 @@
 import {Injectable, Logger} from '@nestjs/common';
 import {DockerCommandService} from '../../core/services/docker-command/docker-command.service';
-import {ComposeRestartOptions, ComposeUpOptions, DockerPs} from '../docker.class';
+import {ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull} from '../docker.class';
 import {FileService} from '../../core/services/file/file.service';
 import {ContainerService} from '../container/container.service';
 import {TaskService} from '../../core/services/task/task.service';
@@ -45,8 +45,8 @@ export class DockerService {
     }
   }
 
-  public async listContainers(): Promise<DockerPs[]> {
-    const containers = await this.dockerCommand.dockerPs();
+  public async listContainers(): Promise<DockerPsFull[]> {
+    const containers = await this.dockerCommand.dockerPsFull();
     return containers.sort((a, b) => a.names.localeCompare(b.names));
   }
 
@@ -160,7 +160,7 @@ export class DockerService {
   }
 
   public async getContainersStatus(): Promise<ContainerStatusInfo> {
-    const containers: DockerPs[] = await this.listContainers();
+    const containers: DockerPs[] = await this.dockerCommand.dockerPs();
 
     const containerNames: string[] = this.containerService.getContainersNames();
 

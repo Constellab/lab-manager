@@ -1,7 +1,7 @@
 import {BadRequestException, Injectable} from '@nestjs/common';
 import {DockerCommandServiceI} from './docker-command.class';
 import {CommandService, ExecCommandMode} from '../command/command.service';
-import {DockerPs, DockerRunOptions} from '../../../lab/docker.class';
+import {DockerPs, DockerPsFull, DockerRunOptions} from '../../../lab/docker.class';
 import { FileService } from '../file/file.service';
 
 /**
@@ -50,10 +50,18 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
   //////////////////////////////// DOCKER ////////////////////////////////
 
+  public async dockerPsFull(): Promise<DockerPsFull[]> {
+    return this.runDockerPs(`{\\"id\\":\\"{{.ID}}\\",\\"command\\":{{.Command}},\\"createdAt\\":\\"{{.CreatedAt}}\\",\\"image\\":\\"{{.Image}}\\",\\"mounts\\":\\"{{.Mounts}}\\",\\"names\\":\\"{{.Names}}\\",\\"networks\\":\\"{{.Networks}}\\",\\"ports\\":\\"{{.Ports}}\\",\\"runningFor\\":\\"{{.RunningFor}}\\",\\"size\\":\\"{{.Size}}\\",\\"state\\":\\"{{.State}}\\",\\"status\\":\\"{{.Status}}\\"}`)
+  }
+
   public async dockerPs(): Promise<DockerPs[]> {
+    return this.runDockerPs(`{\\"names\\":\\"{{.Names}}\\",\\"state\\":\\"{{.State}}\\"}`);
+  }
+
+  private async runDockerPs(format: string): Promise<any[]> {
     // return a json like with each line separated with e_o_f\n
-    // eslint-disable-next-line max-len
-    const result = await this.commandService.execCommand(`docker ps -a --no-trunc --format={\\"id\\":\\"{{.ID}}\\",\\"command\\":{{.Command}},\\"createdAt\\":\\"{{.CreatedAt}}\\",\\"image\\":\\"{{.Image}}\\",\\"mounts\\":\\"{{.Mounts}}\\",\\"names\\":\\"{{.Names}}\\",\\"networks\\":\\"{{.Networks}}\\",\\"ports\\":\\"{{.Ports}}\\",\\"runningFor\\":\\"{{.RunningFor}}\\",\\"size\\":\\"{{.Size}}\\",\\"state\\":\\"{{.State}}\\",\\"status\\":\\"{{.Status}}\\"}e_o_f`);
+    const result = await this.commandService.execCommand(`docker ps -a --no-trunc --format=${format}e_o_f`);
+
     return result.split('e_o_f\n').filter(value => value.length > 0).map(value => JSON.parse(value));
   }
 

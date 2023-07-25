@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
-import { ComposeRestartOptions, ComposeUpOptions, DockerPs, PullBiotaDbOptions } from './docker.class';
+import { ComposeRestartOptions, ComposeUpOptions, DockerPsFull, PullBiotaDbOptions } from './docker.class';
 import { LabInitConfig, LabStatus } from './lab.class';
 import { LabService } from './lab.service';
 import { ConfigFile } from '../core/models/config-file.class';
@@ -21,7 +21,7 @@ export class LabController {
   }
 
   @Get('containers')
-  listContainers(): Promise<DockerPs[]> {
+  listContainers(): Promise<DockerPsFull[]> {
     return this.labService.listContainers();
   }
 

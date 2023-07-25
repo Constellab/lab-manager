@@ -1,4 +1,4 @@
-import {DockerPs, DockerRunOptions} from '../../../lab/docker.class';
+import {DockerPsFull, DockerRunOptions} from '../../../lab/docker.class';
 
 /**
  * Interface for the public methods of the DockerCommandService to be able to create
@@ -13,7 +13,7 @@ export interface DockerCommandServiceI {
 
   composePull(): Promise<string>;
 
-  dockerPs(): Promise<DockerPs[]>;
+  dockerPsFull(): Promise<DockerPsFull[]>;
 
   getLogs(containerName: string): Promise<string>;
 
