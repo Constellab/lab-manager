@@ -113,7 +113,7 @@ export class ContainerService {
   public async startAdminerService(): Promise<boolean> {
     const taskName = 'START ADMINER';
     this.taskService.newTask(taskName);
-
+    
     try {
       const containerName = this.getContainerName(ContainerService.ADMINER_NAME);
       const labels = this.traefikService.getTraefikLabels(containerName, '8080');
@@ -129,8 +129,20 @@ export class ContainerService {
       throw e;
     }
   }
-
+  
   public async deleteAdminerService(): Promise<boolean> {
     return this.removeContainer(ContainerService.ADMINER_NAME);
   }
+
+
+  /////////////////////////////// PROD DB ///////////////////////////////
+
+  public async dumpProdDb(dumpLocation: string): Promise<string> {
+    return await this.dockerCommand.dockerExec(ContainerService.DB_GWS_CORE_PROD, `mysqldump --user="root" --password=$MYSQL_ROOT_PASSWORD $MYSQL_DATABASE > ${dumpLocation}`);
+  }
+
+  public async deleteDumpProdDb(dumpLocation: string): Promise<string> {
+    return await this.dockerCommand.dockerExec(ContainerService.DB_GWS_CORE_PROD, `rm ${dumpLocation}`);
+  }
+
 }

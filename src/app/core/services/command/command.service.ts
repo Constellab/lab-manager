@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ChildProcess, exec, execFile, spawn } from 'child_process';
-import { timingSafeEqual } from 'crypto';
 import { Observable } from 'rxjs';
 
 export interface SpawnResult {

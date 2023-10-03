@@ -132,6 +132,10 @@ export class DockerCommandService implements DockerCommandServiceI {
     }
   }
 
+  public async dockerExec(containerName: string, command: string): Promise<string> {
+    return this.commandService.execCommand(`docker exec ${containerName} ${command}`);
+  }
+
 }
 
 

@@ -72,6 +72,10 @@ export class CoreConfigService {
     return this.getGwsDbFolder() + '/gws_core';
   }
 
+  public getGwsCoreDbProdMariaDbFolder(): string{
+    return this.getGwsCoreDbFolder() + '/prod/mariadb';
+  }
+
   /**
    * Get the path of the volume.
    * @param path if path provided, there are join to the volume path

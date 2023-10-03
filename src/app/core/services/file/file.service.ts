@@ -1,10 +1,11 @@
-import {BadRequestException, Inject, Injectable} from '@nestjs/common';
-import {getPrivateFileTemplate, PrivateFile, PrivateFileData} from '../../models/private-file.class';
-import {copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync} from 'fs';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { getPrivateFileTemplate, PrivateFile, PrivateFileData } from '../../models/private-file.class';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'fs';
+import { readdir, stat } from 'fs/promises';
 
-import {dirname, join} from 'path';
-import {CORE_MODULE_PROVIDER, CoreModuleConfig} from '../../models/core-module-config.class';
-import {CoreConfigService} from '../config/core-config.service';
+import { dirname, join } from 'path';
+import { CORE_MODULE_PROVIDER, CoreModuleConfig } from '../../models/core-module-config.class';
+import { CoreConfigService } from '../config/core-config.service';
 
 @Injectable()
 export class FileService {
@@ -42,15 +43,15 @@ export class FileService {
     return getPrivateFileTemplate();
   }
 
-  public updatePrivateFileData(data: Partial<PrivateFileData>): void{
+  public updatePrivateFileData(data: Partial<PrivateFileData>): void {
     const privateFile = this.readPrivateFile();
 
     const dataTemplate: PrivateFileData = {
       biota_current_db_url_version: null,
       last_init_manager_version: null,
     };
-    privateFile.data = {...dataTemplate, ...privateFile.data ?? {}, ...data};
-    this.createPrivateFile(privateFile);  
+    privateFile.data = { ...dataTemplate, ...privateFile.data ?? {}, ...data };
+    this.createPrivateFile(privateFile);
   }
 
   private get privateFilePath(): string {
@@ -116,7 +117,7 @@ export class FileService {
       throw new Error(`The file '${path}' does not exist`);
     }
 
-    return readFileSync(path, {encoding: 'utf-8'});
+    return readFileSync(path, { encoding: 'utf-8' });
   }
 
   public writeJsonFile(path: string, content: any): void {
@@ -126,7 +127,7 @@ export class FileService {
   public writeFile(path: string, content: any): void {
     // create the directory first
     const dir = dirname(path);
-    mkdirSync(dir, {recursive: true});
+    mkdirSync(dir, { recursive: true });
     writeFileSync(path, content);
   }
 
@@ -155,7 +156,7 @@ export class FileService {
   }
 
   public createDir(path: string, recursive: boolean = false): void {
-    mkdirSync(path, {recursive: recursive});
+    mkdirSync(path, { recursive: recursive });
   }
 
   public createDirIfNotExists(path: string, recursive: boolean = false): void {
@@ -164,15 +165,27 @@ export class FileService {
   }
 
   public deleteFileIfExist(path: string): void {
-    if(this.exists(path)){
+    if (this.exists(path)) {
       unlinkSync(path);
     }
   }
 
   public deleteFolderIfExist(path: string): void {
-    if(this.exists(path)){
+    if (this.exists(path)) {
       rmSync(path, { recursive: true, force: true });
     }
+  }
+
+  public getFileSize(path: string): number {
+    return readFileSync(path).byteLength;
+  }
+
+  // code from https://stackoverflow.com/questions/30448002/how-to-get-directory-size-in-node-js-without-recursively-going-through-directory
+  public async getFolderSize(path: string): Promise<number> {
+    const files = await readdir(path);
+    const stats = files.map(file => stat(join(path, file)));
+
+    return (await Promise.all(stats)).reduce((accumulator, { size }) => accumulator + size, 0);
   }
 
 

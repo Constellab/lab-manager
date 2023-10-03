@@ -1,10 +1,16 @@
+import { ChildProcess } from "child_process";
+import { BucketConfig } from "../core/models/bucket-config.class";
+import { StringHelper } from "../core/helpers/string.helper";
 
-export interface BackupInfoDto {
-  buckets: BackupBucketDto[];
+export interface BackupInfoDTO {
+  buckets: BackupBucketDTO[];
 }
 
+export type BackupFrequency = 'DAILY' | 'WEEKLY';
+export type BackupTriggerMode = 'MANUAL' | 'AUTOMATIC';
 
-export interface BackupBucketDto {
+export interface BackupBucketDTO {
+  backupFrequency: BackupFrequency;
   credentials: {
     accessKeyId: string;
     secretAccessKey: string;
@@ -22,53 +28,8 @@ export interface BackupStatusObject {
   message: string;
 }
 
-export class LabBackup {
-  status: BackupStatus;
-  storages: LabBackupStorage[];
-
-  constructor() {
-    this.status = 'IN_PROGRESS';
-    this.storages = [];
-  }
-
-  public updateMessage(backupType: BackupType, status: BackupStatus, message: string): void {
-    this.storages[0].updateMessage(backupType, status, message);
-
-    if (this.storages[0].isFinished()){
-      this.status = this.storages[0].status;
-    }
-  }
-
-  public addStorage(storage: LabBackupStorage): void {
-    this.storages.push(storage);
-  }
-
-  public isFinished(): boolean {
-    return this.status !== 'IN_PROGRESS';
-  }
-
-  public getFinishDate(): Date | null {
-    if (this.isFinished()) {
-      // return the most recent date
-      return this.storages.reduce((previousValue, currentValue) => {
-        if (currentValue.endUploadAt && currentValue.endUploadAt > previousValue) {
-          return currentValue.endUploadAt;
-        }
-        return previousValue;
-      }, new Date(0));
-    }
-    return null;
-  }
-
-  public static fromJson(json: any): LabBackup {
-    const labBackup = new LabBackup();
-    labBackup.status = json.status;
-    labBackup.storages = json.storages.map(s => LabBackupStorage.fromJson(s));
-    return labBackup;
-  }
-}
-
-export class LabBackupStorage {
+export interface LabBackupStorageI {
+  id: string;
   region: string;
   bucket: string;
   endpoint: string;
@@ -77,11 +38,46 @@ export class LabBackupStorage {
   status: BackupStatus;
   dataStatus: BackupStatusObject;
   dbStatus: BackupStatusObject;
+  dataSize: number;
+  dbSize: number;
+  frequency: BackupFrequency;
+  triggerMode: BackupTriggerMode;
+}
 
-  constructor(region: string, bucket: string, endpoint: string) {
+export class LabBackupStorage {
+
+  // store in the json
+  id: string;
+  region: string;
+  bucket: string;
+  endpoint: string;
+  startUploadAt: Date;
+  endUploadAt?: Date;
+  status: BackupStatus;
+  dataStatus: BackupStatusObject;
+  dbStatus: BackupStatusObject;
+  dataSize: number;
+  dbSize: number;
+  frequency: BackupFrequency;
+  triggerMode: BackupTriggerMode;
+
+  // not stored in the json
+  dbProcess: ChildProcess;
+  dataProcess: ChildProcess;
+  private accessKeyId: string;
+  private secretAccessKey: string;
+
+  private static readonly DAY = 24 * 60 * 60 * 1000; // 24h
+  private static readonly WEEK = 7 * LabBackupStorage.DAY; // 7 days
+
+  constructor(region: string, bucket: string, endpoint: string, frequency: BackupFrequency,
+    triggerMode: BackupTriggerMode) {
+    this.id = StringHelper.generateUUID() + '_' + new Date().getTime();
     this.region = region;
     this.bucket = bucket;
     this.endpoint = endpoint;
+    this.frequency = frequency;
+    this.triggerMode = triggerMode;
     this.status = 'IN_PROGRESS';
     this.startUploadAt = new Date();
     this.dataStatus = {
@@ -94,7 +90,6 @@ export class LabBackupStorage {
       status: 'IN_PROGRESS',
     };
   }
-
 
   public updateMessage(backupType: BackupType, status: BackupStatus, message: string): void {
     const backupStatus: BackupStatusObject = {
@@ -114,44 +109,88 @@ export class LabBackupStorage {
       this.status = this.dataStatus.status === 'ERROR' || this.dbStatus.status === 'ERROR' ? 'ERROR' : 'SUCCESS';
       this.endUploadAt = new Date();
     }
+
+    // clear the process
+    if (status !== 'IN_PROGRESS') {
+      if (backupType === 'DATA') {
+        this.dataProcess = null;
+      } else {
+        this.dbProcess = null;
+      }
+    }
   }
 
   public isFinished(): boolean {
     return this.status !== 'IN_PROGRESS';
   }
 
-  public static fromJson(json: any): LabBackupStorage {
-    const storage = new LabBackupStorage(json.region, json.bucket, json.endpoint);
+  public setAccessKeys(accessKeyId: string, secretAccessKey: string): void {
+    this.accessKeyId = accessKeyId;
+    this.secretAccessKey = secretAccessKey;
+  }
+
+  public getBucketConfig(): BucketConfig {
+    return {
+      bucket: this.bucket,
+      endpoint: this.endpoint,
+      region: this.region,
+      accessKeyId: this.accessKeyId,
+      secretAccessKey: this.secretAccessKey,
+    };
+  }
+
+  public setProcess(backupType: BackupType, process: ChildProcess): void {
+    if (backupType === 'DATA') {
+      this.dataProcess = process;
+    } else {
+      this.dbProcess = process;
+    }
+  }
+
+  /**
+   * return true if the backup is expired based on the frequency
+   * this means a new backup must be done
+   */
+  public backupIsExpired(): boolean {
+    if(this.endUploadAt == null) return false;
+
+    if (this.frequency === 'DAILY') {
+      return new Date().getTime() - this.endUploadAt.getTime() > LabBackupStorage.DAY;
+    } else {
+      return new Date().getTime() - this.endUploadAt.getTime() > LabBackupStorage.WEEK;
+    }
+  }
+
+
+  public static fromJson(json: LabBackupStorageI): LabBackupStorage {
+    const storage = new LabBackupStorage(json.region, json.bucket, json.endpoint, json.frequency,
+      json.triggerMode);
+    storage.id = json.id;
     storage.startUploadAt = new Date(json.startUploadAt);
     storage.endUploadAt = json.endUploadAt ? new Date(json.endUploadAt) : null;
     storage.status = json.status;
     storage.dataStatus = json.dataStatus;
     storage.dbStatus = json.dbStatus;
+    storage.dataSize = json.dataSize;
+    storage.dbSize = json.dbSize;
     return storage;
   }
-}
 
-export class LabBackupHistory {
-  version: number;
-  backups: LabBackup[];
-
-  constructor() {
-    this.version = 1;
-    this.backups = [];
-  }
-
-  public static fromJson(json: any): LabBackupHistory {
-    const history = new LabBackupHistory();
-    history.version = json.version;
-    history.backups = json.backups.map((backup: any) => LabBackup.fromJson(backup));
-    return history;
-  }
-
-  public getLastBackup(): LabBackup | null {
-    if (this.backups.length > 0) {
-      return this.backups[this.backups.length - 1];
+  public toJson(): LabBackupStorageI {
+    return {
+      id: this.id,
+      region: this.region,
+      bucket: this.bucket,
+      endpoint: this.endpoint,
+      startUploadAt: this.startUploadAt,
+      endUploadAt: this.endUploadAt,
+      status: this.status,
+      dataStatus: this.dataStatus,
+      dbStatus: this.dbStatus,
+      dataSize: this.dataSize,
+      dbSize: this.dbSize,
+      frequency: this.frequency,
+      triggerMode: this.triggerMode,
     }
-    return null;
   }
-
 }

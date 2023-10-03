@@ -4,7 +4,7 @@ import { ApiService } from 'src/app/core/services/api/api.service';
 import { ApiHttpOption } from 'src/app/core/services/api/api.class';
 import { FileService } from 'src/app/core/services/file/file.service';
 import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
-import { BackupInfoDto } from 'src/app/backup/backup.class';
+import { BackupInfoDTO, LabBackupStorageI } from 'src/app/backup/backup.class';
 
 
 /**
@@ -24,13 +24,17 @@ export class ExternalCentralApiService {
 
 
 
-  public getBackupInfo(): Promise<BackupInfoDto> {
+  public getBackupInfo(): Promise<BackupInfoDTO> {
     return lastValueFrom(
       this.apiService.get(this.constructRoute('lab/backup-info'), this.getRequestOptions({}))
     );
   }
 
-
+  public syncBackupHistory(backups: LabBackupStorageI[]): Promise<void> {
+    return lastValueFrom(
+      this.apiService.post(this.constructRoute('lab/backup-history'), backups, this.getRequestOptions({}))
+    );
+  }
 
   ////////////////// METHODS TO BUILD THE REQUEST //////////////////
 

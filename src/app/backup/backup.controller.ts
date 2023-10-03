@@ -1,7 +1,8 @@
 import { Body } from '@nestjs/common';
 import { Controller, Get, Post } from '@nestjs/common';
-import { BackupInfoDto, LabBackup, LabBackupHistory } from './backup.class';
+import { BackupInfoDTO, LabBackupStorageI } from './backup.class';
 import { BackupService } from './backup.service';
+import { LabBackupHistory } from './backup-history.class';
 
 
 @Controller('backup')
@@ -13,29 +14,25 @@ export class BackupController {
 
 
   @Post('prod')
-  createProdBackup(@Body() createBackup: BackupInfoDto): Promise<LabBackup> {
-    return this.backupService.checkAndCreateProdBackup(createBackup);
+  async createProdBackup(@Body() createBackup: BackupInfoDTO): Promise<LabBackupStorageI[]> {
+    const backup = await this.backupService.checkAndCreateProdBackup(createBackup);
+    return backup.map(backup => backup.toJson());
   }
 
 
   @Post('stop-current')
   stopCurrentBackup(): boolean {
-    return this.backupService.stopCurrentBackup();
+    return this.backupService.stopCurrentBackups();
   }
 
   @Get('last-status')
-  getLastBackup(): LabBackup {
-    return this.backupService.getLastBackupStatus();
+  getLastBackup(): LabBackupStorageI[] {
+    return this.backupService.getCurrentBackupStatus().map(backup => backup.toJson());
   }
 
-  // deprecated to remove once all labs uses v1.3.0
-  @Get('current-status')
-  currentStatus(): LabBackup {
-    return this.backupService.getLastBackupStatus();
-  }
 
   @Get('history')
   getBackupHistory(): LabBackupHistory {
-    return this.backupService.getBackupHistory();
+    return this.backupService.getBackupHistory().toJson();
   }
 }
