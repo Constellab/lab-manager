@@ -2,7 +2,6 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigFile } from '../../core/models/config-file.class';
 import { PrivateFile } from '../../core/models/private-file.class';
 import { FileService } from '../../core/services/file/file.service';
-import { CommandService } from '../../core/services/command/command.service';
 import { TaskService } from 'src/app/core/services/task/task.service';
 import { GPUService } from 'src/app/core/services/gpu/gpu.service';
 

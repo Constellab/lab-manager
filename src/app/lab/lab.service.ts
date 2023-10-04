@@ -1,16 +1,16 @@
 import {BadRequestException, Injectable, Logger} from '@nestjs/common';
 import {LabInitConfig, LabStatus} from './lab.class';
-import {BeforeDockerCommandOptions, DockerService} from './docker/docker.service';
+import {BeforeDockerCommandOptions, DockerService} from '../docker/docker.service';
 import {TaskService} from '../core/services/task/task.service';
 import {CoreConfigService} from '../core/services/config/core-config.service';
-import { ContainerService } from './container/container.service';
 import { FileService } from '../core/services/file/file.service';
-import { ConfigFileService } from './config-file/config-file.service';
+import { ConfigFileService } from '../core/services/config-file/config-file.service';
 import { BiotaService } from './biota/biota.service';
 import { InitService } from './init/init.service';
 import { ConfigFile } from '../core/models/config-file.class';
-import { ComposeRestartOptions, ComposeUpOptions, DockerPsFull, PullBiotaDbOptions } from './docker.class';
+import { ComposeRestartOptions, ComposeUpOptions, DockerPsFull, PullBiotaDbOptions } from '../docker/docker.class';
 import { EnvVariableService } from './env-variable/env-variable.service';
+import { ContainerService } from '../docker/container/container.service';
 
 const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
   dockerLogin: true,

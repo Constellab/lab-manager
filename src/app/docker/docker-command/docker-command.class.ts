@@ -1,4 +1,4 @@
-import {DockerPsFull, DockerRunOptions} from '../../../lab/docker.class';
+import {DockerPsFull, DockerRunOptions} from '../../docker/docker.class';
 
 /**
  * Interface for the public methods of the DockerCommandService to be able to create

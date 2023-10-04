@@ -3,11 +3,11 @@ import { CommandService } from '../../core/services/command/command.service';
 import { FileService } from '../../core/services/file/file.service';
 import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { TaskService } from '../../core/services/task/task.service';
-import { ConfigFileService } from '../config-file/config-file.service';
+import { ConfigFileService } from '../../core/services/config-file/config-file.service';
 import { HttpService } from '@nestjs/axios';
 import { createWriteStream } from 'fs';
 import { join } from 'path';
-import { ContainerService } from '../container/container.service';
+import { ContainerService } from 'src/app/docker/container/container.service';
 
 @Injectable()
 export class BiotaService {

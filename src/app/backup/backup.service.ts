@@ -3,12 +3,12 @@ import { SpawnResult } from '../core/services/command/command.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
 import { FileService } from '../core/services/file/file.service';
 import { RcloneService } from '../core/services/rclone/rclone.service';
-import { BackupBucketDTO, BackupFrequency, BackupInfoDTO, BackupTriggerMode, LabBackupStorage } from './backup.class';
+import { BackupBucketDTO, BackupFrequency, BackupInfoDTO, BackupTriggerMode, LabBackupStorage, LabBackupStorageI } from './backup.class';
 import { ExternalLabApiService } from '../core/services/external-lab/external-lab-api.service';
 import { Cron } from '@nestjs/schedule';
 import { ExternalCentralApiService } from '../core/external-central/external-central-api.service';
-import { ContainerService } from '../lab/container/container.service';
 import { LabBackupHistory } from './backup-history.class';
+import { ContainerService } from '../docker/container/container.service';
 
 type BackupType = 'DATA' | 'DB';
 
@@ -29,6 +29,9 @@ export class BackupService implements OnModuleInit{
   // min idle time required (no activity on lab) before doing a backup
   private static readonly BACKUP_IDLE_ACTIVITY = 30 * 60 * 1000; // 30min
 
+  // verison of the info sent by central supported by this version of the lab manager
+  private static readonly SUPPORTED_BACKUP_INFO_VERSION = 1;
+
   private readonly logger = new Logger(BackupService.name);
 
   private backupHistory: LabBackupHistory = null;
@@ -42,24 +45,31 @@ export class BackupService implements OnModuleInit{
     private containerService: ContainerService) {
   }
 
+  /**
+   * On start, check if there are some backup mark as running, if yes, mark them as error
+   */
   onModuleInit(): void {
+    this.migrateBackupHistory();
     const backupHistory = this.getBackupHistory();
 
-    // check if there is a running backup, to mark it as error
-    for(const running of backupHistory.getRunningBackups()){
-      if(running.dbStatus.status === 'IN_PROGRESS'){
-        this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped', 'DB', running);
-      }
-      if(running.dataStatus.status === 'IN_PROGRESS'){
-        this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped', 'DATA', running);
-      }
-    }
+    // // check if there is a running backup, to mark it as error
+    // for(const running of backupHistory.getRunningBackups()){
+    //   if(running.dbStatus.status === 'IN_PROGRESS'){
+    //     this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped', 'DB', running);
+    //   }
+    //   if(running.dataStatus.status === 'IN_PROGRESS'){
+    //     this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped', 'DATA', running);
+    //   }
+    // }
 
     // save the history and send history to central server
     this.saveBackupHistory(backupHistory);
+
+    this.logger.log('Syncing backup history with central server')
     this.externalCentralService.syncBackupHistory(backupHistory.backups.map(b => b.toJson())).catch(
       e => this.logger.error(`Error while syncing the backup history with the central server. Error : ${e.message}`)
-    );
+      );
+      this.logger.log('Syncing backup history with central server done')
   }
 
   /**
@@ -71,10 +81,12 @@ export class BackupService implements OnModuleInit{
    */
   @Cron('0 0 * * * *')
   async handleCron(): Promise<void> {
+
     this.logger.log('[AutoBackup] Cron triggered');
 
     try {
       const backupInfo = await this.externalCentralService.getBackupInfo();
+
       // we can do the backup
       this.createMultipleProdBackup(backupInfo, 'AUTOMATIC');
     } catch (e) {
@@ -88,8 +100,12 @@ export class BackupService implements OnModuleInit{
   }
 
   private async createMultipleProdBackup(createBackup: BackupInfoDTO, triggerMode: BackupTriggerMode): Promise<LabBackupStorage[]> {
+    if(createBackup.version !== BackupService.SUPPORTED_BACKUP_INFO_VERSION){
+      throw new BadRequestException(`The backup info version '${createBackup.version}' is not supported by this version of the lab manager`);
+    }
+    
     if (this.hasRunningBackup()) {
-      throw new BadRequestException(`[Backup][${triggerMode}]A backup is already running`);
+      throw new BadRequestException(`A backup is already running`);
     }
 
     // simple check to see if the lab was not encrypted by a ransomware
@@ -126,7 +142,7 @@ export class BackupService implements OnModuleInit{
     const backupHistory = this.getBackupHistory();
 
     const backups: LabBackupStorage[] = [];
-    for (const bucket of createBackup.buckets) {
+    for (const bucket of createBackup.backupBuckets) {
 
       // check if the last backup is expired 
       if (triggerMode === 'AUTOMATIC') {
@@ -148,9 +164,9 @@ export class BackupService implements OnModuleInit{
   private createProdBackup(backupBucketDto: BackupBucketDTO, triggerMode: BackupTriggerMode): LabBackupStorage {
 
     // add the unique storage
-    const backup = new LabBackupStorage(backupBucketDto.region, backupBucketDto.bucket, backupBucketDto.endpoint,
+    const backup = new LabBackupStorage(backupBucketDto.bucketConfig.region, backupBucketDto.bucketConfig.bucket, backupBucketDto.bucketConfig.endpoint,
       backupBucketDto.backupFrequency, triggerMode);
-    backup.setAccessKeys(backupBucketDto.credentials.accessKeyId, backupBucketDto.credentials.secretAccessKey);
+    backup.setAccessKeys(backupBucketDto.bucketConfig.credentials.accessKeyId, backupBucketDto.bucketConfig.credentials.secretAccessKey);
 
     this.logger.log(`[Backup][${backup.triggerMode}] Starting backup for region '${backup.region}', bucket '${backup.bucket}, frequency '${backup.frequency}', id '${backup.id}'`);
     // add the backup to the history
@@ -276,22 +292,28 @@ export class BackupService implements OnModuleInit{
   }
 
 
-  public stopCurrentBackups(): boolean {
+  public stopCurrentBackups(): LabBackupStorage[] {
 
     const backupHistory = this.getBackupHistory();
-    if (!backupHistory.hasRunningBackup) return false;
+    if (!backupHistory.hasRunningBackup()) return [];
 
-    for (const backup of backupHistory.getRunningBackups()) {
+    const runningBackups = backupHistory.getRunningBackups();
+    for (const backup of runningBackups) {
       if (backup.dbProcess) {
         backup.dbProcess.kill();
       }
       if (backup.dataProcess) {
         backup.dataProcess.kill();
       }
-
-      this.onCompleted('DB', 'ERROR', 'Backup stopped manually', backup);
+      
+      if(backup.dataStatus.status === 'IN_PROGRESS'){
+        this.onCompleted('DATA', 'ERROR', 'Backup stopped manually', backup);
+      }
+      if(backup.dbStatus.status === 'IN_PROGRESS'){
+        this.onCompleted('DB', 'ERROR', 'Backup stopped manually', backup);
+      }
     }
-    return true;
+    return runningBackups;
   }
 
 
@@ -316,7 +338,6 @@ export class BackupService implements OnModuleInit{
   /////////////////////////// BACKUP HISTORY ///////////////////////////
 
   private saveBackupStatusToHistory(backup: LabBackupStorage): void {
-    this.migrateBackupHistory();
     const backupHistory: LabBackupHistory = this.getBackupHistory();
 
     try {
@@ -350,6 +371,8 @@ export class BackupService implements OnModuleInit{
     const history: any = this.getBackupHistory();
 
     if (history.version >= 2) return;
+
+    this.logger.log('Migrating backup history to v2');
 
     const newBackupHistory = new LabBackupHistory();
 

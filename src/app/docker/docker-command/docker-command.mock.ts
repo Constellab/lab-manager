@@ -1,6 +1,6 @@
 import {Injectable} from '@nestjs/common';
 import {DockerCommandServiceI} from './docker-command.class';
-import {DockerPsFull, DockerRunOptions} from '../../../lab/docker.class';
+import { DockerPsFull, DockerRunOptions } from '../docker.class';
 
 /*  eslint-disable max-len */
 /**

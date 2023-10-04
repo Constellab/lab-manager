@@ -3,7 +3,6 @@ import {FileService} from './services/file/file.service';
 import {CoreConfigService} from './services/config/core-config.service';
 import {CORE_MODULE_PROVIDER, CoreModuleConfig} from './models/core-module-config.class';
 import {KeyGeneratorService} from './services/key-generator/key-generator.service';
-import {DockerCommandService} from './services/docker-command/docker-command.service';
 import {CommandService} from './services/command/command.service';
 import {TaskService} from './services/task/task.service';
 import {TraefikService} from './services/traefik/traefik.service';
@@ -14,6 +13,7 @@ import { ExternalLabApiService } from './services/external-lab/external-lab-api.
 import { ExternalCentralApiService } from './external-central/external-central-api.service';
 import { HttpModule } from '@nestjs/axios';
 import { GPUService } from './services/gpu/gpu.service';
+import { ConfigFileService } from './services/config-file/config-file.service';
 
 @Module({
   providers: [],
@@ -33,7 +33,6 @@ export class CoreModule {
         FileService,
         CoreConfigService,
         KeyGeneratorService,
-        DockerCommandService,
         CommandService,
         TaskService,
         TraefikService,
@@ -43,12 +42,12 @@ export class CoreModule {
         ExternalLabApiService,
         ExternalCentralApiService,
         GPUService,
+        ConfigFileService,
       ],
       exports: [
         FileService,
         CoreConfigService,
         KeyGeneratorService,
-        DockerCommandService,
         CommandService,
         TaskService,
         TraefikService,
@@ -58,6 +57,7 @@ export class CoreModule {
         ExternalLabApiService,
         ExternalCentralApiService,
         GPUService,
+        ConfigFileService,
       ],
     };
   }

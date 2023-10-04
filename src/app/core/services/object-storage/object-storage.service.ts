@@ -82,8 +82,8 @@ export class ObjectStorageService {
       endpoint: config.endpoint,
       region: config.region,
       credentials: {
-        accessKeyId: config.accessKeyId,
-        secretAccessKey: config.secretAccessKey,
+        accessKeyId: config.credentials.accessKeyId,
+        secretAccessKey: config.credentials.secretAccessKey,
       }
     });
   }

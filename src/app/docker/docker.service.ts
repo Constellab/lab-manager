@@ -1,12 +1,12 @@
 import {Injectable, Logger} from '@nestjs/common';
-import {DockerCommandService} from '../../core/services/docker-command/docker-command.service';
-import {ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull} from '../docker.class';
-import {FileService} from '../../core/services/file/file.service';
-import {ContainerService} from '../container/container.service';
-import {TaskService} from '../../core/services/task/task.service';
-import {ContainerStatusInfo} from '../lab.class';
+import {ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull} from './docker.class';
+import {FileService} from '../core/services/file/file.service';
+import {TaskService} from '../core/services/task/task.service';
+import {ContainerStatusInfo} from '../lab/lab.class';
 import { PrivateFile } from 'src/app/core/models/private-file.class';
 import { GPUService } from 'src/app/core/services/gpu/gpu.service';
+import { DockerCommandService } from './docker-command/docker-command.service';
+import { ContainerService } from './container/container.service';
 
 export interface BeforeDockerCommandOptions {
   dockerLogin?: boolean;

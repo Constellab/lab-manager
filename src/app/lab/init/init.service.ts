@@ -2,12 +2,12 @@ import { BadRequestException, Injectable, Logger, OnApplicationBootstrap } from 
 import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { FileService } from '../../core/services/file/file.service';
 import { PrivateFile } from '../../core/models/private-file.class';
-import { DockerService } from '../docker/docker.service';
+import { DockerService } from '../../docker/docker.service';
 import { BiotaService } from '../biota/biota.service';
 import { join } from 'path';
 import { EnvVariableService } from '../env-variable/env-variable.service';
 import { LabInitConfig } from '../lab.class';
-import { ConfigFileService } from '../config-file/config-file.service';
+import { ConfigFileService } from '../../core/services/config-file/config-file.service';
 import { TaskService } from 'src/app/core/services/task/task.service';
 import { hashSync } from 'bcrypt';
 

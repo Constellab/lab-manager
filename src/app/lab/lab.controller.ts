@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
-import { ComposeRestartOptions, ComposeUpOptions, DockerPsFull, PullBiotaDbOptions } from './docker.class';
+import { ComposeRestartOptions, ComposeUpOptions, DockerPsFull, PullBiotaDbOptions } from '../docker/docker.class';
 import { LabInitConfig, LabStatus } from './lab.class';
 import { LabService } from './lab.service';
 import { ConfigFile } from '../core/models/config-file.class';

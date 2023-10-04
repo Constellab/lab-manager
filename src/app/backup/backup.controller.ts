@@ -1,6 +1,6 @@
 import { Body } from '@nestjs/common';
 import { Controller, Get, Post } from '@nestjs/common';
-import { BackupInfoDTO, LabBackupStorageI } from './backup.class';
+import { BackupInfoDTO, LabBackupStorage, LabBackupStorageI } from './backup.class';
 import { BackupService } from './backup.service';
 import { LabBackupHistory } from './backup-history.class';
 
@@ -21,8 +21,8 @@ export class BackupController {
 
 
   @Post('stop-current')
-  stopCurrentBackup(): boolean {
-    return this.backupService.stopCurrentBackups();
+  stopCurrentBackup(): LabBackupStorageI[] {
+    return this.backupService.stopCurrentBackups().map(backup => backup.toJson());
   }
 
   @Get('last-status')

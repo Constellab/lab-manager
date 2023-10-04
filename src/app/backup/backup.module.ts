@@ -2,6 +2,7 @@ import {Module} from '@nestjs/common';
 import {BackupService} from './backup.service';
 import {CoreModule} from '../core/core.module';
 import { BackupController } from './backup.controller';
+import { DockerModule } from '../docker/docker.module';
 
 @Module({
   providers: [
@@ -11,7 +12,8 @@ import { BackupController } from './backup.controller';
     BackupController
   ],
   imports: [
-    CoreModule
+    CoreModule,
+    DockerModule,
   ]
 })
 export class BackupModule{

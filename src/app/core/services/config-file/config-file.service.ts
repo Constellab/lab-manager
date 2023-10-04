@@ -1,6 +1,6 @@
 import {BadRequestException, Injectable} from '@nestjs/common';
-import {ConfigFile} from '../../core/models/config-file.class';
-import {FileService} from '../../core/services/file/file.service';
+import {ConfigFile} from '../../models/config-file.class';
+import {FileService} from '../file/file.service';
 
 @Injectable()
 export class ConfigFileService {

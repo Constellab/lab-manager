@@ -2,23 +2,25 @@ import { ChildProcess } from "child_process";
 import { BucketConfig } from "../core/models/bucket-config.class";
 import { StringHelper } from "../core/helpers/string.helper";
 
-export interface BackupInfoDTO {
-  buckets: BackupBucketDTO[];
-}
 
 export type BackupFrequency = 'DAILY' | 'WEEKLY';
 export type BackupTriggerMode = 'MANUAL' | 'AUTOMATIC';
 
+
+/**
+ * Object sent by central that contains information about the backups location
+ */
+export interface BackupInfoDTO {
+  version: number;
+  backupBuckets: BackupBucketDTO[];
+}
+
+
 export interface BackupBucketDTO {
   backupFrequency: BackupFrequency;
-  credentials: {
-    accessKeyId: string;
-    secretAccessKey: string;
-  };
-  bucket: string;
-  endpoint: string;
-  region: string;
+  bucketConfig: BucketConfig;
 }
+
 
 export type BackupType = 'DATA' | 'DB';
 export type BackupStatus = 'IN_PROGRESS' | 'SUCCESS' | 'ERROR';
@@ -134,8 +136,10 @@ export class LabBackupStorage {
       bucket: this.bucket,
       endpoint: this.endpoint,
       region: this.region,
-      accessKeyId: this.accessKeyId,
-      secretAccessKey: this.secretAccessKey,
+      credentials: {
+        accessKeyId: this.accessKeyId,  
+        secretAccessKey: this.secretAccessKey,
+      }
     };
   }
 

@@ -1,8 +1,9 @@
 import {BadRequestException, Injectable} from '@nestjs/common';
 import {DockerCommandServiceI} from './docker-command.class';
-import {CommandService, ExecCommandMode} from '../command/command.service';
-import {DockerPs, DockerPsFull, DockerRunOptions} from '../../../lab/docker.class';
-import { FileService } from '../file/file.service';
+import { CommandService, ExecCommandMode } from 'src/app/core/services/command/command.service';
+import { FileService } from 'src/app/core/services/file/file.service';
+import { DockerPs, DockerPsFull, DockerRunOptions } from '../docker.class';
+
 
 /**
  * Service to execute docker command and get result

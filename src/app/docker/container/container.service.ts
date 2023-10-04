@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
-import { DockerCommandService } from 'src/app/core/services/docker-command/docker-command.service';
 import { TaskService } from 'src/app/core/services/task/task.service';
 import { TraefikService } from 'src/app/core/services/traefik/traefik.service';
-import { ConfigFileService } from '../config-file/config-file.service';
+import { DockerCommandService } from '../docker-command/docker-command.service';
+import { ConfigFileService } from 'src/app/core/services/config-file/config-file.service';
 
 @Injectable()
 export class ContainerService {
