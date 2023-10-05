@@ -52,15 +52,15 @@ export class BackupService implements OnModuleInit{
     this.migrateBackupHistory();
     const backupHistory = this.getBackupHistory();
 
-    // // check if there is a running backup, to mark it as error
-    // for(const running of backupHistory.getRunningBackups()){
-    //   if(running.dbStatus.status === 'IN_PROGRESS'){
-    //     this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped', 'DB', running);
-    //   }
-    //   if(running.dataStatus.status === 'IN_PROGRESS'){
-    //     this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped', 'DATA', running);
-    //   }
-    // }
+    // check if there is a running backup, to mark it as error
+    for(const running of backupHistory.getRunningBackups()){
+      if(running.dbStatus.status === 'IN_PROGRESS'){
+        this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped', 'DB', running);
+      }
+      if(running.dataStatus.status === 'IN_PROGRESS'){
+        this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped', 'DATA', running);
+      }
+    }
 
     // save the history and send history to central server
     this.saveBackupHistory(backupHistory);
@@ -173,10 +173,20 @@ export class BackupService implements OnModuleInit{
     this.saveBackupStatusToHistory(backup);
 
     // Synchronize the DB
-    this.syncDb(backup);
+    this.syncDb(backup).catch(e => {
+      this.logger.error(`Error while syncing the DB. Error : ${e.message}`);
+      if(backup.dbStatus.status === 'IN_PROGRESS'){
+        this.updateCurrentStatusStorageErrorMessage(`Error while syncing the DB. Error : ${e.message}`, 'DB', backup);
+      }
+    });
 
     // Synchronize the data
-    this.syncData(backup);
+    this.syncData(backup).catch(e => {
+      this.logger.error(`Error while syncing the data. Error : ${e.message}`);
+      if(backup.dataStatus.status === 'IN_PROGRESS'){
+        this.updateCurrentStatusStorageErrorMessage(`Error while syncing the data. Error : ${e.message}`, 'DATA', backup);
+      }
+    });
 
     return backup;
   }
@@ -185,7 +195,6 @@ export class BackupService implements OnModuleInit{
    * Sync the DB with the bucket. It creates a dump of the DB and sync the file with the bucket
    */
   private async syncDb(backup: LabBackupStorage): Promise<void> {
-
     // dump the db
     const result = await this.containerService.dumpProdDb(this.getDumpMariaDbLocation());
     if (result !== '') {

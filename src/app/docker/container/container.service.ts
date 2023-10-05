@@ -138,7 +138,8 @@ export class ContainerService {
   /////////////////////////////// PROD DB ///////////////////////////////
 
   public async dumpProdDb(dumpLocation: string): Promise<string> {
-    return await this.dockerCommand.dockerExec(ContainerService.DB_GWS_CORE_PROD, `mysqldump --user="root" --password=$MYSQL_ROOT_PASSWORD $MYSQL_DATABASE > ${dumpLocation}`);
+    // return await this.dockerCommand.dockerExec(ContainerService.DB_GWS_CORE_PROD, `mysqldump --user="root" --password=$MYSQL_ROOT_PASSWORD $MYSQL_DATABASE > ${dumpLocation}`);
+    return await this.dockerCommand.dockerExec(ContainerService.DB_GWS_CORE_PROD, `sh -c "mysqldump --user='root' --password=\$MYSQL_ROOT_PASSWORD \$MYSQL_DATABASE > /var/lib/mysql/.dump.sql > ${dumpLocation}"`);
   }
 
   public async deleteDumpProdDb(dumpLocation: string): Promise<string> {
