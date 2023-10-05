@@ -20,9 +20,11 @@ export class BackupService implements OnModuleInit {
   // destination folder for the backup is s3
   private readonly dataFolderDestination = '/data';
   private readonly dbFolderDestination = '/db';
-  // location of the DB dump inside mariadb container
-  private readonly dbDumName = '.dump.sql';
-  private readonly dbDumpLocation = '/var/lib/mysql';
+  // path of the DB dump inside mariadb container
+  private readonly dbDumName = 'dump.sql';
+  // path of the database inside mariadb container, which is shared with volume of this container
+  private readonly dbDumpMariaDbPath = '/var/lib/mysql';
+  private readonly dbDumpFolder = '.dumps';
 
 
   private static readonly MAX_BACKUP_HISTORY = 30;
@@ -140,7 +142,7 @@ export class BackupService implements OnModuleInit {
     }
 
     // delete the DB dump if it exists
-    this.fileService.deleteFileIfExist(this.getDbDumpLocationInCurrentContainer());
+    this.fileService.deleteFolderIfExist(this.getDbDumpPathInCurrentContainer());
 
     const backupHistory = this.getBackupHistory();
 
@@ -198,12 +200,13 @@ export class BackupService implements OnModuleInit {
    * Sync the DB with the bucket. It creates a dump of the DB and sync the file with the bucket
    */
   private async syncDb(backup: LabBackupStorage): Promise<void> {
-    // retrieve the location of the dump in the current container volume
-    const dumpVolumeLocationInCurrentContainer = this.getDbDumpLocationInCurrentContainer();
+    // retrieve the path of the dump in the current container volume
+    const dumpPathInCurrentContainer = this.getDbDumpPathInCurrentContainer();
 
-    if (!this.fileService.exists(dumpVolumeLocationInCurrentContainer)) {
+    if (!this.fileService.exists(dumpPathInCurrentContainer)) {
       // dump the db
-      const result = await this.containerService.dumpProdDb(this.getDumpMariaDbLocationInMariaDbContainer());
+      this.fileService.createDirIfNotExists(this.getDbDumpFolderInCurrentContainer());
+      const result = await this.containerService.dumpProdDb(this.getDumpMariaDbPathInMariaDbContainer());
       if (result !== '') {
         this.updateCurrentStatusStorageErrorMessage(`Error while dumping the DB. Error : ${result}`, 'DB', backup)
         return;
@@ -212,26 +215,31 @@ export class BackupService implements OnModuleInit {
 
 
     // get the dump size
-    const dumpSize = this.fileService.getFileSize(dumpVolumeLocationInCurrentContainer);
+    const dumpSize = this.fileService.getFileSize(dumpPathInCurrentContainer);
     backup.dbSize = dumpSize;
 
-    // sync the dump with the bucket
-    this.callSync(backup, dumpVolumeLocationInCurrentContainer, this.dbFolderDestination, 'DB');
+    // sync the dump folder with the bucket
+    this.callSync(backup, this.getDbDumpFolderInCurrentContainer(), this.dbFolderDestination, 'DB');
   }
 
   /**
-   * @returns Get the location of the DB dump inside the mariadb container
+   * @returns Get the path of the DB dump inside the mariadb container
    */
-  private getDumpMariaDbLocationInMariaDbContainer(): string {
-    return this.dbDumpLocation + '/' + this.dbDumName;
+  private getDumpMariaDbPathInMariaDbContainer(): string {
+    return this.dbDumpMariaDbPath + '/' + this.dbDumName;
+  }
+
+  private getDbDumpFolderInCurrentContainer(): string {
+    return this.configService.getGwsCoreDbProdMariaDbFolder() + '/' + this.dbDumpFolder;
   }
 
   /**
-   * @returns Get the location of the DB dump inside the current container
+   * @returns Get the path of the DB dump inside the current container
    */
-  private getDbDumpLocationInCurrentContainer(): string {
-    return this.configService.getGwsCoreDbProdMariaDbFolder() + '/' + this.dbDumName;
+  private getDbDumpPathInCurrentContainer(): string {
+    return this.getDbDumpFolderInCurrentContainer() + '/' + this.dbDumName;
   }
+
 
   private async syncData(backup: LabBackupStorage): Promise<void> {
     // Synchronize the data
@@ -297,7 +305,7 @@ export class BackupService implements OnModuleInit {
 
     // if there is no running backup, delete the DB dump
     if (!this.hasRunningBackup()) {
-      this.fileService.deleteFileIfExist(this.getDbDumpLocationInCurrentContainer());
+      this.fileService.deleteFolderIfExist(this.getDbDumpFolderInCurrentContainer());
     }
   }
 
