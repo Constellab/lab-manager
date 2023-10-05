@@ -9,6 +9,7 @@ import { Cron } from '@nestjs/schedule';
 import { ExternalCentralApiService } from '../core/external-central/external-central-api.service';
 import { LabBackupHistory } from './backup-history.class';
 import { ContainerService } from '../docker/container/container.service';
+import {join} from 'path';
 
 type BackupType = 'DATA' | 'DB';
 
@@ -21,7 +22,7 @@ export class BackupService implements OnModuleInit {
   private readonly dataFolderDestination = '/data';
   private readonly dbFolderDestination = '/db';
   // path of the DB dump inside mariadb container
-  private readonly dbDumName = 'dump.sql';
+  private readonly dbDumpName = 'dump.sql';
   // path of the database inside mariadb container, which is shared with volume of this container
   private readonly dbDumpMariaDbPath = '/var/lib/mysql';
   private readonly dbDumpFolder = '.dumps';
@@ -226,18 +227,18 @@ export class BackupService implements OnModuleInit {
    * @returns Get the path of the DB dump inside the mariadb container
    */
   private getDumpMariaDbPathInMariaDbContainer(): string {
-    return this.dbDumpMariaDbPath + this.dbDumpFolder + '/' + this.dbDumName;
+    return join(this.dbDumpMariaDbPath, this.dbDumpFolder, this.dbDumpName);
   }
 
   private getDbDumpFolderInCurrentContainer(): string {
-    return this.configService.getGwsCoreDbProdMariaDbFolder() + '/' + this.dbDumpFolder;
+    return join(this.configService.getGwsCoreDbProdMariaDbFolder(), this.dbDumpFolder);
   }
 
   /**
    * @returns Get the path of the DB dump inside the current container
    */
   private getDbDumpPathInCurrentContainer(): string {
-    return this.getDbDumpFolderInCurrentContainer() + '/' + this.dbDumName;
+    return join(this.getDbDumpFolderInCurrentContainer(), this.dbDumpName);
   }
 
 

@@ -49,15 +49,15 @@ export class CoreConfigService {
   }
 
   public getProdFolderPath(): string {
-    return `${this.getAppFolder()}/prod`;
+    return join(this.getAppFolder(), 'prod');
   }
 
   public getProdDataFolder(): string {
-    return `${this.getProdFolderPath()}/data`;
+    return join(this.getProdFolderPath(), 'data');
   }
 
   public getProdSettingsFolder(): string {
-    return `${this.getProdFolderPath()}/settings/glab`;
+    return join(this.getProdFolderPath(), 'settings', 'glab');
   }
 
   public getGwsDbFolder(): string {
@@ -65,15 +65,15 @@ export class CoreConfigService {
   }
 
   public getBiotaDbFolder(): string {
-    return this.getGwsDbFolder() + '/gws_biota';
+    return join(this.getGwsDbFolder() ,'gws_biota');
   }
 
   public getGwsCoreDbFolder(): string{
-    return this.getGwsDbFolder() + '/gws_core';
+    return join(this.getGwsDbFolder() , 'gws_core');
   }
 
   public getGwsCoreDbProdMariaDbFolder(): string{
-    return this.getGwsCoreDbFolder() + '/prod/mariadb';
+    return join(this.getGwsCoreDbFolder(), 'prod', 'mariadb');
   }
 
   /**
