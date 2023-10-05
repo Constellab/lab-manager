@@ -226,7 +226,7 @@ export class BackupService implements OnModuleInit {
    * @returns Get the path of the DB dump inside the mariadb container
    */
   private getDumpMariaDbPathInMariaDbContainer(): string {
-    return this.dbDumpMariaDbPath + '/' + this.dbDumName;
+    return this.dbDumpMariaDbPath + this.dbDumpFolder + '/' + this.dbDumName;
   }
 
   private getDbDumpFolderInCurrentContainer(): string {
