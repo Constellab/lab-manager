@@ -52,6 +52,7 @@ export class BackupService implements OnModuleInit {
    * On start, check if there are some backup mark as running, if yes, mark them as error
    */
   onModuleInit(): void {
+    if(!this.fileService.privateFileExists()) return;
     this.migrateBackupHistory();
     const backupHistory = this.getBackupHistory();
 
