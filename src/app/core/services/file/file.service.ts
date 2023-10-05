@@ -181,11 +181,29 @@ export class FileService {
   }
 
   // code from https://stackoverflow.com/questions/30448002/how-to-get-directory-size-in-node-js-without-recursively-going-through-directory
-  public async getFolderSize(path: string): Promise<number> {
-    const files = await readdir(path);
-    const stats = files.map(file => stat(join(path, file)));
+  public async getFolderSize(dirPath: string): Promise<number> {
+    // const files = await readdir(path);
+    // const stats = files.map(file => stat(join(path, file)));
 
-    return (await Promise.all(stats)).reduce((accumulator, { size }) => accumulator + size, 0);
+    // return (await Promise.all(stats)).reduce((accumulator, { size }) => accumulator + size, 0);
+
+    const files = await readdir(dirPath, { withFileTypes: true });
+
+    const paths = files.map(async file => {
+      const path = join(dirPath, file.name);
+
+      if (file.isDirectory()) return await this.getFolderSize(path);
+
+      if (file.isFile()) {
+        const { size } = await stat(path);
+
+        return size;
+      }
+
+      return 0;
+    });
+
+    return (await Promise.all(paths)).flat(Infinity).reduce((i, size) => i + size, 0);
   }
 
 

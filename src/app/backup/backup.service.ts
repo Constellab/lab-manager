@@ -13,7 +13,7 @@ import { ContainerService } from '../docker/container/container.service';
 type BackupType = 'DATA' | 'DB';
 
 @Injectable()
-export class BackupService implements OnModuleInit{
+export class BackupService implements OnModuleInit {
 
   private readonly backupHistoryFilename = 'backup-history.json';
 
@@ -53,11 +53,11 @@ export class BackupService implements OnModuleInit{
     const backupHistory = this.getBackupHistory();
 
     // check if there is a running backup, to mark it as error
-    for(const running of backupHistory.getRunningBackups()){
-      if(running.dbStatus.status === 'IN_PROGRESS'){
+    for (const running of backupHistory.getRunningBackups()) {
+      if (running.dbStatus.status === 'IN_PROGRESS') {
         this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped', 'DB', running);
       }
-      if(running.dataStatus.status === 'IN_PROGRESS'){
+      if (running.dataStatus.status === 'IN_PROGRESS') {
         this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped', 'DATA', running);
       }
     }
@@ -68,8 +68,8 @@ export class BackupService implements OnModuleInit{
     this.logger.log('Syncing backup history with central server')
     this.externalCentralService.syncBackupHistory(backupHistory.backups.map(b => b.toJson())).catch(
       e => this.logger.error(`Error while syncing the backup history with the central server. Error : ${e.message}`)
-      );
-      this.logger.log('Syncing backup history with central server done')
+    );
+    this.logger.log('Syncing backup history with central server done')
   }
 
   /**
@@ -100,10 +100,10 @@ export class BackupService implements OnModuleInit{
   }
 
   private async createMultipleProdBackup(createBackup: BackupInfoDTO, triggerMode: BackupTriggerMode): Promise<LabBackupStorage[]> {
-    if(createBackup.version !== BackupService.SUPPORTED_BACKUP_INFO_VERSION){
+    if (createBackup.version !== BackupService.SUPPORTED_BACKUP_INFO_VERSION) {
       throw new BadRequestException(`The backup info version '${createBackup.version}' is not supported by this version of the lab manager`);
     }
-    
+
     if (this.hasRunningBackup()) {
       throw new BadRequestException(`A backup is already running`);
     }
@@ -138,6 +138,9 @@ export class BackupService implements OnModuleInit{
       // for now we still run the backup even if we can't get the activity
       this.logger.error(`Error while getting the lab activity: ${e.message}. Running the backup anyway`);
     }
+
+    // delete the DB dump if it exists
+    this.fileService.deleteFileIfExist(this.getDbDumpLocationInCurrentContainer());
 
     const backupHistory = this.getBackupHistory();
 
@@ -175,7 +178,7 @@ export class BackupService implements OnModuleInit{
     // Synchronize the DB
     this.syncDb(backup).catch(e => {
       this.logger.error(`Error while syncing the DB. Error : ${e.message}`);
-      if(backup.dbStatus.status === 'IN_PROGRESS'){
+      if (backup.dbStatus.status === 'IN_PROGRESS') {
         this.updateCurrentStatusStorageErrorMessage(`Error while syncing the DB. Error : ${e.message}`, 'DB', backup);
       }
     });
@@ -183,7 +186,7 @@ export class BackupService implements OnModuleInit{
     // Synchronize the data
     this.syncData(backup).catch(e => {
       this.logger.error(`Error while syncing the data. Error : ${e.message}`);
-      if(backup.dataStatus.status === 'IN_PROGRESS'){
+      if (backup.dataStatus.status === 'IN_PROGRESS') {
         this.updateCurrentStatusStorageErrorMessage(`Error while syncing the data. Error : ${e.message}`, 'DATA', backup);
       }
     });
@@ -195,29 +198,39 @@ export class BackupService implements OnModuleInit{
    * Sync the DB with the bucket. It creates a dump of the DB and sync the file with the bucket
    */
   private async syncDb(backup: LabBackupStorage): Promise<void> {
-    // dump the db
-    const result = await this.containerService.dumpProdDb(this.getDumpMariaDbLocation());
-    if (result !== '') {
-      this.updateCurrentStatusStorageErrorMessage(`Error while dumping the DB. Error : ${result}`, 'DB', backup)
-      return;
+    // retrieve the location of the dump in the current container volume
+    const dumpVolumeLocationInCurrentContainer = this.getDbDumpLocationInCurrentContainer();
+
+    if (!this.fileService.exists(dumpVolumeLocationInCurrentContainer)) {
+      // dump the db
+      const result = await this.containerService.dumpProdDb(this.getDumpMariaDbLocationInMariaDbContainer());
+      if (result !== '') {
+        this.updateCurrentStatusStorageErrorMessage(`Error while dumping the DB. Error : ${result}`, 'DB', backup)
+        return;
+      }
     }
 
-    // retrieve the location of the dump in the current container volume
-    const dumpVolumeLocation = this.configService.getGwsCoreDbProdMariaDbFolder() + '/' + this.dbDumName;
 
     // get the dump size
-    const dumpSize = this.fileService.getFileSize(dumpVolumeLocation);
+    const dumpSize = this.fileService.getFileSize(dumpVolumeLocationInCurrentContainer);
     backup.dbSize = dumpSize;
 
     // sync the dump with the bucket
-    this.callSync(backup, dumpVolumeLocation, this.dbFolderDestination, 'DB');
+    this.callSync(backup, dumpVolumeLocationInCurrentContainer, this.dbFolderDestination, 'DB');
   }
 
   /**
    * @returns Get the location of the DB dump inside the mariadb container
    */
-  private getDumpMariaDbLocation(): string {
+  private getDumpMariaDbLocationInMariaDbContainer(): string {
     return this.dbDumpLocation + '/' + this.dbDumName;
+  }
+
+  /**
+   * @returns Get the location of the DB dump inside the current container
+   */
+  private getDbDumpLocationInCurrentContainer(): string {
+    return this.configService.getGwsCoreDbProdMariaDbFolder() + '/' + this.dbDumName;
   }
 
   private async syncData(backup: LabBackupStorage): Promise<void> {
@@ -269,13 +282,6 @@ export class BackupService implements OnModuleInit{
 
   private uploadCompleted(backupType: BackupType, backup: LabBackupStorage): void {
     this.onCompleted(backupType, 'SUCCESS', 'Backup completed', backup);
-
-    // delete the DB dump once the backup is done
-    if (backupType === 'DB') {
-      this.containerService.deleteDumpProdDb(this.getDumpMariaDbLocation()).catch(e =>
-        this.logger.error(`Error while deleting the DB dump. Error : ${e.message}`)
-      );
-    }
   }
 
   private onCompleted(backupType: BackupType, status: 'SUCCESS' | 'ERROR', message: string,
@@ -287,6 +293,11 @@ export class BackupService implements OnModuleInit{
     if (backup.isFinished()) {
       this.saveBackupStatusToHistory(backup);
       this.logger.log(`[Backup][${backup.triggerMode}] Backup finished for region '${backup.region}', bucket '${backup.bucket}, frequency '${backup.frequency}, id '${backup.id}'`);
+    }
+
+    // if there is no running backup, delete the DB dump
+    if (!this.hasRunningBackup()) {
+      this.fileService.deleteFileIfExist(this.getDbDumpLocationInCurrentContainer());
     }
   }
 
@@ -314,11 +325,11 @@ export class BackupService implements OnModuleInit{
       if (backup.dataProcess) {
         backup.dataProcess.kill();
       }
-      
-      if(backup.dataStatus.status === 'IN_PROGRESS'){
+
+      if (backup.dataStatus.status === 'IN_PROGRESS') {
         this.onCompleted('DATA', 'ERROR', 'Backup stopped manually', backup);
       }
-      if(backup.dbStatus.status === 'IN_PROGRESS'){
+      if (backup.dbStatus.status === 'IN_PROGRESS') {
         this.onCompleted('DB', 'ERROR', 'Backup stopped manually', backup);
       }
     }
