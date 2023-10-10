@@ -1,6 +1,6 @@
-import { Body } from '@nestjs/common';
+import { Body, Param } from '@nestjs/common';
 import { Controller, Get, Post } from '@nestjs/common';
-import { BackupInfoDTO, LabBackupStorage, LabBackupStorageI } from './backup.class';
+import { BackupInfoDTO, BackupTriggerMode, LabBackupStorage, LabBackupStorageI } from './backup.class';
 import { BackupService } from './backup.service';
 import { LabBackupHistory } from './backup-history.class';
 
@@ -13,9 +13,10 @@ export class BackupController {
   }
 
 
-  @Post('prod')
-  async createProdBackup(@Body() createBackup: BackupInfoDTO): Promise<LabBackupStorageI[]> {
-    const backup = await this.backupService.checkAndCreateProdBackup(createBackup);
+  @Post('prod/:mode')
+  async createProdBackup(@Body() createBackup: BackupInfoDTO,
+    @Param('triggerMode') triggerMode: BackupTriggerMode): Promise<LabBackupStorageI[]> {
+    const backup = await this.backupService.createMultipleProdBackup(createBackup, triggerMode);
     return backup.map(backup => backup.toJson());
   }
 

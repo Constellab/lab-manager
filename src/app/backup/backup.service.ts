@@ -99,11 +99,7 @@ export class BackupService implements OnModuleInit {
     }
   }
 
-  public async checkAndCreateProdBackup(createBackup: BackupInfoDTO): Promise<LabBackupStorage[]> {
-    return this.createMultipleProdBackup(createBackup, 'MANUAL');
-  }
-
-  private async createMultipleProdBackup(createBackup: BackupInfoDTO, triggerMode: BackupTriggerMode): Promise<LabBackupStorage[]> {
+  public async createMultipleProdBackup(createBackup: BackupInfoDTO, triggerMode: BackupTriggerMode): Promise<LabBackupStorage[]> {
     if (createBackup.version !== BackupService.SUPPORTED_BACKUP_INFO_VERSION) {
       throw new BadRequestException(`The backup info version '${createBackup.version}' is not supported by this version of the lab manager`);
     }
