@@ -159,9 +159,9 @@ export class LabBackupStorage {
     if(this.endUploadAt == null) return false;
 
     if (this.frequency === 'DAILY') {
-      return new Date().getTime() - this.endUploadAt.getTime() > LabBackupStorage.DAY;
+      return (new Date().getTime() - this.endUploadAt.getTime()) > LabBackupStorage.DAY;
     } else {
-      return new Date().getTime() - this.endUploadAt.getTime() > LabBackupStorage.WEEK;
+      return (new Date().getTime() - this.endUploadAt.getTime()) > LabBackupStorage.WEEK;
     }
   }
 

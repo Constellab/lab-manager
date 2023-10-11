@@ -87,19 +87,28 @@ export class BackupService implements OnModuleInit {
   async handleCron(): Promise<void> {
 
     this.logger.log('[AutoBackup] Cron triggered');
-
+    
+    let backupInfo: BackupInfoDTO;
     try {
-      const backupInfo = await this.externalCentralService.getBackupInfo();
-
-      // we can do the backup
-      this.createMultipleProdBackup(backupInfo, 'AUTOMATIC');
+      
+      backupInfo = await this.externalCentralService.getBackupInfo();
     } catch (e) {
       this.logger.error(`[AutoBackup] Error while getting the backup info: ${e.message}, skipping`);
+      return;
+    }
+
+    try {
+      
+      // we can do the backup
+      await this.createMultipleProdBackup(backupInfo, 'AUTOMATIC');
+    } catch (e) {
+      this.logger.error(`[AutoBackup] Error while creating the backup : ${e.message}, skipping`);
       return;
     }
   }
 
   public async createMultipleProdBackup(createBackup: BackupInfoDTO, triggerMode: BackupTriggerMode): Promise<LabBackupStorage[]> {
+
     if (createBackup.version !== BackupService.SUPPORTED_BACKUP_INFO_VERSION) {
       throw new BadRequestException(`The backup info version '${createBackup.version}' is not supported by this version of the lab manager`);
     }
@@ -151,7 +160,7 @@ export class BackupService implements OnModuleInit {
       if (triggerMode === 'AUTOMATIC') {
 
         const lastBackup = backupHistory.getLastBackupByFrequency(bucket.backupFrequency);
-        if (lastBackup && lastBackup.backupIsExpired()) {
+        if (lastBackup && !lastBackup.backupIsExpired()) {
           this.logger.log(`[AutoBackup] The last backup was finished at '${lastBackup.endUploadAt.toISOString()}' with frequency ${lastBackup.frequency}, skipping`);
           continue;
         }

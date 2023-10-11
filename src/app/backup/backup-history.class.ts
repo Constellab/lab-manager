@@ -13,6 +13,8 @@ export class LabBackupHistory {
         const history = new LabBackupHistory();
         history.version = json.version;
         history.backups = json.backups.map((backup: any) => LabBackupStorage.fromJson(backup));
+        history.sortBackups();
+            
         return history;
     }
 
@@ -64,7 +66,11 @@ export class LabBackupHistory {
             this.backups.push(backup);
         }
 
-        // sort backups by startUploadAt
+        this.sortBackups();
+    }
+    
+    // sort backups by startUploadAt
+    private sortBackups(): void {
         this.backups = this.backups.sort((a, b) => a.startUploadAt.getTime() - b.startUploadAt.getTime());
     }
 
