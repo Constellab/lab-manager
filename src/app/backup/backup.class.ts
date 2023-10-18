@@ -13,6 +13,7 @@ export type BackupTriggerMode = 'MANUAL' | 'AUTOMATIC';
 export interface BackupInfoDTO {
   version: number;
   backupBuckets: BackupBucketDTO[];
+  s3Prefix: string;
 }
 
 
@@ -44,6 +45,7 @@ export interface LabBackupStorageI {
   dbSize: number;
   frequency: BackupFrequency;
   triggerMode: BackupTriggerMode;
+  s3Prefix: string
 }
 
 export class LabBackupStorage {
@@ -62,6 +64,7 @@ export class LabBackupStorage {
   dbSize: number;
   frequency: BackupFrequency;
   triggerMode: BackupTriggerMode;
+  s3Prefix: string
 
   // not stored in the json
   dbProcess: ChildProcess;
@@ -73,13 +76,14 @@ export class LabBackupStorage {
   private static readonly WEEK = 7 * LabBackupStorage.DAY; // 7 days
 
   constructor(region: string, bucket: string, endpoint: string, frequency: BackupFrequency,
-    triggerMode: BackupTriggerMode) {
+    triggerMode: BackupTriggerMode, s3Prefix: string) {
     this.id = StringHelper.generateUUID() + '_' + new Date().getTime();
     this.region = region;
     this.bucket = bucket;
     this.endpoint = endpoint;
     this.frequency = frequency;
     this.triggerMode = triggerMode;
+    this.s3Prefix = s3Prefix;
     this.status = 'IN_PROGRESS';
     this.startUploadAt = new Date();
     this.dataStatus = {
@@ -91,6 +95,7 @@ export class LabBackupStorage {
       message: 'Backup started',
       status: 'IN_PROGRESS',
     };
+  
   }
 
   public updateMessage(backupType: BackupType, status: BackupStatus, message: string): void {
@@ -168,7 +173,7 @@ export class LabBackupStorage {
 
   public static fromJson(json: LabBackupStorageI): LabBackupStorage {
     const storage = new LabBackupStorage(json.region, json.bucket, json.endpoint, json.frequency,
-      json.triggerMode);
+      json.triggerMode, json.s3Prefix);
     storage.id = json.id;
     storage.startUploadAt = new Date(json.startUploadAt);
     storage.endUploadAt = json.endUploadAt ? new Date(json.endUploadAt) : null;
@@ -195,6 +200,7 @@ export class LabBackupStorage {
       dbSize: this.dbSize,
       frequency: this.frequency,
       triggerMode: this.triggerMode,
+      s3Prefix: this.s3Prefix,
     }
   }
 }

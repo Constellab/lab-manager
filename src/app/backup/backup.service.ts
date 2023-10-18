@@ -19,8 +19,8 @@ export class BackupService implements OnModuleInit {
   private readonly backupHistoryFilename = 'backup-history.json';
 
   // destination folder for the backup is s3
-  private readonly dataFolderDestination = '/data';
-  private readonly dbFolderDestination = '/db';
+  private readonly dataFolderDestination = 'data';
+  private readonly dbFolderDestination = 'db';
   // path of the DB dump inside mariadb container
   private readonly dbDumpName = 'dump.sql';
   // path of the database inside mariadb container, which is shared with volume of this container
@@ -117,6 +117,10 @@ export class BackupService implements OnModuleInit {
       throw new BadRequestException(`A backup is already running`);
     }
 
+    if(!createBackup.s3Prefix){
+      throw new BadRequestException(`The s3 prefix is not defined`);
+    }
+
     // simple check to see if the lab was not encrypted by a ransomware
     this.checkRansomware();
 
@@ -166,18 +170,18 @@ export class BackupService implements OnModuleInit {
         }
       }
 
-      backups.push(this.createProdBackup(bucket, triggerMode));
+      backups.push(this.createProdBackup(bucket, triggerMode, createBackup.s3Prefix));
     }
     return backups;
   }
 
 
 
-  private createProdBackup(backupBucketDto: BackupBucketDTO, triggerMode: BackupTriggerMode): LabBackupStorage {
+  private createProdBackup(backupBucketDto: BackupBucketDTO, triggerMode: BackupTriggerMode, s3Prefix: string): LabBackupStorage {
 
     // add the unique storage
     const backup = new LabBackupStorage(backupBucketDto.bucketConfig.region, backupBucketDto.bucketConfig.bucket, backupBucketDto.bucketConfig.endpoint,
-      backupBucketDto.backupFrequency, triggerMode);
+      backupBucketDto.backupFrequency, triggerMode, s3Prefix);
     backup.setAccessKeys(backupBucketDto.bucketConfig.credentials.accessKeyId, backupBucketDto.bucketConfig.credentials.secretAccessKey);
 
     this.logger.log(`[Backup][${backup.triggerMode}] Starting backup for region '${backup.region}', bucket '${backup.bucket}, frequency '${backup.frequency}', id '${backup.id}'`);
@@ -266,7 +270,7 @@ export class BackupService implements OnModuleInit {
 
   private callSync(backup: LabBackupStorage, pathToSync: string,
     destinationFolder: string, backupType: BackupType): void {
-    const response = this.rcloneService.syncFolder(backup.getBucketConfig(), pathToSync, destinationFolder);
+    const response = this.rcloneService.syncFolder(backup.getBucketConfig(), pathToSync, backup.s3Prefix + '/' + destinationFolder);
     // store process
     backup.setProcess(backupType, response.childProcess);
 
