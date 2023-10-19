@@ -46,6 +46,8 @@ services:
       - /app/prod/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
       - /app/prod/data:/data
+      # set the tmp folder under app folder to be on the cloud volume
+      - /app/prod/tmp:/tmp 
     labels:
       - "traefik.enable=true"
       # Config for the HTTPS glab domain to port 8080
@@ -107,6 +109,8 @@ services:
       - /app/dev/data:/data
       - /app/dev/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
+      # set the tmp folder under app folder to be on the cloud volume
+      - /app/dev/tmp:/tmp
     labels:
       - "traefik.enable=true"
       # Config for the HTTPS codelab domain to port 8080
