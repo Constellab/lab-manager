@@ -45,5 +45,8 @@ export interface LabInitConfig {
     username: string;
     password: string;
   }
+  labConfig: {
+    enableBackup: boolean;
+  }
   captchaSiteKey: string;
 }

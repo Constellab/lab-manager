@@ -85,6 +85,10 @@ export class BackupService implements OnModuleInit {
    */
   @Cron('0 0 * * * *')
   async handleCron(): Promise<void> {
+    if(!this.fileService.privateFileExists()) return;
+
+    const privateFile = this.fileService.readPrivateFile();
+    if(privateFile.backup && !privateFile.backup.enable) return;
 
     this.logger.log('[AutoBackup] Cron triggered');
     

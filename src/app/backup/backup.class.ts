@@ -45,7 +45,7 @@ export interface LabBackupStorageI {
   dbSize: number;
   frequency: BackupFrequency;
   triggerMode: BackupTriggerMode;
-  s3Prefix: string
+  s3Prefix: string;
 }
 
 export class LabBackupStorage {

@@ -16,6 +16,9 @@ export interface PrivateFile {
     hashToken: string;
     captchaSiteKey: string;
   };
+  backup: {
+    enable: boolean;
+  }
   db: {
     gws_core_prod_password: string;
     gws_core_dev_password: string;
@@ -58,6 +61,9 @@ export function getPrivateFileTemplate(): PrivateFile {
       token: null,
       hashToken: null,
       captchaSiteKey: null,
+    },
+    backup: {
+      enable: true,
     },
     db: {
       gws_core_prod_password: null,

@@ -127,6 +127,10 @@ export class InitService implements OnApplicationBootstrap {
       privateJson.docker_registry.username = labInitConfig.dockerRegistry.username;
       privateJson.docker_registry.password = labInitConfig.dockerRegistry.password;
 
+      // Backup info
+      privateJson.backup = {
+        enable: labInitConfig.labConfig?.enableBackup ?? true
+      }
 
       // set token, only update the hash when the token has changed.
       // otherwise a new hash is created each time and as the hash is used 
