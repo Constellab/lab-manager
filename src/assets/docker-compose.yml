@@ -18,10 +18,10 @@ services:
       - CENTRAL_API_URL=${CENTRAL_API_URL}
       - FRONT_URL=https://front.${VIRTUAL_HOST}
       - FRONT_VERSION=${FRONT_VERSION}
-      - CONDA_VERSION=latest
       - GPU=${GPU}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
+      - OPEN_AI_API_KEY=${OPEN_AI_API_KEY}
       # COMMUNITY
       - COMMUNITY_API_URL=${COMMUNITY_API_URL}
       - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}
@@ -75,10 +75,10 @@ services:
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
       - FRONT_URL=https://front.${VIRTUAL_HOST}
       - FRONT_VERSION=${FRONT_VERSION}
+      - GPU=${GPU}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
-      - CONDA_VERSION=latest
-      - GPU=${GPU}
+      - OPEN_AI_API_KEY=${OPEN_AI_API_KEY}
       # COMMUNITY
       - COMMUNITY_API_URL=${COMMUNITY_API_URL}
       - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}

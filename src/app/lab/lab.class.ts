@@ -49,4 +49,5 @@ export interface LabInitConfig {
     enableBackup: boolean;
   }
   captchaSiteKey: string;
+  openaiApiKey: string;
 }

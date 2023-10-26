@@ -152,6 +152,9 @@ export class InitService implements OnApplicationBootstrap {
       // captcha site key
       privateJson.lab.captchaSiteKey = labInitConfig.captchaSiteKey;
 
+      // open ai
+      privateJson.openai_api_key = labInitConfig.openaiApiKey;
+
       this.fileService.createPrivateFile(privateJson);
       this.taskService.markTaskAsSuccess(taskName, 'private.json file generated');
     } catch (e) {

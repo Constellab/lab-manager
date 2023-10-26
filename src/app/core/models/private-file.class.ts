@@ -29,6 +29,7 @@ export interface PrivateFile {
     username: string;
     password: string;
   };
+  openai_api_key: string;
   // contains some information about the current state of the lab
   // thoses information are kept when private.json is updated
   data: PrivateFileData;
@@ -78,5 +79,6 @@ export function getPrivateFileTemplate(): PrivateFile {
       biota_current_db_url_version: null,
       last_init_manager_version: null,
     },
+    openai_api_key: null,
   };
 }
