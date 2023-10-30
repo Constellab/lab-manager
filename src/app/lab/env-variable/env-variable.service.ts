@@ -93,7 +93,7 @@ export class EnvVariableService {
       envVariables.addEnvVariable('CAPTCHA_SITE_KEY', privateJson.lab.captchaSiteKey);
       
       // OPEN AI KEY
-      envVariables.addEnvVariable('OPEN_AI_API_KEY', privateJson.openai_api_key);
+      envVariables.addEnvVariable('OPENAI_API_KEY', privateJson.openai_api_key);
 
 
       // write the env variables to the .env file

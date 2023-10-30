@@ -21,7 +21,7 @@ services:
       - GPU=${GPU}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
-      - OPEN_AI_API_KEY=${OPEN_AI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       # COMMUNITY
       - COMMUNITY_API_URL=${COMMUNITY_API_URL}
       - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}
@@ -78,7 +78,7 @@ services:
       - GPU=${GPU}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
-      - OPEN_AI_API_KEY=${OPEN_AI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       # COMMUNITY
       - COMMUNITY_API_URL=${COMMUNITY_API_URL}
       - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}
