@@ -45,9 +45,13 @@ export class DockerService {
     }
   }
 
-  public async listContainers(): Promise<DockerPsFull[]> {
-    const containers = await this.dockerCommand.dockerPsFull();
+  public async listContainers(): Promise<DockerPs[]> {
+    const containers = await this.dockerCommand.dockerPs();
     return containers.sort((a, b) => a.names.localeCompare(b.names));
+  }
+
+  public async getContainersDetail(containerName: string): Promise<DockerPsFull> {
+    return await this.dockerCommand.getContainerInfo(containerName);
   }
 
   public async pullContainers(beforeOptions: BeforeDockerCommandOptions = {}): Promise<void> {

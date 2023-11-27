@@ -13,7 +13,7 @@ export interface DockerCommandServiceI {
 
   composePull(): Promise<string>;
 
-  dockerPsFull(): Promise<DockerPsFull[]>;
+  getContainerInfo(containerName: string): Promise<DockerPsFull>;
 
   getLogs(containerName: string): Promise<string>;
 

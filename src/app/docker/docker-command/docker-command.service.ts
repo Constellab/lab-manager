@@ -51,19 +51,32 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
   //////////////////////////////// DOCKER ////////////////////////////////
 
-  public async dockerPsFull(): Promise<DockerPsFull[]> {
-    return this.runDockerPs(`{\\"id\\":\\"{{.ID}}\\",\\"command\\":{{.Command}},\\"createdAt\\":\\"{{.CreatedAt}}\\",\\"image\\":\\"{{.Image}}\\",\\"mounts\\":\\"{{.Mounts}}\\",\\"names\\":\\"{{.Names}}\\",\\"networks\\":\\"{{.Networks}}\\",\\"ports\\":\\"{{.Ports}}\\",\\"runningFor\\":\\"{{.RunningFor}}\\",\\"size\\":\\"{{.Size}}\\",\\"state\\":\\"{{.State}}\\",\\"status\\":\\"{{.Status}}\\"}`)
+  public async getContainerInfo(containerName: string): Promise<DockerPsFull> {
+    const result = await this.runDockerPs(`{\\"id\\":\\"{{.ID}}\\",\\"command\\":{{.Command}},\\"createdAt\\":\\"{{.CreatedAt}}\\",\\"image\\":\\"{{.Image}}\\",\\"mounts\\":\\"{{.Mounts}}\\",\\"names\\":\\"{{.Names}}\\",\\"networks\\":\\"{{.Networks}}\\",\\"ports\\":\\"{{.Ports}}\\",\\"runningFor\\":\\"{{.RunningFor}}\\",\\"size\\":\\"{{.Size}}\\",\\"state\\":\\"{{.State}}\\",\\"status\\":\\"{{.Status}}\\"}`,
+      containerName);
+
+    if (result.length === 0) {
+      throw new BadRequestException(`Container '${containerName}' not found`);
+    }
+
+    return result[0];
   }
 
   public async dockerPs(): Promise<DockerPs[]> {
     return this.runDockerPs(`{\\"names\\":\\"{{.Names}}\\",\\"state\\":\\"{{.State}}\\"}`);
   }
 
-  private async runDockerPs(format: string): Promise<any[]> {
-    // return a json like with each line separated with e_o_f\n
-    const result = await this.commandService.execCommand(`docker ps -a --no-trunc --format=${format}e_o_f`);
+  private async runDockerPs(format: string, containerName: string = null): Promise<any[]> {
 
-    return result.split('e_o_f\n').filter(value => value.length > 0).map(value => JSON.parse(value));
+    let command = `docker ps -a --no-trunc --format=${format}`;
+
+    if (containerName) {
+      command += ` -f name=${containerName}`;
+    }
+    // return a json like with each line separated with \n
+    const result = await this.commandService.execCommand(command);
+
+    return result.split('\n').filter(value => value.length > 0).map(value => JSON.parse(value));
   }
 
   public async dockerContainerInfo(containerName: string): Promise<DockerPs> {

@@ -8,7 +8,7 @@ import { ConfigFileService } from '../core/services/config-file/config-file.serv
 import { BiotaService } from './biota/biota.service';
 import { InitService } from './init/init.service';
 import { ConfigFile } from '../core/models/config-file.class';
-import { ComposeRestartOptions, ComposeUpOptions, DockerPsFull, PullBiotaDbOptions } from '../docker/docker.class';
+import { ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull, PullBiotaDbOptions } from '../docker/docker.class';
 import { EnvVariableService } from './env-variable/env-variable.service';
 import { ContainerService } from '../docker/container/container.service';
 
@@ -89,8 +89,12 @@ export class LabService {
 
   //////////////////////////// CONTAINERS ////////////////////////////
 
-  public async listContainers(): Promise<DockerPsFull[]> {
+  public async listContainers(): Promise<DockerPs[]> {
     return this.dockerService.listContainers();
+  }
+
+  public async getContainerDetail(containerName: string): Promise<DockerPsFull> {
+    return this.dockerService.getContainersDetail(containerName);
   }
 
   public async upContainers(options: ComposeUpOptions): Promise<void> {

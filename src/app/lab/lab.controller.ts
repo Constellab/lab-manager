@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
-import { ComposeRestartOptions, ComposeUpOptions, DockerPsFull, PullBiotaDbOptions } from '../docker/docker.class';
+import { ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull, PullBiotaDbOptions } from '../docker/docker.class';
 import { LabInitConfig, LabStatus } from './lab.class';
 import { LabService } from './lab.service';
 import { ConfigFile } from '../core/models/config-file.class';
@@ -21,8 +21,18 @@ export class LabController {
   }
 
   @Get('containers')
-  listContainers(): Promise<DockerPsFull[]> {
+  listContainers(): Promise<DockerPs[]> {
     return this.labService.listContainers();
+  }
+  
+  @Get('containers/:containerName')
+  getContainersDetail(@Param('containerName') containerName: string): Promise<DockerPsFull> {
+    return this.labService.getContainerDetail(containerName);
+  }
+
+  @Get('containers/:containerName/logs')
+  getLogs(@Param('containerName') containerName: string): Promise<string> {
+    return this.labService.getLogs(containerName);
   }
 
   @Post('init-all')
@@ -49,11 +59,6 @@ export class LabController {
   @Post('pull-containers')
   pullContainers(): Promise<void> {
     return this.labService.pullContainers();
-  }
-
-  @Get(':containerName/logs')
-  getLogs(@Param('containerName') containerName: string): Promise<string> {
-    return this.labService.getLogs(containerName);
   }
 
   @Post('pull-biota-db')
