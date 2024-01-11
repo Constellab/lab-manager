@@ -171,7 +171,7 @@ services:
       - MYSQL_PASSWORD=${GWS_CORE_PROD_DB_PASSWORD}
       - MYSQL_DATABASE=gws_core
     volumes:
-      - /gws_db/gws_core/prod/mariadb:/var/lib/mysql
+      - /app/gws_db/gws_core/prod/mariadb:/var/lib/mysql
     networks:
       - gencovery-network-prod
     container_name: gws_core_prod_db
@@ -186,7 +186,7 @@ services:
       - MYSQL_PASSWORD=${GWS_CORE_DEV_DB_PASSWORD}
       - MYSQL_DATABASE=gws_core
     volumes:
-      - /gws_db/gws_core/dev/mariadb:/var/lib/mysql
+      - /app/gws_db/gws_core/dev/mariadb:/var/lib/mysql
     networks:
       - gencovery-network-dev
     container_name: gws_core_dev_db
@@ -214,7 +214,7 @@ services:
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=gws_biota
     volumes:
-      - /gws_db/gws_biota/mariadb:/var/lib/mysql
+      - /app/gws_db/gws_biota/mariadb:/var/lib/mysql
     networks:
       - gencovery-network-prod
       - gencovery-network-dev

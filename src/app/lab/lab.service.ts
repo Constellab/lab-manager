@@ -1,4 +1,4 @@
-import {BadRequestException, Injectable, Logger} from '@nestjs/common';
+import {BadRequestException, Injectable, Logger, OnModuleInit} from '@nestjs/common';
 import {LabInitConfig, LabStatus} from './lab.class';
 import {BeforeDockerCommandOptions, DockerService} from '../docker/docker.service';
 import {TaskService} from '../core/services/task/task.service';
@@ -11,6 +11,7 @@ import { ConfigFile } from '../core/models/config-file.class';
 import { ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull, PullBiotaDbOptions } from '../docker/docker.class';
 import { EnvVariableService } from './env-variable/env-variable.service';
 import { ContainerService } from '../docker/container/container.service';
+import { CommandService } from '../core/services/command/command.service';
 
 const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
   dockerLogin: true,
@@ -18,7 +19,7 @@ const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
 };
 
 @Injectable()
-export class LabService {
+export class LabService implements OnModuleInit {
 
   private readonly logger = new Logger(LabService.name);
 
@@ -31,7 +32,23 @@ export class LabService {
     private configFileService: ConfigFileService,
     private biotaService: BiotaService,
     private initService: InitService,
-    private envVariableService: EnvVariableService) {
+    private envVariableService: EnvVariableService,
+    private commandService: CommandService) {
+  }
+
+  // TODO MIGRATION, to remove
+  async onModuleInit(): Promise<void> {
+    if (this.configService.isProduction()) {
+      if(this.fileService.exists(this.configService.getGwsDbFolder())) return;
+      if(!this.fileService.exists('/gws_db')) return;
+
+      this.logger.log('[Migration]: creating gws db folder');
+      this.fileService.createDirIfNotExists(this.configService.getGwsDbFolder());
+      const gws_core_db_folder = this.configService.getGwsDbFolder() + '/gws_core';
+      // copy the /gws_db/gws_core folder to /gws_db/gws_core/
+      this.commandService.execCommand(`cp -r /gws_db/gws_core ${gws_core_db_folder}/`);
+      this.logger.log('[Migration]: Success gws db folder created');
+    }
   }
 
   public async getStatus(): Promise<LabStatus> {

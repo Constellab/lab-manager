@@ -61,7 +61,7 @@ export class CoreConfigService {
   }
 
   public getGwsDbFolder(): string {
-    return '/gws_db';
+    return this.getAppFolder() + '/gws_db';
   }
 
   public getBiotaDbFolder(): string {
