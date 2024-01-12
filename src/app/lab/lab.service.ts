@@ -38,9 +38,15 @@ export class LabService implements OnModuleInit {
 
   // TODO MIGRATION, to remove
   async onModuleInit(): Promise<void> {
-    if (this.configService.isProduction()) {
-      if(this.fileService.exists(this.configService.getGwsDbFolder())) return;
-      if(!this.fileService.exists('/gws_db')) return;
+    if (!this.configService.isLocal()) {
+      if(this.fileService.exists(this.configService.getGwsDbFolder())) {
+        this.logger.log('[Migration]: /app/gws_db folder already exists, skipping migration');
+        return;
+      };
+      if(!this.fileService.exists('/gws_db')) {
+        this.logger.log('[Migration]: /gws_db folder does not exist, skipping migration');
+        return;
+      };
 
       this.logger.log('[Migration]: creating gws db folder');
       this.fileService.createDirIfNotExists(this.configService.getGwsDbFolder());
