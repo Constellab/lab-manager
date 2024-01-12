@@ -43,7 +43,7 @@ export class LabService implements OnModuleInit {
         this.logger.log('[Migration]: /app/gws_db folder already exists, skipping migration');
         return;
       };
-      if(!this.fileService.exists('/gws_db')) {
+      if(!this.fileService.exists('/gws_db') || !this.fileService.exists('/gws_db/gws_core')) {
         this.logger.log('[Migration]: /gws_db folder does not exist, skipping migration');
         return;
       };
