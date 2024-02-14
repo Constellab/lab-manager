@@ -38,6 +38,9 @@ services:
       - GWS_BIOTA_DB_PASSWORD=gencovery
       - GWS_BIOTA_DB_NAME=gws_biota
       - GWS_BIOTA_DB_PORT=3306
+      # STREAMLIT 
+      - STREAMLIT_APP_SERVER_PORT=8501
+      - STREAMLIT_APP_SERVER_HOST=https://dashboard.${VIRTUAL_HOST}
     depends_on:
       - gws_core_prod_db
     volumes:
@@ -55,6 +58,13 @@ services:
       # Enable HTTPS
       - "traefik.http.routers.glab-router.entrypoints=websecure"
       - "traefik.http.routers.glab-router.tls.certresolver=myresolver"
+      # Config for https streamlit domain to port 8501
+      - "traefik.http.routers.streamlit-router.rule=host(`dashboard.${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.streamlit-router.service=streamlit-service"
+      - "traefik.http.services.streamlit-service.loadbalancer.server.port=8501"
+      # Enable HTTPS
+      - "traefik.http.routers.streamlit-router.entrypoints=websecure"
+      - "traefik.http.routers.streamlit-router.tls.certresolver=myresolver"
     networks:
       - gencovery-network-prod
     restart: on-failure:5
@@ -99,6 +109,9 @@ services:
       - GWS_BIOTA_DB_PASSWORD=gencovery
       - GWS_BIOTA_DB_NAME=gws_biota
       - GWS_BIOTA_DB_PORT=3306
+      # STREAMLIT 
+      - STREAMLIT_APP_SERVER_PORT=8501
+      - STREAMLIT_APP_SERVER_HOST=https://dashboard-dev.${VIRTUAL_HOST}
     depends_on:
       - gws_core_dev_db
     volumes:
@@ -127,6 +140,14 @@ services:
       # Enable HTTPS
       - "traefik.http.routers.glab-dev-router.entrypoints=websecure"
       - "traefik.http.routers.glab-dev-router.tls.certresolver=myresolver"
+
+      # Config for https streamlit domain to port 8501
+      - "traefik.http.routers.streamlit-dev-router.rule=host(`dashboard-dev.${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.streamlit-dev-router.service=streamlit-dev-service"
+      - "traefik.http.services.streamlit-dev-service.loadbalancer.server.port=8501"
+      # Enable HTTPS
+      - "traefik.http.routers.streamlit-dev-router.entrypoints=websecure"
+      - "traefik.http.routers.streamlit-dev-router.tls.certresolver=myresolver"
     networks:
       - gencovery-network-dev
     container_name: codelab
