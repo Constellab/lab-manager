@@ -177,6 +177,16 @@ services:
       #Enable HTTPS
       - "traefik.http.routers.front-router.entrypoints=websecure"
       - "traefik.http.routers.front-router.tls.certresolver=myresolver"
+
+      # Configure app to port 81
+      - "traefik.http.routers.lab-router.rule=Host(`lab.${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.lab-router.service=lab-service"
+      - "traefik.http.services.lab-service.loadbalancer.server.port=81"
+      #Enable HTTPS
+      - "traefik.http.routers.lab-router.entrypoints=websecure"
+      - "traefik.http.routers.lab-router.tls.certresolver=myresolver"
+
+      # Redirect http to https
       - "traefik.frontend.redirect.entryPoint=https"
     networks:
       - gencovery-network-prod
