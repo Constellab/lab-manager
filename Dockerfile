@@ -2,7 +2,7 @@
 # https://blog.logrocket.com/containerized-development-nestjs-docker/
 
 # Build step
-FROM node:18-alpine3.17 as builder
+FROM node:20-alpine3.19 as builder
 WORKDIR /lab-manager
 
 # Copy package and package-lock.json file for modules installation
@@ -17,15 +17,18 @@ COPY . .
 RUN npm run build
 
 ## Second Stage : Setup command to run your app using lightweight node image
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 WORKDIR /lab-manager
+
+ENV NODE_VERSION=20.12.2
+ENV RCLONE_VERSION=1.53.3-4ubuntu1.22.04.2
+ENV DOCKER_COMPOSE_VERSION=2.26.1
 
 # Install docker to run docker commands
 RUN apt-get update && \
      apt-get install docker.io -y
 
 # Install node js
-ENV NODE_VERSION=18.16.0
 RUN apt install -y curl
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
 ENV NVM_DIR=/root/.nvm
@@ -35,11 +38,11 @@ RUN . "$NVM_DIR/nvm.sh" && nvm alias default v${NODE_VERSION}
 ENV PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
 
 # Install docker compose
-RUN curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+RUN curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 RUN chmod +x /usr/local/bin/docker-compose
 
 # Install rclone,  unzip and pciutils (useful for lspci command)
-RUN apt install rclone=1.50.2-2ubuntu0.2 -y && \
+RUN apt install rclone=${RCLONE_VERSION} -y && \
     apt install unzip -y && \
     apt install pciutils -y
 
