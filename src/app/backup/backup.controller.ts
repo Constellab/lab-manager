@@ -15,7 +15,7 @@ export class BackupController {
 
   @Post('prod/:mode')
   async createProdBackup(@Body() createBackup: BackupInfoDTO,
-    @Param('triggerMode') triggerMode: BackupTriggerMode): Promise<LabBackupStorageI[]> {
+    @Param('mode') triggerMode: BackupTriggerMode): Promise<LabBackupStorageI[]> {
     const backup = await this.backupService.createMultipleProdBackup(createBackup, triggerMode);
     return backup.map(backup => backup.toJson());
   }

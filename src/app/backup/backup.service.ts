@@ -315,7 +315,7 @@ export class BackupService implements OnModuleInit {
     // when all backup are completed, save the status
     if (backup.isFinished()) {
       this.saveBackupStatusToHistory(backup);
-      this.logger.log(`[Backup][${backup.triggerMode}] Backup finished for region '${backup.region}', bucket '${backup.bucket}, frequency '${backup.frequency}, id '${backup.id}'`);
+      this.logger.log(`[Backup][${backup.triggerMode}] Backup finished for region '${backup.region}', bucket '${backup.bucket}', frequency '${backup.frequency}, id '${backup.id}'`);
     }
 
     // if there is no running backup, delete the DB dump
