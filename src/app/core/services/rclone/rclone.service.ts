@@ -12,6 +12,7 @@ export class RcloneService {
 
 
   public syncFolder(config: BucketConfig, pathToSync: string, destinationFolder: string = ''): SpawnResponse {
+    if(!destinationFolder.startsWith('/')) destinationFolder = '/' + destinationFolder
     return this.commandService.spawn('rclone',
       [
         '-P',
