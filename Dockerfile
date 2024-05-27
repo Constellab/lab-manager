@@ -38,8 +38,6 @@ RUN . "$NVM_DIR/nvm.sh" && nvm alias default v${NODE_VERSION}
 ENV PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
 
 # Install docker compose
-https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-Linux-x86_64
-https://github.com/docker/compose/releases/download/2.26.1/docker-compose-Linux-x86_64
 RUN curl -L "https://github.com/docker/compose/releases/download/v${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 RUN chmod +x /usr/local/bin/docker-compose
 
