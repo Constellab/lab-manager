@@ -120,6 +120,7 @@ services:
       - /app/dev/data:/data
       - /app/dev/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
+      - /app/dev/.ssh:/root/.ssh
     labels:
       - "traefik.enable=true"
       # Config for the HTTPS codelab domain to port 8080
