@@ -24,7 +24,7 @@ export class TaskService {
   public newTask(name: string, info?: string): void {
     if (this.currentTask != null && this.currentTask.status === 'RUNNING') {
       // eslint-disable-next-line max-len
-      throw new BadRequestException(`The task ${this.currentTask.name} is running, please wait for this task to finish before running a new task`);
+      throw new BadRequestException(`Can't start the task ${name} because the task ${this.currentTask.name} is still running, please wait for this task to finish before running a new task`);
     }
 
     this.task$.next({

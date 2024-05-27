@@ -3,6 +3,7 @@ import { ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull, PullBi
 import { LabInitConfig, LabStatus } from './lab.class';
 import { LabService } from './lab.service';
 import { ConfigFile } from '../core/models/config-file.class';
+import { TaskStatusInfo } from '../core/models/task.class';
 
 @Controller('lab')
 export class LabController {
@@ -13,6 +14,11 @@ export class LabController {
   @Get('status')
   getStatus(): Promise<LabStatus> {
     return this.labService.getStatus();
+  }
+
+  @Get('current-task')
+  async getCurrentTask(): Promise<TaskStatusInfo | null> {
+    return this.labService.getCurrentTask();
   }
 
   @Post('stop-current-task')

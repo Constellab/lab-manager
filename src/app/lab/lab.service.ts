@@ -1,4 +1,4 @@
-import {BadRequestException, Injectable, Logger, OnModuleInit} from '@nestjs/common';
+import {BadRequestException, Injectable, Logger} from '@nestjs/common';
 import {LabInitConfig, LabStatus} from './lab.class';
 import {BeforeDockerCommandOptions, DockerService} from '../docker/docker.service';
 import {TaskService} from '../core/services/task/task.service';
@@ -11,7 +11,7 @@ import { ConfigFile } from '../core/models/config-file.class';
 import { ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull, PullBiotaDbOptions } from '../docker/docker.class';
 import { EnvVariableService } from './env-variable/env-variable.service';
 import { ContainerService } from '../docker/container/container.service';
-import { CommandService } from '../core/services/command/command.service';
+import { TaskStatusInfo } from '../core/models/task.class';
 
 const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
   dockerLogin: true,
@@ -19,7 +19,7 @@ const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
 };
 
 @Injectable()
-export class LabService implements OnModuleInit {
+export class LabService  {
 
   private readonly logger = new Logger(LabService.name);
 
@@ -32,30 +32,9 @@ export class LabService implements OnModuleInit {
     private configFileService: ConfigFileService,
     private biotaService: BiotaService,
     private initService: InitService,
-    private envVariableService: EnvVariableService,
-    private commandService: CommandService) {
+    private envVariableService: EnvVariableService) {
   }
 
-  // TODO MIGRATION, to remove
-  async onModuleInit(): Promise<void> {
-    if (!this.configService.isLocal()) {
-      if(this.fileService.exists(this.configService.getGwsDbFolder())) {
-        this.logger.log('[Migration]: /app/gws_db folder already exists, skipping migration');
-        return;
-      };
-      if(!this.fileService.exists('/gws_db') || !this.fileService.exists('/gws_db/gws_core')) {
-        this.logger.log('[Migration]: /gws_db folder does not exist, skipping migration');
-        return;
-      };
-
-      this.logger.log('[Migration]: creating gws db folder');
-      this.fileService.createDirIfNotExists(this.configService.getGwsDbFolder());
-      const gws_core_db_folder = this.configService.getGwsDbFolder() + '/gws_core';
-      // copy the /gws_db/gws_core folder to /gws_db/gws_core/
-      this.commandService.execCommand(`cp -r /gws_db/gws_core ${gws_core_db_folder}/`);
-      this.logger.log('[Migration]: Success gws db folder created');
-    }
-  }
 
   public async getStatus(): Promise<LabStatus> {
     let lastInitManagerVersion: string = null;
@@ -79,13 +58,17 @@ export class LabService implements OnModuleInit {
   }
 
   public initLab(labInitConfig: LabInitConfig): void {
-    const currentTask = this.taskService.currentTask;
+    const currentTask = this.getCurrentTask();
     if(currentTask && currentTask.status === 'RUNNING'){
       throw new BadRequestException(`The task ${currentTask.name} is running, please wait for this task to finish before running a new task`);
     }
     this.initService.initAll(labInitConfig).catch((err) => {
       this.logger.error(err);
     });
+  }
+
+  public getCurrentTask(): TaskStatusInfo | null {
+    return this.taskService.currentTask;
   }
 
   public stopCurrentTask(): void {
