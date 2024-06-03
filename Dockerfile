@@ -21,7 +21,8 @@ FROM ubuntu:22.04
 WORKDIR /lab-manager
 
 ENV NODE_VERSION=20.12.2
-ENV RCLONE_VERSION=1.53.3-4ubuntu1.22.04.2
+# do not name RCLONE_VERSION as it is a reserved name
+ENV CUSTOM_RCLONE_VERSION=1.53.3-4ubuntu1.22.04.2
 ENV DOCKER_COMPOSE_VERSION=2.26.1
 
 # Install docker to run docker commands
@@ -42,7 +43,7 @@ RUN curl -L "https://github.com/docker/compose/releases/download/v${DOCKER_COMPO
 RUN chmod +x /usr/local/bin/docker-compose
 
 # Install rclone,  unzip and pciutils (useful for lspci command)
-RUN apt install rclone=${RCLONE_VERSION} -y && \
+RUN apt install rclone=${CUSTOM_RCLONE_VERSION} -y && \
     apt install unzip -y && \
     apt install pciutils -y
 
