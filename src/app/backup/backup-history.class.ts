@@ -1,8 +1,11 @@
-import { BackupFrequency, LabBackupStorage } from "./backup.class";
+import { BackupBucketDTO, BackupFrequency, BackupInfoDTO, LabBackupStorage } from "./backup.class";
 
 export class LabBackupHistory {
     version: number;
     backups: LabBackupStorage[];
+
+    private static readonly DAY = 24 * 60 * 60 * 1000; // 24h
+    private static readonly WEEK = 7 * LabBackupHistory.DAY; // 7 days
 
     constructor() {
         this.version = 2;
@@ -14,8 +17,48 @@ export class LabBackupHistory {
         history.version = json.version;
         history.backups = json.backups.map((backup: any) => LabBackupStorage.fromJson(backup));
         history.sortBackups();
-            
+
         return history;
+    }
+
+    /**
+     * Base on a list of backupBucketDto, return the backup to trigger
+     * Work for daily and weekly backup, it return only one type of backup to trigger
+     * If there is no backup to trigger, return daily and weekly backup
+     * If the last backup is earlier than 1 day, don't trigger backup
+     * If the last backup is between 1 and 7 days, trigger daily backup
+     * If the last backup is older than 7 days, trigger weekly backup
+     * @param backupBucketDto 
+     * @param forceBackup if true, it will trigger the backup even if the last backup is less than 1 day
+     */
+    public getBackupToTrigger(backupBucketDto: BackupBucketDTO[], forceBackup: boolean): BackupBucketDTO[] {
+        const lastBackup = this.getLastBackup();
+        if (!lastBackup) {
+            return backupBucketDto;
+        }
+
+        const lastBackupDate = lastBackup.startUploadAt;
+        const now = new Date();
+
+        const diff = now.getTime() - lastBackupDate.getTime();
+
+        if (diff < LabBackupHistory.DAY) {
+            // if forceBackup is true, return the daily backup
+            if (forceBackup) {
+                const daily = backupBucketDto.filter(backup => backup.backupFrequency === 'DAILY');
+                if (daily.length > 0) {
+                    return daily;
+                }
+                return backupBucketDto
+            }
+            return [];
+        }
+
+        if (diff < LabBackupHistory.WEEK) {
+            return backupBucketDto.filter(backup => backup.backupFrequency === 'DAILY');
+        }
+
+        return backupBucketDto.filter(backup => backup.backupFrequency === 'WEEKLY');
     }
 
     public getLastBackup(): LabBackupStorage | null {
@@ -68,7 +111,7 @@ export class LabBackupHistory {
 
         this.sortBackups();
     }
-    
+
     // sort backups by startUploadAt
     private sortBackups(): void {
         this.backups = this.backups.sort((a, b) => a.startUploadAt.getTime() - b.startUploadAt.getTime());

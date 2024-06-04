@@ -72,9 +72,6 @@ export class LabBackupStorage {
   private accessKeyId: string;
   private secretAccessKey: string;
 
-  private static readonly DAY = 24 * 60 * 60 * 1000; // 24h
-  private static readonly WEEK = 7 * LabBackupStorage.DAY; // 7 days
-
   constructor(region: string, bucket: string, endpoint: string, frequency: BackupFrequency,
     triggerMode: BackupTriggerMode, s3Prefix: string) {
     this.id = StringHelper.generateUUID() + '_' + new Date().getTime();
@@ -155,21 +152,6 @@ export class LabBackupStorage {
       this.dbProcess = process;
     }
   }
-
-  /**
-   * return true if the backup is expired based on the frequency
-   * this means a new backup must be done
-   */
-  public backupIsExpired(): boolean {
-    if(this.endUploadAt == null) return false;
-
-    if (this.frequency === 'DAILY') {
-      return (new Date().getTime() - this.endUploadAt.getTime()) > LabBackupStorage.DAY;
-    } else {
-      return (new Date().getTime() - this.endUploadAt.getTime()) > LabBackupStorage.WEEK;
-    }
-  }
-
 
   public static fromJson(json: LabBackupStorageI): LabBackupStorage {
     const storage = new LabBackupStorage(json.region, json.bucket, json.endpoint, json.frequency,

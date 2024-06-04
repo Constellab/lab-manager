@@ -141,4 +141,8 @@ export class ContainerService {
     return await this.dockerCommand.dockerExec(ContainerService.DB_GWS_CORE_PROD, `sh -c "mysqldump --user='root' --password=\\$MYSQL_ROOT_PASSWORD \\$MYSQL_DATABASE > ${dumpLocation}"`);
   }
 
+  public async prodDbIsRunning(): Promise<boolean> {
+    return this.containerIsRunning(ContainerService.DB_GWS_CORE_PROD);
+  }
+
 }

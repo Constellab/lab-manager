@@ -128,6 +128,11 @@ export class BackupService implements OnModuleInit {
     // simple check to see if the lab was not encrypted by a ransomware
     this.checkRansomware();
 
+    // check if the prod db is running
+    if (!await this.containerService.prodDbIsRunning()) {
+      throw new BadRequestException('The prod DB is not running, please start the lab before doing a backup');
+    }
+
     try {
       const labActivity = await this.externalLabService.getGlobalActivity();
 
@@ -138,6 +143,7 @@ export class BackupService implements OnModuleInit {
       if (labActivity.queued_experiments > 0) {
         throw new BadRequestException(`There is ${labActivity.queued_experiments} experiments in the queue in the lab, please remove them from queue before doing a backup`)
       }
+
 
       if (triggerMode === 'AUTOMATIC') {
         // check if the last activity is older than BACKUP_IDLE_ACTIVITY
@@ -161,24 +167,16 @@ export class BackupService implements OnModuleInit {
 
     const backupHistory = this.getBackupHistory();
 
+    // get the list of backup to trigger
+    const backupToTrigger = backupHistory.getBackupToTrigger(createBackup.backupBuckets, 
+      triggerMode === 'AUTOMATIC');
+
     const backups: LabBackupStorage[] = [];
-    for (const bucket of createBackup.backupBuckets) {
-
-      // check if the last backup is expired 
-      if (triggerMode === 'AUTOMATIC') {
-
-        const lastBackup = backupHistory.getLastBackupByFrequency(bucket.backupFrequency);
-        if (lastBackup && !lastBackup.backupIsExpired()) {
-          this.logger.log(`[AutoBackup] The last backup was finished at '${lastBackup.endUploadAt.toISOString()}' with frequency ${lastBackup.frequency}, skipping`);
-          continue;
-        }
-      }
-
+    for (const bucket of backupToTrigger) {
       backups.push(this.createProdBackup(bucket, triggerMode, createBackup.s3Prefix));
     }
     return backups;
   }
-
 
 
   private createProdBackup(backupBucketDto: BackupBucketDTO, triggerMode: BackupTriggerMode, s3Prefix: string): LabBackupStorage {
