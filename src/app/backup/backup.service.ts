@@ -3,13 +3,15 @@ import { SpawnResult } from '../core/services/command/command.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
 import { FileService } from '../core/services/file/file.service';
 import { RcloneService } from '../core/services/rclone/rclone.service';
-import { BackupBucketDTO, BackupFrequency, BackupInfoDTO, BackupTriggerMode, LabBackupStorage, LabBackupStorageI } from './backup.class';
+import { BackupBucketDTO, BackupFrequency, BackupInfoDTO, BackupRestoreDTO, BackupTriggerMode, LabBackupStorage, LabBackupStorageI } from './backup.class';
 import { ExternalLabApiService } from '../core/services/external-lab/external-lab-api.service';
 import { Cron } from '@nestjs/schedule';
 import { ExternalCentralApiService } from '../core/external-central/external-central-api.service';
 import { LabBackupHistory } from './backup-history.class';
 import { ContainerService } from '../docker/container/container.service';
-import {join} from 'path';
+import { join } from 'path';
+import { TaskService } from '../core/services/task/task.service';
+import { Observable, lastValueFrom, tap } from 'rxjs';
 
 type BackupType = 'DATA' | 'DB';
 
@@ -19,8 +21,8 @@ export class BackupService implements OnModuleInit {
   private readonly backupHistoryFilename = 'backup-history.json';
 
   // destination folder for the backup is s3
-  private readonly dataFolderDestination = 'data';
-  private readonly dbFolderDestination = 'db';
+  private readonly dataS3FolderDestination = 'data';
+  private readonly dbS3FolderDestination = 'db';
   // path of the DB dump inside mariadb container
   private readonly dbDumpName = 'dump.sql';
   // path of the database inside mariadb container, which is shared with volume of this container
@@ -35,6 +37,8 @@ export class BackupService implements OnModuleInit {
   // verison of the info sent by central supported by this version of the lab manager
   private static readonly SUPPORTED_BACKUP_INFO_VERSION = 1;
 
+  private static readonly RESTORE_BACKUP_TASK = 'RESTORE BACKUP';
+
   private readonly logger = new Logger(BackupService.name);
 
   private backupHistory: LabBackupHistory = null;
@@ -45,14 +49,15 @@ export class BackupService implements OnModuleInit {
     private fileService: FileService,
     private externalLabService: ExternalLabApiService,
     private externalCentralService: ExternalCentralApiService,
-    private containerService: ContainerService) {
+    private containerService: ContainerService,
+    private taskService: TaskService) {
   }
 
   /**
    * On start, check if there are some backup mark as running, if yes, mark them as error
    */
   onModuleInit(): void {
-    if(!this.fileService.privateFileExists()) return;
+    if (!this.fileService.privateFileExists()) return;
     this.migrateBackupHistory();
     const backupHistory = this.getBackupHistory();
 
@@ -85,16 +90,16 @@ export class BackupService implements OnModuleInit {
    */
   @Cron('0 0 * * * *')
   async handleCron(): Promise<void> {
-    if(!this.fileService.privateFileExists()) return;
+    if (!this.fileService.privateFileExists()) return;
 
     const privateFile = this.fileService.readPrivateFile();
-    if(privateFile.backup && !privateFile.backup.enable) return;
+    if (privateFile.backup && !privateFile.backup.enable) return;
 
     this.logger.log('[AutoBackup] Cron triggered');
-    
+
     let backupInfo: BackupInfoDTO;
     try {
-      
+
       backupInfo = await this.externalCentralService.getBackupInfo();
     } catch (e) {
       this.logger.error(`[AutoBackup] Error while getting the backup info: ${e.message}, skipping`);
@@ -102,7 +107,7 @@ export class BackupService implements OnModuleInit {
     }
 
     try {
-      
+
       // we can do the backup
       await this.createMultipleProdBackup(backupInfo, 'AUTOMATIC');
     } catch (e) {
@@ -121,7 +126,7 @@ export class BackupService implements OnModuleInit {
       throw new BadRequestException(`A backup is already running`);
     }
 
-    if(!createBackup.s3Prefix){
+    if (!createBackup.s3Prefix) {
       throw new BadRequestException(`The s3 prefix is not defined`);
     }
 
@@ -168,13 +173,16 @@ export class BackupService implements OnModuleInit {
     const backupHistory = this.getBackupHistory();
 
     // get the list of backup to trigger
-    const backupToTrigger = backupHistory.getBackupToTrigger(createBackup.backupBuckets, 
+    const backupToTrigger = backupHistory.getBackupToTrigger(createBackup.backupBuckets,
       triggerMode === 'MANUAL');
 
     const backups: LabBackupStorage[] = [];
+
+
     for (const bucket of backupToTrigger) {
       backups.push(this.createProdBackup(bucket, triggerMode, createBackup.s3Prefix));
     }
+
     return backups;
   }
 
@@ -232,7 +240,7 @@ export class BackupService implements OnModuleInit {
     backup.dbSize = dumpSize;
 
     // sync the dump folder with the bucket
-    this.callSync(backup, this.getDbDumpFolderInCurrentContainer(), this.dbFolderDestination, 'DB');
+    this.callSyncToS3(backup, this.getDbDumpFolderInCurrentContainer(), this.dbS3FolderDestination, 'DB');
   }
 
   /**
@@ -266,13 +274,13 @@ export class BackupService implements OnModuleInit {
       this.logger.error(`Error while getting the data folder size. Error : ${e.message}`);
     }
 
-    this.callSync(backup, dataFolder, this.dataFolderDestination, 'DATA');
+    this.callSyncToS3(backup, dataFolder, this.dataS3FolderDestination, 'DATA');
   }
 
 
-  private callSync(backup: LabBackupStorage, pathToSync: string,
+  private callSyncToS3(backup: LabBackupStorage, pathToSync: string,
     destinationFolder: string, backupType: BackupType): void {
-    const response = this.rcloneService.syncFolder(backup.getBucketConfig(), pathToSync, backup.s3Prefix + '/' + destinationFolder);
+    const response = this.rcloneService.syncFolderToS3(backup.getBucketConfig(), pathToSync, backup.s3Prefix + '/' + destinationFolder);
     // store process
     backup.setProcess(backupType, response.childProcess);
 
@@ -286,15 +294,7 @@ export class BackupService implements OnModuleInit {
   }
 
   private onProgress(message: string, backupType: BackupType, backup: LabBackupStorage): void {
-    // filter useful to only get the progess messages
-    if (message.startsWith('Transferred') && message.includes('%')) {
-      // remove the part of the message after text : 'Error'
-      const index = message.indexOf('Error');
-      if (index > 0) {
-        message = message.substring(0, index);
-      }
-      backup.updateMessage(backupType, 'IN_PROGRESS', message);
-    }
+    backup.updateMessage(backupType, 'IN_PROGRESS', message);
   }
 
   private updateCurrentStatusStorageErrorMessage(message: string, backupType: BackupType, backup: LabBackupStorage): void {
@@ -460,6 +460,104 @@ export class BackupService implements OnModuleInit {
   }
 
 
+
+  /////////////////////////////////////// RESTORE BACKUP ///////////////////////////////////////
+
+
+  public async restoreBackup(restoreDTO: BackupRestoreDTO): Promise<void> {
+    // Synchronize the data
+    const dataFolder = this.configService.getProdDataFolder();
+
+    // if the data folder is not empty, we stop the restore
+    if (this.fileService.exists(dataFolder) && !this.fileService.folderIsEmpty(dataFolder)) {
+      throw new BadRequestException('The data folder is not empty, please delete the data folder before restoring a backup');
+    }
+
+    this.taskService.newTask(BackupService.RESTORE_BACKUP_TASK);
+
+    try {
+
+      if(restoreDTO.restoreDb){
+        // restore the DB
+        await this.restoreDb(restoreDTO);
+      }
+
+
+      if(restoreDTO.restoreData){
+        // restore the data
+        this.restoreData(restoreDTO).subscribe({
+          error: (error: SpawnResult) => this.onRestoreBackupError(error.data),
+          complete: () => this.onRestoreBackupSuccess()
+        })
+      }else{
+        this.onRestoreBackupSuccess();
+      }
+
+    } catch (e) {
+      this.taskService.markTaskAsError(BackupService.RESTORE_BACKUP_TASK, e.toString());
+      throw e;
+    }
+  }
+
+  private restoreData(restoreDTO: BackupRestoreDTO): Observable<SpawnResult> {
+    this.logger.log('[RESTORE DATA] Starting restore of the DB');
+    const dataFolder = this.configService.getProdDataFolder();
+
+    // sync the data folder with the bucket
+    return this.callSyncFromS3(restoreDTO, this.dataS3FolderDestination, dataFolder).pipe(
+      tap({
+        complete: () => this.logger.log('[RESTORE DATA] Data Restored')
+      })
+    );
+  }
+
+  private async restoreDb(restoreDTO: BackupRestoreDTO): Promise<void> {
+    this.logger.log('[RESTORE DB] Starting restore of the DB');
+    // retrieve the path of the dump in the current container volume
+    const dumpPathInCurrentContainer = this.getDbDumpPathInCurrentContainer();
+
+    // delete the DB dump if it exists
+    this.fileService.deleteFolderIfExist(dumpPathInCurrentContainer);
+
+    this.logger.log('[RESTORE DB] Downloading DB dump from S3');
+    // sync db file into the container
+    const obs = this.callSyncFromS3(restoreDTO, this.dbS3FolderDestination, dumpPathInCurrentContainer);
+    // wait for the download to complete
+    await lastValueFrom(obs);
+
+    this.logger.log('[RESTORE DB] Applying the DB dump');
+
+    // restore the DB
+    const dbPathInMariaDb = this.getDumpMariaDbPathInMariaDbContainer();
+    await this.containerService.restoreProdDb(dbPathInMariaDb);
+
+    this.logger.log('[RESTORE DB] DB Restored');
+  }
+
+  private callSyncFromS3(restoreDTO: BackupRestoreDTO, s3SourceFolder: string,
+    localDestinationPath: string): Observable<SpawnResult> {
+    
+    const response = this.rcloneService.syncFolderFromS3(restoreDTO.bucketConfig,
+      restoreDTO.s3Prefix + '/' + s3SourceFolder, localDestinationPath);
+   
+    // listen to progress
+    return response.observable.pipe(
+      tap((spawnResult: SpawnResult) => this.onRestoreProgress(spawnResult.data))
+    );
+  
+  }
+
+  private onRestoreProgress(message: string): void {
+    this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, message);
+  }
+
+  private onRestoreBackupError(message: string): void {
+    this.taskService.markTaskAsError(BackupService.RESTORE_BACKUP_TASK, `Error during backup restore : ${message}`);
+  }
+
+  private onRestoreBackupSuccess(): void {
+    this.taskService.markTaskAsSuccess(BackupService.RESTORE_BACKUP_TASK, 'Backup restored successfully');
+  }
 
 }
 

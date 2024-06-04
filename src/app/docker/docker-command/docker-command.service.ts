@@ -35,8 +35,8 @@ export class DockerCommandService implements DockerCommandServiceI {
     return this.execDockerComposeCommand('restart');
   }
   
-  public composeStop(): Promise<string> {
-    return this.execDockerComposeCommand('stop');
+  public composeStop(containers: string[] = []): Promise<string> {
+    return this.execDockerComposeCommand(`stop ${containers.join(' ')}`);
   }
   
   public composeDown(): Promise<string> {

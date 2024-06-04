@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { getPrivateFileTemplate, PrivateFile, PrivateFileData } from '../../models/private-file.class';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from 'fs';
 import { readdir, stat } from 'fs/promises';
 
 import { dirname, join } from 'path';
@@ -178,6 +178,11 @@ export class FileService {
 
   public getFileSize(path: string): number {
     return readFileSync(path).byteLength;
+  }
+
+  public folderIsEmpty(path: string): boolean {
+    const files = readdirSync(path);
+    return files.length === 0;
   }
 
   // code from https://stackoverflow.com/questions/30448002/how-to-get-directory-size-in-node-js-without-recursively-going-through-directory

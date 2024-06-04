@@ -22,6 +22,14 @@ export interface BackupBucketDTO {
   bucketConfig: BucketConfig;
 }
 
+export interface BackupRestoreDTO {
+  version: number;
+  bucketConfig: BucketConfig;
+  s3Prefix: string;
+  restoreDb: boolean;
+  restoreData: boolean;
+}
+
 
 export type BackupType = 'DATA' | 'DB';
 export type BackupStatus = 'IN_PROGRESS' | 'SUCCESS' | 'ERROR';
