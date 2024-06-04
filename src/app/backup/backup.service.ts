@@ -169,7 +169,7 @@ export class BackupService implements OnModuleInit {
 
     // get the list of backup to trigger
     const backupToTrigger = backupHistory.getBackupToTrigger(createBackup.backupBuckets, 
-      triggerMode === 'AUTOMATIC');
+      triggerMode === 'MANUAL');
 
     const backups: LabBackupStorage[] = [];
     for (const bucket of backupToTrigger) {
