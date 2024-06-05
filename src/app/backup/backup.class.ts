@@ -22,12 +22,17 @@ export interface BackupBucketDTO {
   bucketConfig: BucketConfig;
 }
 
+export interface BackupRestoreOptionsDTO {
+  restoreDb: boolean;
+  restoreData: boolean;
+}
+
+
 export interface BackupRestoreDTO {
   version: number;
   bucketConfig: BucketConfig;
   s3Prefix: string;
-  restoreDb: boolean;
-  restoreData: boolean;
+  options: BackupRestoreOptionsDTO;
 }
 
 

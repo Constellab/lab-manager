@@ -477,13 +477,13 @@ export class BackupService implements OnModuleInit {
 
     try {
 
-      if(restoreDTO.restoreDb){
+      if(restoreDTO.options.restoreDb){
         // restore the DB
         await this.restoreDb(restoreDTO);
       }
 
 
-      if(restoreDTO.restoreData){
+      if(restoreDTO.options.restoreData){
         // restore the data
         this.restoreData(restoreDTO).subscribe({
           error: (error: SpawnResult) => this.onRestoreBackupError(error.data),
