@@ -58,13 +58,13 @@ export class LabService  {
   }
 
   public initLab(labInitConfig: LabInitConfig): void {
-    const currentTask = this.getCurrentTask();
-    if(currentTask && currentTask.status === 'RUNNING'){
-      throw new BadRequestException(`The task ${currentTask.name} is running, please wait for this task to finish before running a new task`);
-    }
     this.initService.initAll(labInitConfig).catch((err) => {
       this.logger.error(err);
     });
+  }
+
+  public configureLabManager(labInitConfig: LabInitConfig): Promise<void> {
+    return this.initService.configureLabManager(labInitConfig);
   }
 
   public getCurrentTask(): TaskStatusInfo | null {
@@ -112,6 +112,11 @@ export class LabService  {
   public async restartContainers(options: ComposeRestartOptions): Promise<void> {
     await this.checkLabIsConfigured();
     return this.dockerService.restartContainers(options, initAllBeforeDockerCommand);
+  }
+
+  public async stopContainers(): Promise<void> {
+    await this.checkLabIsConfigured();
+    return this.dockerService.stopContainers();
   }
 
   public async deleteContainers(): Promise<void> {

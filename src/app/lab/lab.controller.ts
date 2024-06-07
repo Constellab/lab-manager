@@ -46,6 +46,11 @@ export class LabController {
     this.labService.initLab(labInitConfig);
   }
 
+  @Post('configure-lab-manager')
+  configureLabManager(@Body() labInitConfig: LabInitConfig): Promise<void> {
+    return this.labService.configureLabManager(labInitConfig);
+  }
+
 
   @Post('up-containers')
   async upContainers(@Body() options: ComposeUpOptions): Promise<void> {
@@ -55,6 +60,11 @@ export class LabController {
   @Post('restart-containers')
   restartContainers(@Body() options: ComposeRestartOptions): Promise<void> {
     return this.labService.restartContainers(options);
+  }
+
+  @Post('stop-containers')
+  stopContainers(): Promise<void> {
+    return this.labService.stopContainers();
   }
 
   @Post('delete-containers')

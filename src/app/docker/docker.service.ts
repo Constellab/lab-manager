@@ -101,6 +101,19 @@ export class DockerService {
     }
   }
 
+  public async stopContainers(): Promise<void> {
+    const taskName = 'STOP_CONTAINERS';
+    this.taskService.newTask(taskName);
+
+    try {
+      const result = await this.dockerCommand.composeStop();
+      this.taskService.markTaskAsSuccess(taskName, result);
+    } catch (e) {
+      this.taskService.markTaskAsError(taskName, e.toString());
+      throw e;
+    }
+  }
+
   public async deleteContainers(): Promise<void> {
     const taskName = 'DELETE_CONTAINERS';
     this.taskService.newTask(taskName);

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { FileService } from '../../core/services/file/file.service';
 import { PrivateFile } from '../../core/models/private-file.class';
@@ -12,7 +12,7 @@ import { TaskService } from 'src/app/core/services/task/task.service';
 import { hashSync } from 'bcrypt';
 
 @Injectable()
-export class InitService implements OnApplicationBootstrap {
+export class InitService {
 
   private readonly logger = new Logger(InitService.name);
 
@@ -25,9 +25,6 @@ export class InitService implements OnApplicationBootstrap {
     private taskService: TaskService) {
   }
 
-  onApplicationBootstrap(): any {
-  }
-
   public async initAll(labInitConfig: LabInitConfig): Promise<void> {
     if (!this.configFileService.configFileExists()) {
       throw new BadRequestException('You must configure the bricks before calling init');
@@ -35,14 +32,8 @@ export class InitService implements OnApplicationBootstrap {
     try {
       this.logger.log('[INIT] Init started');
 
-      this.initAppVolume();
-
-
-      this.generateFiles(labInitConfig);
-      await this.envVariableService.setAllEnvVariables(this.configFileService.readConfigFile(),
-        this.fileService.readPrivateFile());
-
-      await this.loginToDockerRegistry();
+      // CONFIGURE LAB MANAGER
+      await this.configureLabManager(labInitConfig);
 
       // PULL BIOTA DB
       await this.biotaService.pullBiota();
@@ -67,6 +58,23 @@ export class InitService implements OnApplicationBootstrap {
         this.logger.error(e.stack);
       }
     }
+  }
+
+  /**
+   * Configure the lab manager to be ready to start the docker containers (but not start them)
+   */
+  public async configureLabManager(labInitConfig: LabInitConfig): Promise<void>{
+    this.logger.log('Configuring lab manager');
+
+    this.initAppVolume();
+
+    this.generateFiles(labInitConfig);
+    await this.envVariableService.setAllEnvVariables(this.configFileService.readConfigFile(),
+      this.fileService.readPrivateFile());
+
+    await this.loginToDockerRegistry();
+
+    this.logger.log('Lab manager configured');
   }
 
   private initAppVolume(): void {
