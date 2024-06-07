@@ -39,14 +39,14 @@ export class DockerCommandService implements DockerCommandServiceI {
     return this.execDockerComposeCommand(`stop ${containers.join(' ')}`);
   }
   
-  public composeDown(): Promise<string> {
-    return this.execDockerComposeCommand('down');
+  public composeDown(containers: string[] = []): Promise<string> {
+    return this.execDockerComposeCommand(`down ${containers.join(' ')}`);
   }
 
   private execDockerComposeCommand(options: string): Promise<string> {
     const composePath = this.fileService.dockerComposePath;
     const envPath = this.fileService.envFilePath;
-    const command: string = `docker-compose -f ${composePath} --env-file ${envPath} ${options}`;
+    const command: string = `docker compose -f ${composePath} --env-file ${envPath} ${options}`;
     return this.commandService.execCommand(command);
   }
   //////////////////////////////// DOCKER ////////////////////////////////

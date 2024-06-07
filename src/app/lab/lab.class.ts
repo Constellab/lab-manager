@@ -34,7 +34,6 @@ export interface LabInitConfig {
   codelabToken: string;
   centralFrontUrl: string;
   centralApiUrl: string;
-  hubFrontUrl?: string; // TODO remove once all lab manager are on version 0.5.0
   communityFrontUrl?: string;
   communityApiUrl: string;
   communityApiKey: string;

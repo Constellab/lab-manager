@@ -118,7 +118,7 @@ export class InitService implements OnApplicationBootstrap {
       privateJson.central.front_url = labInitConfig.centralFrontUrl;
 
       // Community information
-      privateJson.community.front_url = labInitConfig.hubFrontUrl || labInitConfig.communityFrontUrl;
+      privateJson.community.front_url = labInitConfig.communityFrontUrl;
       privateJson.community.api_url = labInitConfig.communityApiUrl;
       privateJson.community.api_key = labInitConfig.communityApiKey;
 

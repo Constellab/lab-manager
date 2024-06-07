@@ -1,7 +1,4 @@
 # Docker compose file used in dev (local env). It removes the volumes and traefik config
-
-version: "3"
-
 services:
 
   # Production Glab
@@ -10,13 +7,13 @@ services:
     environment:
       - LAB_ID=1
       - LAB_NAME=MyLab
-      - LAB_MODE=prod
-      - LAB_ENVIRONMENT=ON_CLOUD
-      - LAB_PROD_API_URL=http://localhost:3000
-      - LAB_DEV_API_URL=http://localhost:3000
+      - LAB_MODE=dev
+      - LAB_ENVIRONMENT=LOCAL
+      - LAB_PROD_API_URL=http://localhost:3100
+      - LAB_DEV_API_URL=http://localhost:3100
       - CENTRAL_API_KEY=
       - CENTRAL_API_URL=
-      - FRONT_URL=http://localhost:4200
+      - FRONT_URL=http://localhost:89
       - FRONT_VERSION=
       - CONDA_VERSION=latest
       - GPU=${GPU}
@@ -42,12 +39,15 @@ services:
       - gws_core_prod_db
       - gws_biota_db
     volumes:
+     # this volume include conf and settings
       - lab-manager-config:/conf
+    # volume for prod lab
       - lab-manager-prod-lab:/lab
-
     networks:
       - local_gencovery-network-prod
     container_name: local_glab
+    ports: 
+      - 3100:3000
     #GPU_CONFIG#
 
   # Codelab
@@ -105,16 +105,16 @@ services:
   front:
     image: registry.gitlab.com/constellab/public/docker-registry/lab-front:latest
     environment:
-      - API_URL=https://local_glab-prod.${VIRTUAL_HOST}
-      - LAB_PROD_API_URL=https://local_glab-prod.${VIRTUAL_HOST}
-      - LAB_DEV_API_URL=https://local_glab-dev.${VIRTUAL_HOST}
+      - API_URL=http://localhost:3100
+      - LAB_PROD_API_URL=http://localhost:3100
+      - LAB_DEV_API_URL=http://localhost:3100
       - CODE_SERVER_URL=https://local_codelab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=
       - CENTRAL_FRONT_URL=https://preconstellab.space
       - CENTRAL_API_URL=https://api.preconstellab.com
       - COMMUNITY_FRONT_URL=https://hub-pre-prod.gencovery.com
       - COMMUNITY_API_URL=https://hub-back-pre-prod.constellab-pre-prod.gencovery.com
-      - CAPTCHA_SITE_KEY=${CAPTCHA_SITE_KEY}
+      - CAPTCHA_SITE_KEY=
     networks:
       - local_gencovery-network-prod
     container_name: local_front
@@ -130,9 +130,13 @@ services:
       - MYSQL_USER=gws_core
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=gws_core
+    volumes:
+      - lab-manager-prod-db:/var/lib/mysql
     networks:
       - local_gencovery-network-prod
     container_name: local_gws_core_prod_db
+    ports: 
+      - 3406:3306
 
   # GWS Core Development DB
   gws_core_dev_db:
@@ -143,9 +147,13 @@ services:
       - MYSQL_USER=gws_core
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=gws_core
+    volumes:
+      - lab-manager-dev-db:/var/lib/mysql
     networks:
       - local_gencovery-network-dev
     container_name: local_gws_core_dev_db
+    ports: 
+      - 3407:3306
 
   # GWS Test db
   test_gws_dev_db:
@@ -159,6 +167,8 @@ services:
     networks:
       - local_gencovery-network-dev
     container_name: local_test_gws_dev_db
+    ports: 
+      - 3408:3306
 
   # GWS Biota Production DB
   gws_biota_db:
@@ -175,6 +185,8 @@ services:
     container_name: local_gws_biota_db
     volumes:
       - lab-manager-biota:/var/lib/mysql
+    ports:
+      - 3409:3306
 
 
 networks:
@@ -187,6 +199,10 @@ networks:
 # this is because volume are relative to host machine and not docker image
 volumes:
   lab-manager-config:
+    external: true
+  lab-manager-prod-db:
+    external: true
+  lab-manager-dev-db:
     external: true
   lab-manager-biota:
     external: true

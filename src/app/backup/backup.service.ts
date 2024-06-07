@@ -494,44 +494,45 @@ export class BackupService implements OnModuleInit {
       }
 
     } catch (e) {
-      this.taskService.markTaskAsError(BackupService.RESTORE_BACKUP_TASK, e.toString());
-      throw e;
+      const error = e.data ?? e.message ?? e.toString();
+      this.taskService.markTaskAsError(BackupService.RESTORE_BACKUP_TASK, error);
+      throw Error(error);
     }
   }
 
   private restoreData(restoreDTO: BackupRestoreDTO): Observable<SpawnResult> {
-    this.logger.log('[RESTORE DATA] Starting restore of the DB');
+    this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Starting restore of the DB');
     const dataFolder = this.configService.getProdDataFolder();
 
     // sync the data folder with the bucket
     return this.callSyncFromS3(restoreDTO, this.dataS3FolderDestination, dataFolder).pipe(
       tap({
-        complete: () => this.logger.log('[RESTORE DATA] Data Restored')
+        complete: () => this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Data Restored')
       })
     );
   }
 
   private async restoreDb(restoreDTO: BackupRestoreDTO): Promise<void> {
-    this.logger.log('[RESTORE DB] Starting restore of the DB');
+    this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Starting restore of the DB');
     // retrieve the path of the dump in the current container volume
-    const dumpPathInCurrentContainer = this.getDbDumpPathInCurrentContainer();
+    const dumpFolderInCurrentContainer = this.getDbDumpFolderInCurrentContainer();
 
     // delete the DB dump if it exists
-    this.fileService.deleteFolderIfExist(dumpPathInCurrentContainer);
+    this.fileService.deleteFolderIfExist(dumpFolderInCurrentContainer);
 
-    this.logger.log('[RESTORE DB] Downloading DB dump from S3');
+    this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, `Downloading DB dump from S3 into ${dumpFolderInCurrentContainer}`);
     // sync db file into the container
-    const obs = this.callSyncFromS3(restoreDTO, this.dbS3FolderDestination, dumpPathInCurrentContainer);
+    const obs = this.callSyncFromS3(restoreDTO, this.dbS3FolderDestination, dumpFolderInCurrentContainer);
     // wait for the download to complete
     await lastValueFrom(obs);
 
-    this.logger.log('[RESTORE DB] Applying the DB dump');
+    this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Applying the DB dump');
 
     // restore the DB
     const dbPathInMariaDb = this.getDumpMariaDbPathInMariaDbContainer();
     await this.containerService.restoreProdDb(dbPathInMariaDb);
 
-    this.logger.log('[RESTORE DB] DB Restored');
+    this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'DB Restored');
   }
 
   private callSyncFromS3(restoreDTO: BackupRestoreDTO, s3SourceFolder: string,

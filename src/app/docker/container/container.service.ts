@@ -32,19 +32,7 @@ export class ContainerService {
   }
 
   public getContainersNames(): string[] {
-    const containers = [
-      this.getContainerName(ContainerService.GLAB),
-      this.getContainerName(ContainerService.CODELAB),
-      this.getContainerName(ContainerService.FRONT),
-      this.getContainerName(ContainerService.DB_GWS_CORE_PROD),
-      this.getContainerName(ContainerService.DB_GWS_CORE_DEV),
-      this.getContainerName(ContainerService.DB_GWS_CORE_DEV_TEST)];
-
-    // add biota container only if biota is active
-    if (this.configFileService.biotaIsActive()) {
-      containers.push(this.getContainerName(ContainerService.DB_GWS_BIOTA));
-    }
-    return containers;
+    return this.getComposeServiceNames().map(serviceName => this.getContainerName(serviceName));
   }
 
   public getContainerName(serviceName: string): string {
@@ -56,6 +44,22 @@ export class ContainerService {
   }
 
   /////////////////////////////// COMPOSE CONTAINER ///////////////////////////////
+
+  public getComposeServiceNames(): string[] {
+    const containers = [
+      ContainerService.GLAB,
+      ContainerService.CODELAB,
+      ContainerService.FRONT,
+      ContainerService.DB_GWS_CORE_PROD,
+      ContainerService.DB_GWS_CORE_DEV,
+      ContainerService.DB_GWS_CORE_DEV_TEST];
+
+    // add biota container only if biota is active
+    if (this.configFileService.biotaIsActive()) {
+      containers.push(ContainerService.DB_GWS_BIOTA);
+    }
+    return containers;
+  }
   /**
     * Start one container from the docker-compose file
     * @param serviceName
@@ -63,14 +67,13 @@ export class ContainerService {
     * @throws error if the container can't be started
     */
   public async startComposeContainer(serviceName: string): Promise<boolean> {
-    if (await this.containerIsRunning(serviceName)) return false;
-
     const containerName = this.getContainerName(serviceName);
-    
-    this.logger.log(`Starting container ${containerName}`);
-    await this.dockerCommand.composeUp([], [containerName]);
+    if (await this.containerIsRunning(containerName)) return false;
 
-    if (!await this.waitForContainerToBeRunning(serviceName)) {
+    this.logger.log(`Starting compose service ${serviceName}`);
+    await this.dockerCommand.composeUp([], [serviceName]);
+
+    if (!await this.waitForContainerToBeRunning(containerName)) {
       throw new Error(`The container ${containerName} is not running`);
     }
 
@@ -84,16 +87,15 @@ export class ContainerService {
    * @returns true if the container was stopped, false if the container was already stopped
    * @throws error if the container can't be stopped
    */
-  public async stopComposeContainer(serviceName: string): Promise<boolean> {
-    if (!await this.containerIsRunning(serviceName)) return false;
-
+  public async downComposeContainer(serviceName: string): Promise<boolean> {
     const containerName = this.getContainerName(serviceName);
+    if (!await this.containerIsRunning(containerName)) return false;
 
-    this.logger.log(`Stopping container ${containerName}`);
-    await this.dockerCommand.composeStop([containerName]);
+    this.logger.log(`Stopping compose service ${serviceName}`);
+    await this.dockerCommand.composeDown([serviceName]);
 
-    if (!await this.waitForContainerToBeRunning(serviceName)) {
-      throw new Error(`The container ${containerName} is not running`);
+    if (!await this.waitForContainerToBeStopped(containerName)) {
+      throw new Error(`The container ${containerName} is not stopped`);
     }
 
     this.logger.log(`Container ${containerName} stopped`);
@@ -109,27 +111,28 @@ export class ContainerService {
    */
   private async execCommandInComposeContainer(serviceName: string, command: string): Promise<string> {
     const wasStarted = await this.startComposeContainer(serviceName);
-    const result = await this.dockerCommand.dockerExec(this.getContainerName(serviceName), command);
 
-    if (wasStarted) {
-      await this.stopComposeContainer(serviceName);
+    let result: string;
+    try {
+      result = await this.dockerCommand.dockerExec(this.getContainerName(serviceName), command);
+    } finally {
+      if (wasStarted) {
+        await this.downComposeContainer(serviceName);
+      }
     }
-
     return result;
   }
 
   /////////////////////////////// CONTAINERS ///////////////////////////////
-  public async containerIsRunning(serviceName: string): Promise<boolean> {
-    const container = await this.dockerCommand.dockerContainerInfo(
-      this.getContainerName(serviceName));
+  public async containerIsRunning(containerName: string): Promise<boolean> {
+    const container = await this.dockerCommand.dockerContainerInfo(containerName);
 
     if (container == null) return false;
 
     return container.state === 'running';
   }
 
-  public async removeContainer(serviceName: string): Promise<boolean> {
-    const containerName = this.getContainerName(serviceName);
+  public async removeContainer(containerName: string): Promise<boolean> {
     // return false if the container is not running
     if (!(await this.containerIsRunning(containerName))) return false;
 
@@ -147,17 +150,15 @@ export class ContainerService {
     }
   }
 
-  public async waitForContainerToBeRunning(serviceName: string): Promise<boolean> {
-    return this.waitForContainerStatus(serviceName, true);
+  public async waitForContainerToBeRunning(containerName: string): Promise<boolean> {
+    return this.waitForContainerStatus(containerName, true);
   }
 
-  public async waitForContainerToBeStopped(serviceName: string): Promise<boolean> {
-    return this.waitForContainerStatus(serviceName, false);
+  public async waitForContainerToBeStopped(containerName: string): Promise<boolean> {
+    return this.waitForContainerStatus(containerName, false);
   }
 
-  public async waitForContainerStatus(serviceName: string,
-    waitForStart: boolean): Promise<boolean> {
-    const containerName = this.getContainerName(serviceName);
+  public async waitForContainerStatus(containerName: string, waitForStart: boolean): Promise<boolean> {
 
     // test if the container is start or stop each 3 seconds during 60 seconds
     let i = 0;
@@ -176,7 +177,7 @@ export class ContainerService {
 
 
   public deleteBiotaService(): Promise<boolean> {
-    return this.removeContainer(ContainerService.DB_GWS_BIOTA);
+    return this.removeContainer(this.getContainerName(ContainerService.DB_GWS_BIOTA));
   }
 
 
@@ -197,7 +198,7 @@ export class ContainerService {
 
   /////////////////////////////// ADMINER ///////////////////////////////
   public async adminerIsRunning(): Promise<boolean> {
-    return this.containerIsRunning(ContainerService.ADMINER_NAME);
+    return this.containerIsRunning(this.getContainerName(ContainerService.ADMINER_NAME));
   }
 
   public async startAdminerService(): Promise<boolean> {
@@ -221,23 +222,23 @@ export class ContainerService {
   }
 
   public async deleteAdminerService(): Promise<boolean> {
-    return this.removeContainer(ContainerService.ADMINER_NAME);
+    return this.removeContainer(this.getContainerName(ContainerService.ADMINER_NAME));
   }
 
 
   /////////////////////////////// PROD DB ///////////////////////////////
 
   public async dumpProdDb(dumpLocation: string): Promise<string> {
-    return await this.execCommandInComposeContainer(this.getContainerName(ContainerService.DB_GWS_CORE_PROD),
+    return await this.execCommandInComposeContainer(ContainerService.DB_GWS_CORE_PROD,
       `sh -c "mysqldump --user='root' --password=\\$MYSQL_ROOT_PASSWORD \\$MYSQL_DATABASE > ${dumpLocation}"`);
   }
 
   public async restoreProdDb(dumpLocation: string): Promise<string> {
-    return await this.execCommandInComposeContainer(this.getContainerName(ContainerService.DB_GWS_CORE_PROD),
+    return await this.execCommandInComposeContainer(ContainerService.DB_GWS_CORE_PROD,
       `sh -c "mysql --user='root' --password=\\$MYSQL_ROOT_PASSWORD \\$MYSQL_DATABASE < ${dumpLocation}"`);
   }
 
   public async prodDbIsRunning(): Promise<boolean> {
-    return this.containerIsRunning(ContainerService.DB_GWS_CORE_PROD);
+    return this.containerIsRunning(this.getContainerName(ContainerService.DB_GWS_CORE_PROD));
   }
 }

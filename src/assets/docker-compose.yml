@@ -1,4 +1,3 @@
-version: "3"
 
 services:
   # /!\ WARNING /!\
@@ -11,7 +10,7 @@ services:
       - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}
       - LAB_MODE=prod
-      - LAB_ENVIRONMENT=ON_CLOUD # TODO to commit once almost all lab are update to 0.5.5
+      - LAB_ENVIRONMENT=ON_CLOUD
       - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
       - CENTRAL_API_KEY=${CENTRAL_API_KEY}

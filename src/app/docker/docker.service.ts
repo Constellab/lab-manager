@@ -1,12 +1,13 @@
-import {Injectable, Logger} from '@nestjs/common';
-import {ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull} from './docker.class';
-import {FileService} from '../core/services/file/file.service';
-import {TaskService} from '../core/services/task/task.service';
-import {ContainerStatusInfo} from '../lab/lab.class';
+import { Injectable, Logger } from '@nestjs/common';
+import { ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull } from './docker.class';
+import { FileService } from '../core/services/file/file.service';
+import { TaskService } from '../core/services/task/task.service';
+import { ContainerStatusInfo } from '../lab/lab.class';
 import { PrivateFile } from 'src/app/core/models/private-file.class';
 import { GPUService } from 'src/app/core/services/gpu/gpu.service';
 import { DockerCommandService } from './docker-command/docker-command.service';
 import { ContainerService } from './container/container.service';
+import { CoreConfigService } from '../core/services/config/core-config.service';
 
 export interface BeforeDockerCommandOptions {
   dockerLogin?: boolean;
@@ -20,8 +21,11 @@ export class DockerService {
   private readonly logger = new Logger(DockerService.name);
 
   constructor(private dockerCommand: DockerCommandService,
-    private fileService: FileService, private containerService: ContainerService,
-    private taskService: TaskService, private gpuService: GPUService) {
+    private fileService: FileService,
+    private containerService: ContainerService,
+    private taskService: TaskService,
+    private gpuService: GPUService,
+    private configService: CoreConfigService) {
   }
 
   public async login(): Promise<void> {
@@ -88,7 +92,7 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      const containers = this.containerService.getContainersNames();
+      const containers = this.containerService.getComposeServiceNames();
       const result = await this.dockerCommand.composeUp([], containers);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
@@ -151,6 +155,9 @@ export class DockerService {
   }
 
   public async systemPrune(): Promise<void> {
+    // in local mode, don't prune because it breaks the local docker environment
+    if (this.configService.isLocal()) return;
+    
     const taskName = 'SYSTEM PRUNE';
     this.taskService.newTask(taskName);
 
@@ -222,7 +229,7 @@ export class DockerService {
     // replace the GPU config in the docker-compose file
     const gpuConfig = await this.gpuService.getDockerComposeGpuConfig();
     dockerComposeContent = dockerComposeContent.replace(/#GPU_CONFIG#/g, gpuConfig);
-    
+
     this.fileService.writeDockerCompose(dockerComposeContent)
     this.logger.log(`${dockerComposeFileName} file generated`);
   }
