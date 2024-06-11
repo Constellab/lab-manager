@@ -3,13 +3,16 @@ import { Controller, Get, Post } from '@nestjs/common';
 import { BackupInfoDTO, BackupRestoreDTO, BackupTriggerMode, LabBackupStorage, LabBackupStorageI } from './backup.class';
 import { BackupService } from './backup.service';
 import { LabBackupHistory } from './backup-history.class';
+import { ContainerService } from '../docker/container/container.service';
+import { hashSync } from 'bcrypt';
 
 
 @Controller('backup')
 export class BackupController {
 
 
-  constructor(private backupService: BackupService) {
+  constructor(private backupService: BackupService,
+    private containerService: ContainerService) {
   }
 
 
@@ -41,4 +44,6 @@ export class BackupController {
   restoreBackup(@Body() backupRestore: BackupRestoreDTO): Promise<void> {
     return this.backupService.restoreBackup(backupRestore);
   }
+
+
 }

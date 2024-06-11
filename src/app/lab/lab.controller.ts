@@ -26,6 +26,33 @@ export class LabController {
     return this.labService.stopCurrentTask();
   }
 
+  @Post('init-all')
+  initAll(@Body() labInitConfig: LabInitConfig): void {
+    this.labService.initLab(labInitConfig);
+  }
+
+  @Post('configure-lab-manager')
+  configureLabManager(@Body() labInitConfig: LabInitConfig): Promise<void> {
+    return this.labService.configureLabManager(labInitConfig);
+  }
+
+  @Post('pull-biota-db')
+  async pullBiotaDb(@Body() labInitConfig: PullBiotaDbOptions = {}): Promise<void> {
+    return this.labService.pullBiotaDb(labInitConfig);
+  }
+
+
+  @Get('config')
+  getConfig(): ConfigFile {
+    return this.labService.getConfig();
+  }
+
+  @Put('config')
+  updateConfig(@Body() updateConfig: ConfigFile): void {
+    this.labService.updateConfig(updateConfig);
+  }
+
+  ///////////////////////// CONTAINER /////////////////////////
   @Get('containers')
   listContainers(): Promise<DockerPs[]> {
     return this.labService.listContainers();
@@ -41,17 +68,26 @@ export class LabController {
     return this.labService.getLogs(containerName);
   }
 
-  @Post('init-all')
-  initAll(@Body() labInitConfig: LabInitConfig): void {
-    this.labService.initLab(labInitConfig);
+  /**
+   * Start a container service from docker-compose file
+   * @param serviceName 
+   * @returns 
+   */
+  @Put('containers/:serviceName/start')
+  startComposeContainer(@Param('serviceName') serviceName: string): Promise<void> {
+    return this.labService.startComposeContainer(serviceName);
   }
 
-  @Post('configure-lab-manager')
-  configureLabManager(@Body() labInitConfig: LabInitConfig): Promise<void> {
-    return this.labService.configureLabManager(labInitConfig);
+  @Put('containers/:containerName/stop')
+  stopContainer(@Param('containerName') containerName: string): Promise<boolean> {
+    return this.labService.stopContainer(containerName);
   }
 
-
+  @Put('containers/:containerName/delete')
+  deleteContainer(@Param('containerName') containerName: string): Promise<boolean> {
+    return this.labService.deleteContainer(containerName);
+  }
+  
   @Post('up-containers')
   async upContainers(@Body() options: ComposeUpOptions): Promise<void> {
     return await this.labService.upContainers(options);
@@ -77,11 +113,6 @@ export class LabController {
     return this.labService.pullContainers();
   }
 
-  @Post('pull-biota-db')
-  async pullBiotaDb(@Body() labInitConfig: PullBiotaDbOptions = {}): Promise<void> {
-    return this.labService.pullBiotaDb(labInitConfig);
-  }
-
   @Post('registry-login')
   async registryLogin(): Promise<void> {
     return this.labService.registryLogin();
@@ -92,16 +123,7 @@ export class LabController {
     return this.labService.systemPrune();
   }
 
-  @Get('config')
-  getConfig(): ConfigFile {
-    return this.labService.getConfig();
-  }
-
-  @Put('config')
-  updateConfig(@Body() updateConfig: ConfigFile): void {
-    this.labService.updateConfig(updateConfig);
-  }
-
+  ///////////////////////// ADMINER /////////////////////////
   @Put('adminer/start')
   startAdminer(): Promise<boolean> {
     return this.labService.startAdminer();
@@ -111,4 +133,5 @@ export class LabController {
   stopAdminer(): Promise<boolean> {
     return this.labService.stopAdminer();
   }
+
 }

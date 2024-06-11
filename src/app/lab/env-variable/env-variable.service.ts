@@ -15,11 +15,12 @@ class EnvVariables {
 
   public addEnvVariable(key: string, value: string): void {
     if (value == null) value = '';
-    this.envString += `${key}=${value}\n`;
+    this.envString += `${key}="${value}"\n`;
   }
 
   public toString(): string {
-    return this.envString;
+    // replace all '$' by '$$' to escape them
+    return this.envString.replace(/\$/g, '$$$$');
   }
 
 }

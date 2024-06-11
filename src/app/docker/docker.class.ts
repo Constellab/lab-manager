@@ -1,6 +1,12 @@
 export interface DockerPs {
   names: string;
-  state: 'running' | 'exited';
+  /**
+   * The status of the container
+   * running: The container is running
+   * exited: The container is stopped
+   * none: The container does not exist
+   */
+  state: 'running' | 'exited' | 'none';
 }
 
 

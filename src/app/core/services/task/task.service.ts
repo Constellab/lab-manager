@@ -1,6 +1,6 @@
-import {BadRequestException, Injectable, Logger} from '@nestjs/common';
-import {BehaviorSubject, filter, Observable} from 'rxjs';
-import {TaskStatus, TaskStatusInfo} from '../../models/task.class';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BehaviorSubject, filter, Observable } from 'rxjs';
+import { TaskStatus, TaskStatusInfo } from '../../models/task.class';
 
 /**
  * Singleton shared across the app to store the current task with its status and prevent
@@ -40,19 +40,26 @@ export class TaskService {
     this.logger.log(log);
   }
 
-  public markTaskAsError(name: string, info: string): void {
-    this.updateTask(name, 'ERROR', info);
+  public markTaskAsError(name: string, info: string,
+    logMessage: boolean = true
+  ): void {
+    this.updateTask(name, 'ERROR', info, logMessage);
   }
 
-  public markTaskAsSuccess(name: string, info?: string): void {
-    this.updateTask(name, 'SUCCESS', info);
+  public markTaskAsSuccess(name: string, info?: string,
+    logMessage: boolean = true
+  ): void {
+    this.updateTask(name, 'SUCCESS', info, logMessage);
   }
 
-  public updateTaskInfo(name: string, info: string): void {
-    this.updateTask(name, this.currentTask.status, info);
+  public updateTaskInfo(name: string, info: string,
+    logMessage: boolean = true
+  ): void {
+    this.updateTask(name, this.currentTask.status, info, logMessage);
   }
 
-  public updateTask(name: string, status: TaskStatus, info?: string): void {
+  public updateTask(name: string, status: TaskStatus, info?: string,
+    logMessage: boolean = true): void {
     if (this.currentTask == null) {
       throw new BadRequestException(`There is no running task`);
     }
@@ -72,10 +79,12 @@ export class TaskService {
       log += `, info : '${info}'`;
     }
 
-    if (status == 'ERROR') {
-      this.logger.error(log);
-    } else {
-      this.logger.log(log);
+    if(logMessage){
+      if (status == 'ERROR') {
+        this.logger.error(log);
+      } else {
+        this.logger.log(log);
+      }
     }
   }
 

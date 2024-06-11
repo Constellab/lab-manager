@@ -146,8 +146,17 @@ export class DockerCommandService implements DockerCommandServiceI {
     }
   }
 
-  public async dockerExec(containerName: string, command: string): Promise<string> {
-    return this.commandService.execCommand(`docker exec ${containerName} ${command}`);
+  public async stopContainer(containerName: string): Promise<void> {
+    const result = await this.commandService.execCommand(`docker stop ${containerName}`);
+
+    // if success the response is containerName\n
+    if( result !== containerName + '\n'){
+      throw new BadRequestException(`Error while stopping container '${containerName}'. Error : ${result}`);
+    }
+  }
+
+  public async dockerExec(containerName: string, command: string, mode?: ExecCommandMode): Promise<string> {
+    return this.commandService.execCommand(`docker exec ${containerName} ${command}`, mode);
   }
 
 }

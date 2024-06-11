@@ -24,13 +24,14 @@ export class LabBackupHistory {
     /**
      * Base on a list of backupBucketDto, return the backup to trigger
      * Work for daily and weekly backup, it return only one type of backup to trigger
-     * If there is no backup to trigger, return daily and weekly backup
+     * If there is no backup inhistory, return daily and weekly backup
      * If the last backup is earlier than 1 day, don't trigger backup
-     * If the last backup is between 1 and 7 days, trigger daily backup
-     * If the last backup is older than 7 days, trigger weekly backup
+     * If the last backup is older than 1 day and last weekly backup is older than 7 days, trigger weekly backup
+     * If the last backup is older than 1 day and last weekly backup is less than 7 days, trigger daily backup
      * @param backupBucketDto 
      * @param forceBackup if true, it will trigger the backup even if the last backup is less than 1 day
      */
+    // TODO TO FIX
     public getBackupToTrigger(backupBucketDto: BackupBucketDTO[], forceBackup: boolean): BackupBucketDTO[] {
         const lastBackup = this.getLastBackup();
         if (!lastBackup) {

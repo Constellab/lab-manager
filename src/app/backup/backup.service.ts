@@ -468,28 +468,30 @@ export class BackupService implements OnModuleInit {
     // Synchronize the data
     const dataFolder = this.configService.getProdDataFolder();
 
-    // if the data folder is not empty, we stop the restore
-    if (this.fileService.exists(dataFolder) && !this.fileService.folderIsEmpty(dataFolder)) {
-      throw new BadRequestException('The data folder is not empty, please delete the data folder before restoring a backup');
+    if (!restoreDTO.options.force) {
+      // if the data folder is not empty, we stop the restore
+      if (this.fileService.exists(dataFolder) && !this.fileService.folderIsEmpty(dataFolder)) {
+        throw new BadRequestException('The data folder is not empty, please delete the data folder before restoring a backup');
+      }
     }
 
     this.taskService.newTask(BackupService.RESTORE_BACKUP_TASK);
 
     try {
 
-      if(restoreDTO.options.restoreDb){
+      if (restoreDTO.options.restoreDb) {
         // restore the DB
         await this.restoreDb(restoreDTO);
       }
 
 
-      if(restoreDTO.options.restoreData){
+      if (restoreDTO.options.restoreData) {
         // restore the data
         this.restoreData(restoreDTO).subscribe({
           error: (error: SpawnResult) => this.onRestoreBackupError(error.data),
           complete: () => this.onRestoreBackupSuccess()
         })
-      }else{
+      } else {
         this.onRestoreBackupSuccess();
       }
 
@@ -537,19 +539,19 @@ export class BackupService implements OnModuleInit {
 
   private callSyncFromS3(restoreDTO: BackupRestoreDTO, s3SourceFolder: string,
     localDestinationPath: string): Observable<SpawnResult> {
-    
+
     const response = this.rcloneService.syncFolderFromS3(restoreDTO.bucketConfig,
       restoreDTO.s3Prefix + '/' + s3SourceFolder, localDestinationPath);
-   
+
     // listen to progress
     return response.observable.pipe(
       tap((spawnResult: SpawnResult) => this.onRestoreProgress(spawnResult.data))
     );
-  
+
   }
 
   private onRestoreProgress(message: string): void {
-    this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, message);
+    this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, message, false);
   }
 
   private onRestoreBackupError(message: string): void {

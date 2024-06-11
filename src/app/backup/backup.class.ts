@@ -25,6 +25,7 @@ export interface BackupBucketDTO {
 export interface BackupRestoreOptionsDTO {
   restoreDb: boolean;
   restoreData: boolean;
+  force: boolean;
 }
 
 

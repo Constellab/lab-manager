@@ -51,6 +51,18 @@ export class DockerService {
 
   public async listContainers(): Promise<DockerPs[]> {
     const containers = await this.dockerCommand.dockerPs();
+
+    // add the default containers if they are not in the list
+    const defaultContainers = this.containerService.getServiceNames();
+    for (const defaultContainer of defaultContainers) {
+      if (!containers.find(c => c.names === defaultContainer)) {
+        containers.push({
+          names: defaultContainer,
+          state: 'none'
+        });
+      }
+    }
+
     return containers.sort((a, b) => a.names.localeCompare(b.names));
   }
 
@@ -87,13 +99,15 @@ export class DockerService {
     }
   }
 
-  private async upContainerCommand(): Promise<void> {
+  public async upContainerCommand(services: string[] = []): Promise<void> {
     const taskName = 'UP_CONTAINERS';
     this.taskService.newTask(taskName);
 
     try {
-      const containers = this.containerService.getComposeServiceNames();
-      const result = await this.dockerCommand.composeUp([], containers);
+      if (!services || services.length === 0) {
+        services = this.containerService.getServiceNames();
+      }
+      const result = await this.dockerCommand.composeUp([], services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -101,12 +115,12 @@ export class DockerService {
     }
   }
 
-  public async stopContainers(): Promise<void> {
+  public async stopContainers(services: string[] = []): Promise<void> {
     const taskName = 'STOP_CONTAINERS';
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.composeStop();
+      const result = await this.dockerCommand.composeStop(services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -114,12 +128,12 @@ export class DockerService {
     }
   }
 
-  public async deleteContainers(): Promise<void> {
+  public async deleteContainers(services: string[] = []): Promise<void> {
     const taskName = 'DELETE_CONTAINERS';
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.composeDown();
+      const result = await this.dockerCommand.composeDown(services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -170,7 +184,7 @@ export class DockerService {
   public async systemPrune(): Promise<void> {
     // in local mode, don't prune because it breaks the local docker environment
     if (this.configService.isLocal()) return;
-    
+
     const taskName = 'SYSTEM PRUNE';
     this.taskService.newTask(taskName);
 
@@ -186,7 +200,7 @@ export class DockerService {
   public async getContainersStatus(): Promise<ContainerStatusInfo> {
     const containers: DockerPs[] = await this.dockerCommand.dockerPs();
 
-    const containerNames: string[] = this.containerService.getContainersNames();
+    const containerNames: string[] = this.containerService.getServiceNames();
 
     const containersDown: string[] = [];
     const containersStop: string[] = [];

@@ -24,13 +24,13 @@ services:
       - COMMUNITY_FRONT_URL=https://hub-pre-prod.gencovery.com/
       - COMMUNITY_API_KEY= # no need for the key, we will not download private bricks
       # GWS_CORE database
-      - GWS_CORE_DB_HOST=local_gws_core_prod_db
+      - GWS_CORE_DB_HOST=gws_core_prod_db
       - GWS_CORE_DB_USER=gws_core
       - GWS_CORE_DB_PASSWORD=gencovery
       - GWS_CORE_DB_NAME=gws_core
       - GWS_CORE_DB_PORT=3306
       # GWS_BIOTA database
-      - GWS_BIOTA_DB_HOST=local_gws_biota_db
+      - GWS_BIOTA_DB_HOST=gws_biota_db
       - GWS_BIOTA_DB_USER=gws_biota
       - GWS_BIOTA_DB_PASSWORD=gencovery
       - GWS_BIOTA_DB_NAME=gws_biota
@@ -44,8 +44,8 @@ services:
     # volume for prod lab
       - lab-manager-prod-lab:/lab
     networks:
-      - local_gencovery-network-prod
-    container_name: local_glab
+      - gencovery-network-prod
+    container_name: glab
     ports: 
       - 3100:3000
     #GPU_CONFIG#
@@ -71,19 +71,19 @@ services:
       - COMMUNITY_FRONT_URL=https://hub-pre-prod.gencovery.com/
       - COMMUNITY_API_KEY=${COMMUNITY_API_KEY}
       # GWS_CORE database
-      - GWS_CORE_DB_HOST=local_gws_core_dev_db
+      - GWS_CORE_DB_HOST=gws_core_dev_db
       - GWS_CORE_DB_USER=gws_core
       - GWS_CORE_DB_PASSWORD=gencovery
       - GWS_CORE_DB_NAME=gws_core
       - GWS_CORE_DB_PORT=3306
       # Test database
-      - GWS_TEST_DB_HOST=local_test_gws_dev_db
+      - GWS_TEST_DB_HOST=test_gws_dev_db
       - GWS_TEST_DB_USER=test_gws
       - GWS_TEST_DB_PASSWORD=gencovery
       - GWS_TEST_DB_NAME=test_gws
       - GWS_TEST_DB_PORT=3306
       # GWS_BIOTA database
-      - GWS_BIOTA_DB_HOST=local_gws_biota_db
+      - GWS_BIOTA_DB_HOST=gws_biota_db
       - GWS_BIOTA_DB_USER=gws_biota
       - GWS_BIOTA_DB_PASSWORD=gencovery
       - GWS_BIOTA_DB_NAME=gws_biota
@@ -95,8 +95,8 @@ services:
       - gws_core_dev_db
       - gws_biota_db
     networks:
-      - local_gencovery-network-dev
-    container_name: local_codelab
+      - gencovery-network-dev
+    container_name: codelab
     ports: 
       - 8083:8080
     #GPU_CONFIG#
@@ -108,7 +108,7 @@ services:
       - API_URL=http://localhost:3100
       - LAB_PROD_API_URL=http://localhost:3100
       - LAB_DEV_API_URL=http://localhost:3100
-      - CODE_SERVER_URL=https://local_codelab.${VIRTUAL_HOST}
+      - CODE_SERVER_URL=https://codelab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=
       - CENTRAL_FRONT_URL=https://preconstellab.space
       - CENTRAL_API_URL=https://api.preconstellab.com
@@ -116,8 +116,8 @@ services:
       - COMMUNITY_API_URL=https://hub-back-pre-prod.constellab-pre-prod.gencovery.com
       - CAPTCHA_SITE_KEY=
     networks:
-      - local_gencovery-network-prod
-    container_name: local_front
+      - gencovery-network-prod
+    container_name: front
     ports: 
       - 89:81
 
@@ -133,8 +133,8 @@ services:
     volumes:
       - lab-manager-prod-db:/var/lib/mysql
     networks:
-      - local_gencovery-network-prod
-    container_name: local_gws_core_prod_db
+      - gencovery-network-prod
+    container_name: gws_core_prod_db
     ports: 
       - 3406:3306
 
@@ -150,8 +150,8 @@ services:
     volumes:
       - lab-manager-dev-db:/var/lib/mysql
     networks:
-      - local_gencovery-network-dev
-    container_name: local_gws_core_dev_db
+      - gencovery-network-dev
+    container_name: gws_core_dev_db
     ports: 
       - 3407:3306
 
@@ -165,8 +165,8 @@ services:
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=test_gws
     networks:
-      - local_gencovery-network-dev
-    container_name: local_test_gws_dev_db
+      - gencovery-network-dev
+    container_name: test_gws_dev_db
     ports: 
       - 3408:3306
 
@@ -180,9 +180,9 @@ services:
       - MYSQL_PASSWORD=gencovery
       - MYSQL_DATABASE=gws_biota
     networks:
-      - local_gencovery-network-prod
-      - local_gencovery-network-dev
-    container_name: local_gws_biota_db
+      - gencovery-network-prod
+      - gencovery-network-dev
+    container_name: gws_biota_db
     volumes:
       - lab-manager-biota:/var/lib/mysql
     ports:
@@ -190,10 +190,10 @@ services:
 
 
 networks:
-  local_gencovery-network-dev:
-    external: false
-  local_gencovery-network-prod:
-    external: false
+  gencovery-network-dev:
+    external: true
+  gencovery-network-prod:
+    external: true
 
 # the volume names are the same as the one in the dockerlab local docker-compose.yml
 # this is because volume are relative to host machine and not docker image

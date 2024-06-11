@@ -16,7 +16,8 @@ export interface SpawnResponse {
 export enum ExecCommandMode {
   STDERR_AS_ERROR, // reject promis when stderr is not empty
   STDERR_AS_WARNING, // on stderr, log warning and return stdout
-  STDERR_AS_SUCCESS // consider STDERR as success and return stdout and stderr
+  STDERR_AS_SUCCESS, // consider STDERR as success and return stdout and stderr
+  NO_LOG // do not log anything
 }
 
 /**
@@ -37,12 +38,13 @@ export class CommandService {
     return new Promise(((resolve, reject) => {
       exec(command,
         (error, stdout, stderr) => {
-          if (error) {
+          if (error && mode !== ExecCommandMode.NO_LOG) {
             this.logger.error(`Error during the execution of the command '${command}'. Error : '${error}'`);
             reject(error);
             return;
           }
 
+          // TODO handle no log
           switch (mode) {
             case ExecCommandMode.STDERR_AS_SUCCESS:
               resolve(stdout + stderr);
@@ -60,6 +62,13 @@ export class CommandService {
                 return;
               }
               resolve(stdout);
+              return;
+            default:
+              if (stderr) {
+                reject(stderr);
+              } else {
+                resolve(stdout);
+              }
               return;
           }
         });

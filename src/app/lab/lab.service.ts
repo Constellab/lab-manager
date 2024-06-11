@@ -103,6 +103,21 @@ export class LabService  {
     return this.dockerService.getContainersDetail(containerName);
   }
 
+  public async startComposeContainer(serviceName: string): Promise<void> {
+    await this.checkLabIsConfigured();
+    return this.dockerService.upContainerCommand([serviceName]);
+  }
+
+  public async stopContainer(containerName: string): Promise<boolean> {
+    await this.checkLabIsConfigured();
+    return this.containerService.stopContainer(containerName);
+  }
+
+  public async deleteContainer(containerName: string): Promise<boolean> {
+    await this.checkLabIsConfigured();
+    return this.containerService.deleteContainer(containerName);
+  }
+
   public async upContainers(options: ComposeUpOptions): Promise<void> {
     await this.checkLabIsConfigured();
     return this.dockerService.upContainers(options, initAllBeforeDockerCommand);
