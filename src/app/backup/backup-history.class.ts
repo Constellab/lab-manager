@@ -6,6 +6,7 @@ export class LabBackupHistory {
 
     private static readonly DAY = 24 * 60 * 60 * 1000; // 24h
     private static readonly WEEK = 7 * LabBackupHistory.DAY; // 7 days
+    private static readonly ONE_MINUTE = 60 * 1000; // 1 minute
 
     constructor() {
         this.version = 2;
@@ -34,32 +35,36 @@ export class LabBackupHistory {
     // TODO TO FIX
     public getBackupToTrigger(backupBucketDto: BackupBucketDTO[], forceBackup: boolean): BackupBucketDTO[] {
         const lastBackup = this.getLastBackup();
-        if (!lastBackup) {
+        const lastWeeklyBackup = this.getLastBackupByFrequency('WEEKLY');
+        if (!lastBackup || !lastWeeklyBackup) {
             return backupBucketDto;
         }
 
-        const lastBackupDate = lastBackup.startUploadAt;
         const now = new Date();
 
-        const diff = now.getTime() - lastBackupDate.getTime();
+        // diff in milliseconds (add 1 minute to avoid the case when the last backup is just a few seconds ago the last day)
+        // diff between now and last backup
+        const lastDiff = now.getTime() - lastBackup.startUploadAt.getTime() + LabBackupHistory.ONE_MINUTE;
 
-        if (diff < LabBackupHistory.DAY) {
-            // if forceBackup is true, return the daily backup
+        // diff between now and last weekly backup
+        const lastWeeklyDiff = now.getTime() - lastWeeklyBackup.startUploadAt.getTime() + LabBackupHistory.ONE_MINUTE;
+
+        // if the last backup is less than 1 day, don't trigger backup
+        if (lastDiff < LabBackupHistory.DAY) {
             if (forceBackup) {
-                const daily = backupBucketDto.filter(backup => backup.backupFrequency === 'DAILY');
-                if (daily.length > 0) {
-                    return daily;
-                }
-                return backupBucketDto
+                return backupBucketDto.filter(backup => backup.backupFrequency === 'DAILY');
             }
             return [];
         }
 
-        if (diff < LabBackupHistory.WEEK) {
-            return backupBucketDto.filter(backup => backup.backupFrequency === 'DAILY');
+
+        // if the last backup is older than 1 day and last weekly backup is older than 7 days, trigger weekly backup
+        if (lastDiff >= LabBackupHistory.DAY && lastWeeklyDiff >= LabBackupHistory.WEEK) {
+            return backupBucketDto.filter(backup => backup.backupFrequency === 'WEEKLY');
         }
 
-        return backupBucketDto.filter(backup => backup.backupFrequency === 'WEEKLY');
+        // if the last backup is older than 1 day and last weekly backup is less than 7 days, trigger daily backup
+        return backupBucketDto.filter(backup => backup.backupFrequency === 'DAILY');
     }
 
     public getLastBackup(): LabBackupStorage | null {
