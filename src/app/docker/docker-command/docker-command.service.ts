@@ -85,7 +85,17 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
 
   public getLogs(containerName: string): Promise<string> {
-    return this.commandService.execCommand(`docker logs --tail 2000 ${containerName}`, ExecCommandMode.STDERR_AS_SUCCESS);
+    // --timestamps : add timestamps to logs
+    // --tail 2000 : only get the last 2000 lines
+    // 2>&1 : redirect stderr to stdout to get it in the result in the order it was written
+    return this.commandService.execCommand(`docker logs --timestamps --tail 2000 ${containerName} 2>&1`, ExecCommandMode.STDERR_AS_SUCCESS);
+  }
+
+  public async exportLogsToFile(containerName: string, filePath: string): Promise<string> {
+    // --timestamps : add timestamps to logs
+    // 2>&1 : redirect stderr to stdout to get it in the result in the order it was written
+    await this.commandService.execCommand(`docker logs --timestamps ${containerName} > ${filePath} 2>&1`);
+    return filePath;
   }
 
   public login(username: string, password: string, registryUrl: string): Promise<string> {

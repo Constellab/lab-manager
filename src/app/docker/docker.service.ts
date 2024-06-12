@@ -181,6 +181,10 @@ export class DockerService {
     return await this.dockerCommand.getLogs(containerName);
   }
 
+  public exportLogsToFile(containerName: string, filePath: string): Promise<string> {
+    return this.dockerCommand.exportLogsToFile(containerName, filePath);
+  }
+
   public async systemPrune(): Promise<void> {
     // in local mode, don't prune because it breaks the local docker environment
     if (this.configService.isLocal()) return;

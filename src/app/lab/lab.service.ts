@@ -148,6 +148,10 @@ export class LabService  {
     return this.dockerService.getLogs(containerName);
   }
 
+  public exportLogsToFile(containerName: string): Promise<string> {
+    return this.dockerService.exportLogsToFile(containerName, '/tmp/logs_export.txt');
+  }
+
   public async registryLogin(): Promise<void> {
     return this.dockerService.login();
   }

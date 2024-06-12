@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, StreamableFile } from '@nestjs/common';
 import { ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull, PullBiotaDbOptions } from '../docker/docker.class';
 import { LabInitConfig, LabStatus } from './lab.class';
 import { LabService } from './lab.service';
 import { ConfigFile } from '../core/models/config-file.class';
 import { TaskStatusInfo } from '../core/models/task.class';
+import { createReadStream } from 'fs';
 
 @Controller('lab')
 export class LabController {
@@ -67,6 +68,15 @@ export class LabController {
   getLogs(@Param('containerName') containerName: string): Promise<string> {
     return this.labService.getLogs(containerName);
   }
+
+  @Get('containers/:containerName/logs/export')
+  async exportLogsToFile(@Param('containerName') containerName: string): Promise<StreamableFile> {
+    const filePath = await this.labService.exportLogsToFile(containerName);
+    const fileStream = createReadStream(filePath);
+
+    return new StreamableFile(fileStream);
+  }
+
 
   /**
    * Start a container service from docker-compose file
