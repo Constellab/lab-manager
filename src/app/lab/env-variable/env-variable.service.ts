@@ -43,7 +43,7 @@ export class EnvVariableService {
     try {
       this.taskService.newTask(taskName, 'Initializing env variable');
 
-      let envVariables = new EnvVariables();
+      const envVariables = new EnvVariables();
 
 
       if(configJson == null){
@@ -69,9 +69,9 @@ export class EnvVariableService {
       // GLAB TAG
       envVariables.addEnvVariable('GLAB_TAG', configJson.glab_tag);
 
-      envVariables.addEnvVariable('CENTRAL_API_KEY', privateJson.central.api_key);
-      envVariables.addEnvVariable('CENTRAL_API_URL', privateJson.central.api_url);
-      envVariables.addEnvVariable('CENTRAL_FRONT_URL', privateJson.central.front_url);
+      envVariables.addEnvVariable('SPACE_API_KEY', privateJson.space.api_key);
+      envVariables.addEnvVariable('SPACE_API_URL', privateJson.space.api_url);
+      envVariables.addEnvVariable('SPACE_FRONT_URL', privateJson.space.front_url);
 
       if(privateJson.community){
         envVariables.addEnvVariable('COMMUNITY_FRONT_URL', privateJson.community.front_url);

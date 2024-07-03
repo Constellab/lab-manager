@@ -6,11 +6,10 @@ import {KeyGeneratorService} from './services/key-generator/key-generator.servic
 import {CommandService} from './services/command/command.service';
 import {TaskService} from './services/task/task.service';
 import {TraefikService} from './services/traefik/traefik.service';
-import {ObjectStorageService} from './services/object-storage/object-storage.service';
 import { RcloneService } from './services/rclone/rclone.service';
 import { ApiService } from './services/api/api.service';
 import { ExternalLabApiService } from './services/external-lab/external-lab-api.service';
-import { ExternalCentralApiService } from './external-central/external-central-api.service';
+import { ExternalSpaceApiService } from './external-space/external-space-api.service';
 import { HttpModule } from '@nestjs/axios';
 import { GPUService } from './services/gpu/gpu.service';
 import { ConfigFileService } from './services/config-file/config-file.service';
@@ -36,11 +35,10 @@ export class CoreModule {
         CommandService,
         TaskService,
         TraefikService,
-        ObjectStorageService,
         RcloneService,
         ApiService,
         ExternalLabApiService,
-        ExternalCentralApiService,
+        ExternalSpaceApiService,
         GPUService,
         ConfigFileService,
       ],
@@ -51,11 +49,10 @@ export class CoreModule {
         CommandService,
         TaskService,
         TraefikService,
-        ObjectStorageService,
         RcloneService,
         ApiService,
         ExternalLabApiService,
-        ExternalCentralApiService,
+        ExternalSpaceApiService,
         GPUService,
         ConfigFileService,
       ],

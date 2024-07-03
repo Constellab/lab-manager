@@ -30,13 +30,17 @@ export interface LabStatus {
  * Object to config the lab manager required on init
  */
 export interface LabInitConfig {
-  centralApiKey: string;
+  space: {
+    apiKey: string;
+    frontUrl: string;
+    apiUrl: string;
+  },
+  community: {
+    frontUrl: string;
+    apiUrl: string;
+    apiKey: string;
+  },
   codelabToken: string;
-  centralFrontUrl: string;
-  centralApiUrl: string;
-  communityFrontUrl?: string;
-  communityApiUrl: string;
-  communityApiKey: string;
   gwsCoreProdPassword: string;
   gwsCoreDevPassword: string;
   dockerRegistry: {

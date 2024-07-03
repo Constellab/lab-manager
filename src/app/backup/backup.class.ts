@@ -8,14 +8,13 @@ export type BackupTriggerMode = 'MANUAL' | 'AUTOMATIC';
 
 
 /**
- * Object sent by central that contains information about the backups location
+ * Object sent by space that contains information about the backups location
  */
 export interface BackupInfoDTO {
   version: number;
   backupBuckets: BackupBucketDTO[];
   s3Prefix: string;
 }
-
 
 export interface BackupBucketDTO {
   backupFrequency: BackupFrequency;
@@ -28,6 +27,13 @@ export interface BackupRestoreOptionsDTO {
   force: boolean;
 }
 
+
+export interface AzureBlobConfigDTO {
+  accountName: string;
+  containerName: string;
+  accountKey: string;
+  regionName: string;
+}
 
 export interface BackupRestoreDTO {
   version: number;
@@ -47,9 +53,9 @@ export interface BackupStatusObject {
 
 export interface LabBackupStorageI {
   id: string;
+  type: 's3' | 'azureBlob';
   region: string;
   bucket: string;
-  endpoint: string;
   startUploadAt: Date;
   endUploadAt?: Date;
   status: BackupStatus;
@@ -60,15 +66,18 @@ export interface LabBackupStorageI {
   frequency: BackupFrequency;
   triggerMode: BackupTriggerMode;
   s3Prefix: string;
+
+  endpoint: string; // for s3
+  accountName: string; // for azure
 }
+
 
 export class LabBackupStorage {
 
+
+  
   // store in the json
   id: string;
-  region: string;
-  bucket: string;
-  endpoint: string;
   startUploadAt: Date;
   endUploadAt?: Date;
   status: BackupStatus;
@@ -78,21 +87,15 @@ export class LabBackupStorage {
   dbSize: number;
   frequency: BackupFrequency;
   triggerMode: BackupTriggerMode;
-  s3Prefix: string
-
+  s3Prefix: string;
+  
   // not stored in the json
+  bucketConfig: BucketConfig;
   dbProcess: ChildProcess;
   dataProcess: ChildProcess;
-  private accessKeyId: string;
-  private secretAccessKey: string;
 
-  constructor(region: string, bucket: string, endpoint: string, frequency: BackupFrequency,
-    triggerMode: BackupTriggerMode, s3Prefix: string) {
+  constructor(triggerMode: BackupTriggerMode, s3Prefix: string) {
     this.id = StringHelper.generateUUID() + '_' + new Date().getTime();
-    this.region = region;
-    this.bucket = bucket;
-    this.endpoint = endpoint;
-    this.frequency = frequency;
     this.triggerMode = triggerMode;
     this.s3Prefix = s3Prefix;
     this.status = 'IN_PROGRESS';
@@ -101,13 +104,18 @@ export class LabBackupStorage {
       message: 'Backup started',
       status: 'IN_PROGRESS',
     };
-
+    
     this.dbStatus = {
       message: 'Backup started',
       status: 'IN_PROGRESS',
     };
-  
   }
+  
+  public setBackupBucketDto(backupBucketDto: BackupBucketDTO): void {
+    this.frequency = backupBucketDto.backupFrequency;
+    this.bucketConfig = backupBucketDto.bucketConfig;
+  }
+
 
   public updateMessage(backupType: BackupType, status: BackupStatus, message: string): void {
     const backupStatus: BackupStatusObject = {
@@ -138,25 +146,20 @@ export class LabBackupStorage {
     }
   }
 
+  public getRegion(): string {
+    return this.bucketConfig.config.region;
+  }
+
+  public getBucketName(): string {
+    return this.bucketConfig.type === 's3' ? this.bucketConfig.config.bucket : this.bucketConfig.config.containerName;
+  }
+
   public isFinished(): boolean {
     return this.status !== 'IN_PROGRESS';
   }
 
-  public setAccessKeys(accessKeyId: string, secretAccessKey: string): void {
-    this.accessKeyId = accessKeyId;
-    this.secretAccessKey = secretAccessKey;
-  }
-
   public getBucketConfig(): BucketConfig {
-    return {
-      bucket: this.bucket,
-      endpoint: this.endpoint,
-      region: this.region,
-      credentials: {
-        accessKeyId: this.accessKeyId,  
-        secretAccessKey: this.secretAccessKey,
-      }
-    };
+    return this.bucketConfig;
   }
 
   public setProcess(backupType: BackupType, process: ChildProcess): void {
@@ -168,9 +171,29 @@ export class LabBackupStorage {
   }
 
   public static fromJson(json: LabBackupStorageI): LabBackupStorage {
-    const storage = new LabBackupStorage(json.region, json.bucket, json.endpoint, json.frequency,
-      json.triggerMode, json.s3Prefix);
+    const storage = new LabBackupStorage(json.triggerMode, json.s3Prefix);
     storage.id = json.id;
+    if(json.type === 's3' || !json.type) {
+      storage.bucketConfig = {
+        type: 's3',
+        config: {
+          bucket: json.bucket,
+          endpoint: json.endpoint,
+          region: json.region,
+          credentials: null
+        }
+      }
+    }else{
+      storage.bucketConfig = {
+        type: 'azureBlob',
+        config: {
+          accountName: json.accountName,
+          containerName: json.bucket,
+          accountKey: '',
+          region: json.region
+        }
+      }
+    }
     storage.startUploadAt = new Date(json.startUploadAt);
     storage.endUploadAt = json.endUploadAt ? new Date(json.endUploadAt) : null;
     storage.status = json.status;
@@ -184,9 +207,7 @@ export class LabBackupStorage {
   public toJson(): LabBackupStorageI {
     return {
       id: this.id,
-      region: this.region,
-      bucket: this.bucket,
-      endpoint: this.endpoint,
+      type: this.bucketConfig.type,
       startUploadAt: this.startUploadAt,
       endUploadAt: this.endUploadAt,
       status: this.status,
@@ -197,6 +218,10 @@ export class LabBackupStorage {
       frequency: this.frequency,
       triggerMode: this.triggerMode,
       s3Prefix: this.s3Prefix,
+      region: this.getRegion(),
+      bucket: this.getBucketName(),
+      endpoint: this.bucketConfig.type === 's3' ? this.bucketConfig.config.endpoint : null,
+      accountName: this.bucketConfig.type === 's3' ? null : this.bucketConfig.config.accountName
     }
   }
 }

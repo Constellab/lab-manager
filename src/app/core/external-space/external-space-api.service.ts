@@ -8,20 +8,21 @@ import { BackupInfoDTO, LabBackupStorageI } from 'src/app/backup/backup.class';
 
 
 /**
- * Class to call route of central using central api
+ * Class to call route of space using space api
  */
 @Injectable()
-export class ExternalCentralApiService {
+export class ExternalSpaceApiService {
 
   private static readonly API_KEY_HEADER = 'Authorization';
   private static readonly API_KEY_SCHEMA = 'api-key';
+  private static readonly LAB_MANAGER_VERSION = 'lab-manager-version';
 
   private static readonly BASE_API_ROUTE = 'external-labs-manager';
 
   constructor(private apiService: ApiService,
-    private fileService: FileService,
-    private configService: CoreConfigService) { }
-
+              private fileService: FileService,
+              private configService: CoreConfigService) { 
+  }
 
 
   public getBackupInfo(): Promise<BackupInfoDTO> {
@@ -45,10 +46,10 @@ export class ExternalCentralApiService {
       url = 'http://host.docker.internal:3001'
     } else {
       const privateFile = this.fileService.readPrivateFile();
-      url = privateFile.central.api_url;
+      url = privateFile.space.api_url;
     }
 
-    return `${url}/${ExternalCentralApiService.BASE_API_ROUTE}/${route}`;
+    return `${url}/${ExternalSpaceApiService.BASE_API_ROUTE}/${route}`;
   }
 
   // get the axios request config with the api key in the header
@@ -61,8 +62,11 @@ export class ExternalCentralApiService {
   // get the header with api key
   private getHeader(apiKey: string): any {
     const header: any = {};
-    header[ExternalCentralApiService.API_KEY_HEADER] = `${ExternalCentralApiService.API_KEY_SCHEMA} ${apiKey}`;
+    header[ExternalSpaceApiService.API_KEY_HEADER] = `${ExternalSpaceApiService.API_KEY_SCHEMA} ${apiKey}`;
+    // add the lab manager version in the header
+    header[ExternalSpaceApiService.LAB_MANAGER_VERSION] = this.configService.getLabManagerVersion();
     return header;
   }
+
 
 }

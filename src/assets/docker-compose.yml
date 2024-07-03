@@ -13,8 +13,13 @@ services:
       - LAB_ENVIRONMENT=ON_CLOUD
       - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
-      - CENTRAL_API_KEY=${CENTRAL_API_KEY}
-      - CENTRAL_API_URL=${CENTRAL_API_URL}
+      - SPACE_API_KEY=${SPACE_API_KEY}
+      - SPACE_API_URL=${SPACE_API_URL}
+      - SPACE_FRONT_URL=${SPACE_FRONT_URL}
+      # TODO TO REMOVE ONCE all lab are on v0.8.2
+      - CENTRAL_API_KEY=${SPACE_API_KEY}
+      - CENTRAL_API_URL=${SPACE_API_URL}
+      # end remove
       - FRONT_URL=https://front.${VIRTUAL_HOST}
       - FRONT_VERSION=${FRONT_VERSION}
       - GPU=${GPU}
@@ -163,8 +168,12 @@ services:
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
       - CODELAB_URL=https://codelab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
-      - CENTRAL_FRONT_URL=${CENTRAL_FRONT_URL}
-      - CENTRAL_API_URL=${CENTRAL_API_URL}
+      - SPACE_FRONT_URL=${SPACE_FRONT_URL}
+      - SPACE_API_URL=${SPACE_API_URL}
+      # TODO TO REMOVE ONCE all lab are on v0.8.2
+      - CENTRAL_FRONT_URL=${SPACE_FRONT_URL}
+      - CENTRAL_API_URL=${SPACE_API_URL}
+      # end remove
       - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}
       - COMMUNITY_API_URL=${COMMUNITY_API_URL}
       - CAPTCHA_SITE_KEY=${CAPTCHA_SITE_KEY}

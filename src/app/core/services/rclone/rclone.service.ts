@@ -8,30 +8,68 @@ import { filter, map } from 'rxjs';
 export class RcloneService {
 
   constructor(private commandService: CommandService) {
-
   }
 
 
   public syncFolderToS3(config: BucketConfig, localSourcePath: string, s3DestinationPath: string): SpawnResponse {
-    if (!s3DestinationPath.startsWith('/')) s3DestinationPath = '/' + s3DestinationPath
-    return this.runRcloneCommand(config, localSourcePath, ':s3:' + config.bucket + s3DestinationPath);
+    if (!s3DestinationPath.startsWith('/')) s3DestinationPath = '/' + s3DestinationPath;
+
+    const options = this.getOptions(config);
+    const bucketName = this.getBucketName(config);
+    const bucketType = this.getBucketType(config);
+
+    return this.runSyncRCloneCommand(options, localSourcePath, bucketType + bucketName + s3DestinationPath);
   }
 
   public syncFolderFromS3(config: BucketConfig, s3SourcePath: string, localDestinationPath: string): SpawnResponse {
     if (!s3SourcePath.startsWith('/')) s3SourcePath = '/' + s3SourcePath
-    return this.runRcloneCommand(config, ':s3:' + config.bucket + s3SourcePath, localDestinationPath);
+
+    const options = this.getOptions(config);
+    const bucketName = this.getBucketName(config);
+    const bucketType = this.getBucketType(config);
+
+    return this.runSyncRCloneCommand(options, bucketType + bucketName + s3SourcePath, localDestinationPath);
   }
 
-  private runRcloneCommand(config: BucketConfig, source: string, destination: string): SpawnResponse {
+  private getOptions(config: BucketConfig): string[] {
+    if (config.type === 's3') {
+      return [
+        '--s3-endpoint', config.config.endpoint,
+        '--s3-region', config.config.region,
+        '--s3-access-key-id', config.config.credentials.accessKeyId,
+        '--s3-secret-access-key', config.config.credentials.secretAccessKey,
+      ];
+    } else {
+      return [
+        '--azureblob-account', config.config.accountName,
+        '--azureblob-key', config.config.accountKey,
+      ];
+    }
+  }
+
+  private getBucketName(config: BucketConfig): string {
+    if (config.type === 's3') {
+      return config.config.bucket;
+    } else {
+      return config.config.containerName;
+    }
+  }
+
+  public getBucketType(config: BucketConfig): string{
+    if (config.type === 's3') {
+      return ':s3:';
+    }else{
+      return ':azureblob:';
+    }
+  }
+
+  private runSyncRCloneCommand(options: string[], source: string, destination: string): SpawnResponse {
     const spanwResult = this.commandService.spawn('rclone',
       [
         '-P',
-        '--s3-endpoint', config.endpoint,
-        '--s3-region', config.region,
-        '--s3-access-key-id', config.credentials.accessKeyId,
-        '--s3-secret-access-key', config.credentials.secretAccessKey,
         '--drive-chunk-size', '128M',
         '--transfers', '16',
+        ...options,
         'sync', source, destination
       ]);
 
@@ -44,6 +82,8 @@ export class RcloneService {
       )
     }
   }
+
+
 
   private cleanProgressMessage(result: SpawnResult): SpawnResult {
     // remove the part of the message after text : 'Error'
@@ -59,4 +99,6 @@ export class RcloneService {
   }
 
 
+  // rclone -P --azureblob-account labbackuplocal --azureblob-key "0uKBMO4D7j5LS54CeKp0L6RdxtzqPJZupv6J1dxsX1betQV+etdQeJNxYDGTva6onJcC3vmHjepA+AStwamrHA==" 
+  // sync /home/lab-manager/src/app/lab :azureblob:test/ok/test
 }

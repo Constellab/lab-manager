@@ -3,10 +3,10 @@ import { SpawnResult } from '../core/services/command/command.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
 import { FileService } from '../core/services/file/file.service';
 import { RcloneService } from '../core/services/rclone/rclone.service';
-import { BackupBucketDTO, BackupFrequency, BackupInfoDTO, BackupRestoreDTO, BackupTriggerMode, LabBackupStorage, LabBackupStorageI } from './backup.class';
+import { BackupBucketDTO, BackupFrequency, BackupInfoDTO, BackupRestoreDTO, BackupTriggerMode, LabBackupStorage } from './backup.class';
 import { ExternalLabApiService } from '../core/services/external-lab/external-lab-api.service';
 import { Cron } from '@nestjs/schedule';
-import { ExternalCentralApiService } from '../core/external-central/external-central-api.service';
+import { ExternalSpaceApiService } from '../core/external-space/external-space-api.service';
 import { LabBackupHistory } from './backup-history.class';
 import { ContainerService } from '../docker/container/container.service';
 import { join } from 'path';
@@ -34,7 +34,7 @@ export class BackupService implements OnModuleInit {
   // min idle time required (no activity on lab) before doing a backup
   private static readonly BACKUP_IDLE_ACTIVITY = 30 * 60 * 1000; // 30min
 
-  // verison of the info sent by central supported by this version of the lab manager
+  // verison of the info sent by space supported by this version of the lab manager
   private static readonly SUPPORTED_BACKUP_INFO_VERSION = 1;
 
   private static readonly RESTORE_BACKUP_TASK = 'RESTORE BACKUP';
@@ -48,7 +48,7 @@ export class BackupService implements OnModuleInit {
     private rcloneService: RcloneService,
     private fileService: FileService,
     private externalLabService: ExternalLabApiService,
-    private externalCentralService: ExternalCentralApiService,
+    private externalSpaceService: ExternalSpaceApiService,
     private containerService: ContainerService,
     private taskService: TaskService) {
   }
@@ -58,27 +58,28 @@ export class BackupService implements OnModuleInit {
    */
   onModuleInit(): void {
     if (!this.fileService.privateFileExists()) return;
-    this.migrateBackupHistory();
     const backupHistory = this.getBackupHistory();
 
     // check if there is a running backup, to mark it as error
     for (const running of backupHistory.getRunningBackups()) {
       if (running.dbStatus.status === 'IN_PROGRESS') {
-        this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped', 'DB', running);
+        this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped',
+          'DB', running);
       }
       if (running.dataStatus.status === 'IN_PROGRESS') {
-        this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped', 'DATA', running);
+        this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped',
+          'DATA', running);
       }
     }
 
-    // save the history and send history to central server
+    // save the history and send history to space server
     this.saveBackupHistory(backupHistory);
 
-    this.logger.log('Syncing backup history with central server')
-    this.externalCentralService.syncBackupHistory(backupHistory.backups.map(b => b.toJson())).catch(
-      e => this.logger.error(`Error while syncing the backup history with the central server. Error : ${e.message}`)
+    this.logger.log('Syncing backup history with space server')
+    this.externalSpaceService.syncBackupHistory(backupHistory.backups.map(b => b.toJson())).catch(
+      e => this.logger.error(`Error while syncing the backup history with the space server. Error : ${e.message}`)
     );
-    this.logger.log('Syncing backup history with central server done')
+    this.logger.log('Syncing backup history with space server done')
   }
 
   /**
@@ -100,7 +101,7 @@ export class BackupService implements OnModuleInit {
     let backupInfo: BackupInfoDTO;
     try {
 
-      backupInfo = await this.externalCentralService.getBackupInfo();
+      backupInfo = await this.externalSpaceService.getBackupInfo();
     } catch (e) {
       this.logger.error(`[AutoBackup] Error while getting the backup info: ${e.message}, skipping`);
       return;
@@ -117,9 +118,9 @@ export class BackupService implements OnModuleInit {
   }
 
   public async createMultipleProdBackup(createBackup: BackupInfoDTO, triggerMode: BackupTriggerMode): Promise<LabBackupStorage[]> {
-
     if (createBackup.version !== BackupService.SUPPORTED_BACKUP_INFO_VERSION) {
-      throw new BadRequestException(`The backup info version '${createBackup.version}' is not supported by this version of the lab manager`);
+      throw new BadRequestException(`The backup info version '${createBackup.version}' ` +
+        `is not supported by this version of the lab manager`);
     }
 
     if (this.hasRunningBackup()) {
@@ -146,7 +147,8 @@ export class BackupService implements OnModuleInit {
       }
 
       if (labActivity.queued_experiments > 0) {
-        throw new BadRequestException(`There is ${labActivity.queued_experiments} experiments in the queue in the lab, please remove them from queue before doing a backup`)
+        throw new BadRequestException(`There is ${labActivity.queued_experiments} experiments in ` +
+          `the queue in the lab, please remove them from queue before doing a backup`)
       }
 
 
@@ -190,11 +192,11 @@ export class BackupService implements OnModuleInit {
   private createProdBackup(backupBucketDto: BackupBucketDTO, triggerMode: BackupTriggerMode, s3Prefix: string): LabBackupStorage {
 
     // add the unique storage
-    const backup = new LabBackupStorage(backupBucketDto.bucketConfig.region, backupBucketDto.bucketConfig.bucket, backupBucketDto.bucketConfig.endpoint,
-      backupBucketDto.backupFrequency, triggerMode, s3Prefix);
-    backup.setAccessKeys(backupBucketDto.bucketConfig.credentials.accessKeyId, backupBucketDto.bucketConfig.credentials.secretAccessKey);
+    const backup = new LabBackupStorage( triggerMode, s3Prefix);
+    backup.setBackupBucketDto(backupBucketDto);
 
-    this.logger.log(`[Backup][${backup.triggerMode}] Starting backup for region '${backup.region}', bucket '${backup.bucket}, frequency '${backup.frequency}', id '${backup.id}'`);
+    this.logger.log(`[Backup][${backup.triggerMode}] Starting backup for region '${backup.getRegion()}', ` +
+      `bucket '${backup.getBucketName()}, frequency '${backup.frequency}', id '${backup.id}'`);
     // add the backup to the history
     this.saveBackupStatusToHistory(backup);
 
@@ -279,7 +281,7 @@ export class BackupService implements OnModuleInit {
 
 
   private callSyncToS3(backup: LabBackupStorage, pathToSync: string,
-    destinationFolder: string, backupType: BackupType): void {
+                       destinationFolder: string, backupType: BackupType): void {
     const response = this.rcloneService.syncFolderToS3(backup.getBucketConfig(), pathToSync, backup.s3Prefix + '/' + destinationFolder);
     // store process
     backup.setProcess(backupType, response.childProcess);
@@ -306,14 +308,15 @@ export class BackupService implements OnModuleInit {
   }
 
   private onCompleted(backupType: BackupType, status: 'SUCCESS' | 'ERROR', message: string,
-    backup: LabBackupStorage): void {
+                      backup: LabBackupStorage): void {
 
     backup.updateMessage(backupType, status, message);
 
     // when all backup are completed, save the status
     if (backup.isFinished()) {
       this.saveBackupStatusToHistory(backup);
-      this.logger.log(`[Backup][${backup.triggerMode}] Backup finished for region '${backup.region}', bucket '${backup.bucket}', frequency '${backup.frequency}, id '${backup.id}'`);
+      this.logger.log(`[Backup][${backup.triggerMode}] Backup finished for region '${backup.getRegion()}', ` + 
+        `bucket '${backup.getBucketName()}', frequency '${backup.frequency}, id '${backup.id}'`);
     }
 
     // if there is no running backup, delete the DB dump
@@ -371,7 +374,8 @@ export class BackupService implements OnModuleInit {
     const dockerCompose = this.fileService.readDockerComposeTemplate();
 
     if (!dockerCompose.includes('image')) {
-      throw new BadRequestException('The docker-compose file does not contain any image, please check your docker-compose file. Maybe it has been encrypted by a ransomware');
+      throw new BadRequestException('The docker-compose file does not contain any image, please check your '+ 
+        'docker-compose file. Maybe it has been encrypted by a ransomware');
     }
   }
 
@@ -386,8 +390,8 @@ export class BackupService implements OnModuleInit {
 
       this.saveBackupHistory(backupHistory);
 
-      this.externalCentralService.syncBackupHistory([backup.toJson()]).catch(
-        e => this.logger.error(`Error while syncing the backup history with the central server. Error : ${e.message}`)
+      this.externalSpaceService.syncBackupHistory([backup.toJson()]).catch(
+        e => this.logger.error(`Error while syncing the backup history with the space server. Error : ${e.message}`)
       );
     } catch (e) {
       Logger.error('Error while writing backup history file', e);
@@ -404,36 +408,6 @@ export class BackupService implements OnModuleInit {
 
   private backupHistoryPath(): string {
     return this.configService.getProdSettingsFolder() + '/' + this.backupHistoryFilename;
-  }
-
-
-  // todo history migration, to remove once all labs uses v1.3.2
-  private migrateBackupHistory(): void {
-    const history: any = this.getBackupHistory();
-
-    if (history.version >= 2) return;
-
-    this.logger.log('Migrating backup history to v2');
-
-    const newBackupHistory = new LabBackupHistory();
-
-    // store each backup individually
-    for (const backup of history.backups) {
-      if (backup.storages && backup.storages.length > 0) {
-        for (const storage of backup.storages) {
-          // set the frequency and trigger mode
-          storage.frequency = 'DAILY' as BackupFrequency;
-          storage.triggerMode = 'AUTO' as BackupTriggerMode;
-          storage.dataSize = 0;
-          storage.dbSize = 0;
-          newBackupHistory.backups.push(storage);
-        }
-      }
-    }
-
-    const filePath = this.backupHistoryPath();
-    this.fileService.writeJsonFile(filePath, newBackupHistory.toJson());
-    this.backupHistory = newBackupHistory;
   }
 
   public getBackupHistory(): LabBackupHistory {
@@ -538,7 +512,7 @@ export class BackupService implements OnModuleInit {
   }
 
   private callSyncFromS3(restoreDTO: BackupRestoreDTO, s3SourceFolder: string,
-    localDestinationPath: string): Observable<SpawnResult> {
+                         localDestinationPath: string): Observable<SpawnResult> {
 
     const response = this.rcloneService.syncFolderFromS3(restoreDTO.bucketConfig,
       restoreDTO.s3Prefix + '/' + s3SourceFolder, localDestinationPath);

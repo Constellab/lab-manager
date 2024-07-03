@@ -1,6 +1,6 @@
 export interface PrivateFile {
   version: number;
-  central: {
+  space: {
     api_key: string;
     api_url: string;
     front_url: string;
@@ -47,7 +47,7 @@ export interface PrivateFileData {
 export function getPrivateFileTemplate(): PrivateFile {
   return {
     version: 1,
-    central: {
+    space: {
       api_key: null,
       api_url: null,
       front_url: null,

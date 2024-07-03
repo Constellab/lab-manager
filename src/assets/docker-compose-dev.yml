@@ -11,8 +11,8 @@ services:
       - LAB_ENVIRONMENT=LOCAL
       - LAB_PROD_API_URL=http://localhost:3100
       - LAB_DEV_API_URL=http://localhost:3100
-      - CENTRAL_API_KEY=
-      - CENTRAL_API_URL=
+      - SPACE_API_KEY=
+      - SPACE_API_URL=
       - FRONT_URL=http://localhost:89
       - FRONT_VERSION=
       - CONDA_VERSION=latest
@@ -110,8 +110,8 @@ services:
       - LAB_DEV_API_URL=http://localhost:3100
       - CODE_SERVER_URL=https://codelab.${VIRTUAL_HOST}
       - VIRTUAL_HOST=
-      - CENTRAL_FRONT_URL=https://preconstellab.space
-      - CENTRAL_API_URL=https://api.preconstellab.com
+      - SPACE_FRONT_URL=https://preconstellab.space
+      - SPACE_API_URL=https://api.preconstellab.com
       - COMMUNITY_FRONT_URL=https://hub-pre-prod.gencovery.com
       - COMMUNITY_API_URL=https://hub-back-pre-prod.constellab-pre-prod.gencovery.com
       - CAPTCHA_SITE_KEY=

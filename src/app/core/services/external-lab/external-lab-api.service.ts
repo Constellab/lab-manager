@@ -8,7 +8,7 @@ import { CoreConfigService } from 'src/app/core/services/config/core-config.serv
 
 
 /**
- * Class to call route of the lab using central api 
+ * Class to call route of the lab using space api 
  */
 @Injectable()
 export class ExternalLabApiService {
@@ -26,13 +26,13 @@ export class ExternalLabApiService {
   public healthCheck(): Promise<boolean> {
     return lastValueFrom(
       this.apiService.get(this.constructRoute('lab/health'))
-      ).catch(() => false);
+    ).catch(() => false);
   }
 
   public getGlobalActivity(): Promise<LabGlobalActivity> {
     return lastValueFrom(
       this.apiService.get(this.constructRoute('lab/global-activity'), this.getRequestOptions({}))
-      );
+    );
   }
 
 
@@ -55,7 +55,7 @@ export class ExternalLabApiService {
   private getRequestOptions(options: ApiHttpOption): ApiHttpOption {
     const privateFile = this.fileService.readPrivateFile();
 
-    return Object.assign(options, { headers: this.getHeader(privateFile.central.api_key) });
+    return Object.assign(options, { headers: this.getHeader(privateFile.space.api_key) });
   }
 
   // get the header with api key

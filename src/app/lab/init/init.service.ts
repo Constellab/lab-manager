@@ -120,15 +120,15 @@ export class InitService {
         privateJson.data = oldPrivateJson.data;
       }
 
-      // configure central information a central api key
-      privateJson.central.api_key = labInitConfig.centralApiKey;
-      privateJson.central.api_url = labInitConfig.centralApiUrl;
-      privateJson.central.front_url = labInitConfig.centralFrontUrl;
+      // configure space information a space api key
+      privateJson.space.api_key = labInitConfig.space.apiKey;
+      privateJson.space.api_url = labInitConfig.space.apiUrl;
+      privateJson.space.front_url = labInitConfig.space.frontUrl;
 
       // Community information
-      privateJson.community.front_url = labInitConfig.communityFrontUrl;
-      privateJson.community.api_url = labInitConfig.communityApiUrl;
-      privateJson.community.api_key = labInitConfig.communityApiKey;
+      privateJson.community.front_url = labInitConfig.community.frontUrl;
+      privateJson.community.api_url = labInitConfig.community.apiUrl;
+      privateJson.community.api_key = labInitConfig.community.apiKey;
 
       // Docker registry info
       privateJson.docker_registry.url = labInitConfig.dockerRegistry.url;
