@@ -98,7 +98,4 @@ export class RcloneService {
     return result;
   }
 
-
-  // rclone -P --azureblob-account labbackuplocal --azureblob-key "0uKBMO4D7j5LS54CeKp0L6RdxtzqPJZupv6J1dxsX1betQV+etdQeJNxYDGTva6onJcC3vmHjepA+AStwamrHA==" 
-  // sync /home/lab-manager/src/app/lab :azureblob:test/ok/test
 }
