@@ -29,7 +29,7 @@ export class FileService implements OnModuleInit {
       if(privateFile.central){
         privateFile.space = privateFile.central;
         delete privateFile.central;
-        this.updatePrivateFileData(privateFile)
+        this.createPrivateFile(privateFile)
       }
     }
   }

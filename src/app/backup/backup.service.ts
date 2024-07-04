@@ -3,7 +3,7 @@ import { SpawnResult } from '../core/services/command/command.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
 import { FileService } from '../core/services/file/file.service';
 import { RcloneService } from '../core/services/rclone/rclone.service';
-import { BackupBucketDTO, BackupFrequency, BackupInfoDTO, BackupRestoreDTO, BackupTriggerMode, LabBackupStorage } from './backup.class';
+import { BackupBucketDTO, BackupInfoDTO, BackupRestoreDTO, BackupTriggerMode, LabBackupStorage } from './backup.class';
 import { ExternalLabApiService } from '../core/services/external-lab/external-lab-api.service';
 import { Cron } from '@nestjs/schedule';
 import { ExternalSpaceApiService } from '../core/external-space/external-space-api.service';
@@ -76,9 +76,13 @@ export class BackupService implements OnModuleInit {
     this.saveBackupHistory(backupHistory);
 
     this.logger.log('Syncing backup history with space server')
-    this.externalSpaceService.syncBackupHistory(backupHistory.backups.map(b => b.toJson())).catch(
-      e => this.logger.error(`Error while syncing the backup history with the space server. Error : ${e.message}`)
-    );
+    try{
+      this.externalSpaceService.syncBackupHistory(backupHistory.backups.map(b => b.toJson())).catch(
+        e => this.logger.error(`Error while syncing the backup history with the space server. Error : ${e.message}`)
+      );
+    } catch(e){
+      this.logger.error(`Error while syncing the backup history with the space server. Error : ${e.message}`)
+    }
     this.logger.log('Syncing backup history with space server done')
   }
 
