@@ -57,33 +57,34 @@ export class BackupService implements OnModuleInit {
    * On start, check if there are some backup mark as running, if yes, mark them as error
    */
   onModuleInit(): void {
-    if (!this.fileService.privateFileExists()) return;
-    const backupHistory = this.getBackupHistory();
-
-    // check if there is a running backup, to mark it as error
-    for (const running of backupHistory.getRunningBackups()) {
-      if (running.dbStatus.status === 'IN_PROGRESS') {
-        this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped',
-          'DB', running);
-      }
-      if (running.dataStatus.status === 'IN_PROGRESS') {
-        this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped',
-          'DATA', running);
-      }
-    }
-
-    // save the history and send history to space server
-    this.saveBackupHistory(backupHistory);
-
-    this.logger.log('Syncing backup history with space server')
     try{
+
+      if (!this.fileService.privateFileExists()) return;
+      const backupHistory = this.getBackupHistory();
+
+      // check if there is a running backup, to mark it as error
+      for (const running of backupHistory.getRunningBackups()) {
+        if (running.dbStatus.status === 'IN_PROGRESS') {
+          this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped',
+            'DB', running);
+        }
+        if (running.dataStatus.status === 'IN_PROGRESS') {
+          this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped',
+            'DATA', running);
+        }
+      }
+
+      // save the history and send history to space server
+      this.saveBackupHistory(backupHistory);
+
+      this.logger.log('Syncing backup history with space server')
       this.externalSpaceService.syncBackupHistory(backupHistory.backups.map(b => b.toJson())).catch(
         e => this.logger.error(`Error while syncing the backup history with the space server. Error : ${e.message}`)
       );
+      this.logger.log('Syncing backup history with space server done')
     } catch(e){
-      this.logger.error(`Error while syncing the backup history with the space server. Error : ${e.message}`)
+      this.logger.error(`Error during backup module init. Error : ${e.message}`)
     }
-    this.logger.log('Syncing backup history with space server done')
   }
 
   /**
