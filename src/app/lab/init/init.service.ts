@@ -163,6 +163,9 @@ export class InitService {
       // open ai
       privateJson.openai_api_key = labInitConfig.openaiApiKey;
 
+      // additional host
+      privateJson.additionalDomains = labInitConfig.additionalDomains;
+
       this.fileService.createPrivateFile(privateJson);
       this.taskService.markTaskAsSuccess(taskName, 'private.json file generated');
     } catch (e) {

@@ -56,14 +56,15 @@ services:
     labels:
       - "traefik.enable=true"
       # Config for the HTTPS glab domain to port 8080
-      - "traefik.http.routers.glab-router.rule=host(`glab.${VIRTUAL_HOST}`)"
+      # The GLAB_HOST and GLAB_DASHBOARD_HOST are replaced during the generation of the docker-compose file
+      - "traefik.http.routers.glab-router.rule=#GLAB_HOST#"
       - "traefik.http.routers.glab-router.service=glab-service"
       - "traefik.http.services.glab-service.loadbalancer.server.port=3000"
       # Enable HTTPS
       - "traefik.http.routers.glab-router.entrypoints=websecure"
       - "traefik.http.routers.glab-router.tls.certresolver=myresolver"
       # Config for https streamlit domain to port 8501
-      - "traefik.http.routers.streamlit-router.rule=host(`dashboard.${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.streamlit-router.rule=#GLAB_DASHBOARD_HOST#"
       - "traefik.http.routers.streamlit-router.service=streamlit-service"
       - "traefik.http.services.streamlit-service.loadbalancer.server.port=8501"
       # Enable HTTPS
@@ -180,15 +181,15 @@ services:
     labels:
       - "traefik.enable=true"
       # Configure Host domain to port 81
-      - "traefik.http.routers.front-router.rule=Host(`front.${VIRTUAL_HOST}`)"
+      - "traefik.http.routers.front-router.rule=host(`front.${VIRTUAL_HOST}`)"
       - "traefik.http.routers.front-router.service=front-service"
       - "traefik.http.services.front-service.loadbalancer.server.port=81"
       #Enable HTTPS
       - "traefik.http.routers.front-router.entrypoints=websecure"
       - "traefik.http.routers.front-router.tls.certresolver=myresolver"
 
-      # Configure app to port 81
-      - "traefik.http.routers.lab-router.rule=Host(`lab.${VIRTUAL_HOST}`)"
+      # Configure lab to port 81
+      - "traefik.http.routers.lab-router.rule=#FRONT_LAB_HOST#"
       - "traefik.http.routers.lab-router.service=lab-service"
       - "traefik.http.services.lab-service.loadbalancer.server.port=81"
       #Enable HTTPS

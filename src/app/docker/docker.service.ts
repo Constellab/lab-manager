@@ -257,9 +257,45 @@ export class DockerService {
     this.logger.log(`Generating ${dockerComposeFileName} file`);
     let dockerComposeContent = this.fileService.readDockerComposeTemplate();
 
+    
     // replace the GPU config in the docker-compose file
     const gpuConfig = await this.gpuService.getDockerComposeGpuConfig();
     dockerComposeContent = dockerComposeContent.replace(/#GPU_CONFIG#/g, gpuConfig);
+
+    // Handle glab hosts
+    const privateFile: PrivateFile = this.fileService.readPrivateFile();
+    
+    // list of variable in the docker-compose file that need to be replaced
+    const toReplaces = [
+      {
+        subDomain: 'glab',
+        replacementText: '#GLAB_HOST#'
+      },
+      {
+        subDomain: 'dashboard',
+        replacementText: '#GLAB_DASHBOARD_HOST#'
+      },
+      // TODO TO BE REMOVED
+      {
+        subDomain: 'lab',
+        replacementText: '#FRONT_LAB_HOST#'
+      }
+    ]
+    for(const toReplace of toReplaces) {
+      // build the standard host string like : host(`glab.${VIRTUAL_HOST}`)
+      let newContent = 'host(`' + toReplace.subDomain + '.${VIRTUAL_HOST}`)';
+      
+      // if there are additional hosts, add them to the host string
+      if(privateFile.additionalDomains && privateFile.additionalDomains.length > 0) {
+        for(const additionalHost of privateFile.additionalDomains) {
+          // add an host for each additional host, keep the same sub domain
+          newContent += ` || host(\`${toReplace.subDomain}.${additionalHost}\`)`
+        }
+      }
+
+      // replace the content in the docker-compose file
+      dockerComposeContent = dockerComposeContent.replace(toReplace.replacementText, newContent);
+    }
 
     this.fileService.writeDockerCompose(dockerComposeContent)
     this.logger.log(`${dockerComposeFileName} file generated`);
