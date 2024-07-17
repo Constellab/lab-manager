@@ -261,9 +261,6 @@ export class DockerService {
     // replace the GPU config in the docker-compose file
     const gpuConfig = await this.gpuService.getDockerComposeGpuConfig();
     dockerComposeContent = dockerComposeContent.replace(/#GPU_CONFIG#/g, gpuConfig);
-
-    // Handle glab hosts
-    const privateFile: PrivateFile = this.fileService.readPrivateFile();
     
     // list of variable in the docker-compose file that need to be replaced
     const toReplaces = [
@@ -285,9 +282,10 @@ export class DockerService {
       // build the standard host string like : host(`glab.${VIRTUAL_HOST}`)
       let newContent = 'host(`' + toReplace.subDomain + '.${VIRTUAL_HOST}`)';
       
+      const additionalDomains = this.configService.getAddtionalDomains();
       // if there are additional hosts, add them to the host string
-      if(privateFile.additionalDomains && privateFile.additionalDomains.length > 0) {
-        for(const additionalHost of privateFile.additionalDomains) {
+      if(additionalDomains && additionalDomains.length > 0) {
+        for(const additionalHost of additionalDomains) {
           // add an host for each additional host, keep the same sub domain
           newContent += ` || host(\`${toReplace.subDomain}.${additionalHost}\`)`
         }

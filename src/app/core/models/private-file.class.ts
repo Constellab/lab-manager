@@ -30,11 +30,6 @@ export interface PrivateFile {
     password: string;
   };
   openai_api_key: string;
-  /**
-   * Provided for on premise installations. Can be used to add additional hosts to the lab manager
-   * to enable access to apps from other domains.
-   */
-  additionalDomains?: string[];
   // contains some information about the current state of the lab
   // thoses information are kept when private.json is updated
   data: PrivateFileData;

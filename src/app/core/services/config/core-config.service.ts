@@ -44,6 +44,20 @@ export class CoreConfigService {
     return this.configService.get('VIRTUAL_HOST');
   }
 
+
+  /**
+   * Provided for on premise installations. Can be used to add additional hosts to the lab manager
+   * to enable access to apps from other domains.
+   */
+  public getAddtionalDomains(): string[] {
+    const domains = this.configService.get('ADDITIONAL_DOMAINS');
+    try{
+      return JSON.parse(domains);
+    }catch (e){
+      throw Error('Error while parsing environment variable ADDITIONAL_DOMAINS to array. It must be a valid JSON array.');
+    }
+  }
+
   public getAppFolder(): string {
     return '/app';
   }
