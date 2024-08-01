@@ -27,14 +27,6 @@ export interface BackupRestoreOptionsDTO {
   force: boolean;
 }
 
-
-export interface AzureBlobConfigDTO {
-  accountName: string;
-  containerName: string;
-  accountKey: string;
-  regionName: string;
-}
-
 export interface BackupRestoreDTO {
   version: number;
   bucketConfig: BucketConfig;
