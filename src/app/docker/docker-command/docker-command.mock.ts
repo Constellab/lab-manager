@@ -26,7 +26,7 @@ export class DockerCommandMock implements DockerCommandServiceI {
         'id': '4f8364e6037b348a9eff4768cf9694d6490c803923433326cac87ee6a5ee61e9',
         'command': '/entrypoint.sh --run-codelab',
         'createdAt': '2022-01-04 17:42:12 +0100 CET',
-        'image': 'registry.gitlab.com/constellab/public/docker-registry/codelab-cpu:latest',
+        'image': 'constellab/codelab:latest',
         'mounts': '',
         'names': 'codelab',
         'networks': 'gencovery-network-dev',

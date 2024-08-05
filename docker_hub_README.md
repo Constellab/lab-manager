@@ -18,7 +18,7 @@
 
 ## ✅ Features
 
-This container is one of the first container to be started on the lab,*. Its role is to configure the lab and to start the others container. 
+This container is one of the first container to be started on the lab. Its role is to configure the lab and to start the others container. 
  
 📋 Here is the list of the main features:
 - manage the containers 

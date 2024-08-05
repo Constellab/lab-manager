@@ -87,8 +87,8 @@ export class EnvVariableService {
       // OTHERS
       const isGpu: boolean = await this.gpuService.isGpu();
       envVariables.addEnvVariable('GPU', isGpu ? 'cuda' : '');
-      // set the IMAGE_SUFFIX to use the correct image based on if GPU is on
-      envVariables.addEnvVariable('IMAGE_SUFFIX', isGpu ? 'gpu' : 'cpu');
+      // set the TAG_PREFIX to use the correct image based on if GPU is on
+      envVariables.addEnvVariable('TAG_PREFIX', isGpu ? 'gpu-': '');
 
       // CAPTCHA
       envVariables.addEnvVariable('CAPTCHA_SITE_KEY', privateJson.lab.captchaSiteKey);

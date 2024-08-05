@@ -8,7 +8,6 @@ on:
       - '*'
 
 env:
-  REGISTRY: registry.hub.docker.com
   IMAGE_NAME: constellab/lab-manager
 
 jobs:
