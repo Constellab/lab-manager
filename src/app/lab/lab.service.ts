@@ -14,7 +14,6 @@ import { ContainerService } from '../docker/container/container.service';
 import { TaskStatusInfo } from '../core/models/task.class';
 
 const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
-  dockerLogin: true,
   generateComposeFile: true,
 };
 
@@ -151,11 +150,7 @@ export class LabService  {
   public exportLogsToFile(containerName: string): Promise<string> {
     return this.dockerService.exportLogsToFile(containerName, '/tmp/logs_export.txt');
   }
-
-  public async registryLogin(): Promise<void> {
-    return this.dockerService.login();
-  }
-
+  
   public async systemPrune(): Promise<void> {
     return this.dockerService.systemPrune();
   }

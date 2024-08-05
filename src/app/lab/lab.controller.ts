@@ -123,11 +123,6 @@ export class LabController {
     return this.labService.pullContainers();
   }
 
-  @Post('registry-login')
-  async registryLogin(): Promise<void> {
-    return this.labService.registryLogin();
-  }
-
   @Post('system-prune')
   async systemPrune(): Promise<void> {
     return this.labService.systemPrune();

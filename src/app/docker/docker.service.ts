@@ -10,7 +10,6 @@ import { ContainerService } from './container/container.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
 
 export interface BeforeDockerCommandOptions {
-  dockerLogin?: boolean;
   generateComposeFile?: boolean;
 }
 
@@ -26,27 +25,6 @@ export class DockerService {
     private taskService: TaskService,
     private gpuService: GPUService,
     private configService: CoreConfigService) {
-  }
-
-  public async login(): Promise<void> {
-    const taskName = 'DOCKER_LOGIN';
-    this.taskService.newTask(taskName);
-
-
-    try {
-
-      const privateFile: PrivateFile = this.fileService.readPrivateFile();
-      await this.dockerCommand.login(
-        privateFile.docker_registry.username,
-        privateFile.docker_registry.password,
-        privateFile.docker_registry.url
-      );
-      this.taskService.markTaskAsSuccess(taskName);
-    } catch (e: any) {
-      // eslint-disable-next-line max-len
-      this.taskService.markTaskAsError(taskName, `Can't log in to the docker registry. Error: ${e.message}`);
-      throw e;
-    }
   }
 
   public async listContainers(): Promise<DockerPs[]> {
@@ -303,10 +281,6 @@ export class DockerService {
     if (!options) return;
     if (options.generateComposeFile) {
       this.generateDockerCompose();
-    }
-
-    if (options.dockerLogin) {
-      await this.login();
     }
   }
 }

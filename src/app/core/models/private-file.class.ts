@@ -23,12 +23,6 @@ export interface PrivateFile {
     gws_core_prod_password: string;
     gws_core_dev_password: string;
   };
-  // registry info on how to pull images
-  docker_registry: {
-    url: string;
-    username: string;
-    password: string;
-  };
   openai_api_key: string;
   // contains some information about the current state of the lab
   // thoses information are kept when private.json is updated
@@ -69,11 +63,6 @@ export function getPrivateFileTemplate(): PrivateFile {
     db: {
       gws_core_prod_password: null,
       gws_core_dev_password: null,
-    },
-    docker_registry: {
-      url: null,
-      username: null,
-      password: null,
     },
     data: {
       biota_current_db_url_version: null,

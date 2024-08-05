@@ -72,8 +72,6 @@ export class InitService {
     await this.envVariableService.setAllEnvVariables(this.configFileService.readConfigFile(),
       this.fileService.readPrivateFile());
 
-    await this.loginToDockerRegistry();
-
     this.logger.log('Lab manager configured');
   }
 
@@ -130,11 +128,6 @@ export class InitService {
       privateJson.community.api_url = labInitConfig.community.apiUrl;
       privateJson.community.api_key = labInitConfig.community.apiKey;
 
-      // Docker registry info
-      privateJson.docker_registry.url = labInitConfig.dockerRegistry.url;
-      privateJson.docker_registry.username = labInitConfig.dockerRegistry.username;
-      privateJson.docker_registry.password = labInitConfig.dockerRegistry.password;
-
       // Backup info
       privateJson.backup = {
         enable: labInitConfig.labConfig?.enableBackup ?? true
@@ -168,13 +161,6 @@ export class InitService {
     } catch (e) {
       this.taskService.markTaskAsError(taskName, `Error while generating private.json file : ${e.message}`);
       throw e;
-    }
-  }
-
-  private async loginToDockerRegistry(): Promise<void> {
-    try {
-      await this.dockerService.login();
-    } catch (e: any) {
     }
   }
 }
