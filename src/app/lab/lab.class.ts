@@ -31,23 +31,18 @@ export interface LabStatus {
  */
 export interface LabInitConfig {
   space: {
+    apiUrl: string;
     apiKey: string;
     frontUrl: string;
-    apiUrl: string;
   },
   community: {
-    frontUrl: string;
     apiUrl: string;
     apiKey: string;
+    frontUrl: string;
   },
   codelabToken: string;
   gwsCoreProdPassword: string;
   gwsCoreDevPassword: string;
-  dockerRegistry: {
-    url: string;
-    username: string;
-    password: string;
-  }
   labConfig: {
     enableBackup: boolean;
   }

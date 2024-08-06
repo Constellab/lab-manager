@@ -46,6 +46,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            LAB_MANAGER_VERSION=${{ github.ref_name }}
 
       # step to set the docker image description from docker_hub_README.md 
       - name: Docker Hub Description
