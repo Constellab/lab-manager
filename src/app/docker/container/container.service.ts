@@ -273,12 +273,12 @@ export class ContainerService {
 
   public async dumpProdDb(dumpLocation: string): Promise<string> {
     return await this.execCommandInComposeContainer(ContainerService.DB_GWS_CORE_PROD,
-      `sh -c "mysqldump --user='root' --password=\\$MYSQL_ROOT_PASSWORD \\$MYSQL_DATABASE > ${dumpLocation}"`);
+      `sh -c "mysqldump --user='root' --password=\\$MYSQL_ROOT_PASSWORD --max_allowed_packet=256M \\$MYSQL_DATABASE > ${dumpLocation}"`);
   }
 
   public async restoreProdDb(dumpLocation: string): Promise<string> {
     return await this.execCommandInComposeContainer(ContainerService.DB_GWS_CORE_PROD,
-      `sh -c "mysql --user='root' --password=\\$MYSQL_ROOT_PASSWORD \\$MYSQL_DATABASE < ${dumpLocation}"`);
+      `sh -c "mysql --user='root' --password=\\$MYSQL_ROOT_PASSWORD --max_allowed_packet=256M \\$MYSQL_DATABASE < ${dumpLocation}"`);
   }
 
   public async prodDbIsRunning(): Promise<boolean> {
