@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
 import { TaskService } from 'src/app/core/services/task/task.service';
 import { TraefikService } from 'src/app/core/services/traefik/traefik.service';
 import { DockerCommandService } from '../docker-command/docker-command.service';
@@ -12,7 +11,7 @@ export class ContainerService {
   private static readonly GLAB = 'glab';
   private static readonly CODELAB = 'codelab';
   private static readonly FRONT = 'front';
-  public static readonly DB_GWS_CORE_PROD = 'gws_core_prod_db';
+  private static readonly DB_GWS_CORE_PROD = 'gws_core_prod_db';
   private static readonly DB_GWS_BIOTA = 'gws_biota_db';
   private static readonly DB_GWS_CORE_DEV = 'gws_core_dev_db';
   private static readonly DB_GWS_CORE_DEV_TEST = 'test_gws_dev_db';
@@ -138,7 +137,7 @@ export class ContainerService {
 
     // if the container is a mysql container, check if the mysql is ready
     if ([ContainerService.DB_GWS_CORE_PROD, ContainerService.DB_GWS_CORE_DEV,
-    ContainerService.DB_GWS_CORE_DEV_TEST, ContainerService.DB_GWS_BIOTA].includes(containerName)) {
+      ContainerService.DB_GWS_CORE_DEV_TEST, ContainerService.DB_GWS_BIOTA].includes(containerName)) {
       try {
         // check if the mysql socket is ready
         await this.dockerCommand.dockerExec(containerName,

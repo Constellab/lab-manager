@@ -1,6 +1,8 @@
-import { BackupBucketDTO, BackupFrequency, LabBackupStorage } from "./backup.class";
+import { BackupBucketDTO, BackupFrequency, BackupInfo, LabBackupStorage } from "./backup.class";
 
 export class LabBackupHistory {
+
+  private static readonly CURRENT_VERSION = 3;
   version: number;
   backups: LabBackupStorage[];
 
@@ -9,17 +11,48 @@ export class LabBackupHistory {
   private static readonly ONE_MINUTE = 60 * 1000; // 1 minute
 
   constructor() {
-    this.version = 2;
+    this.version = LabBackupHistory.CURRENT_VERSION;
     this.backups = [];
   }
 
   public static fromJson(json: any): LabBackupHistory {
+
+    if(json.version === 2){
+      json = this.migrateFrom2To3(json);
+    }
+
     const history = new LabBackupHistory();
-    history.version = json.version;
+
     history.backups = json.backups.map((backup: any) => LabBackupStorage.fromJson(backup));
     history.sortBackups();
 
     return history;
+  }
+
+  public static migrateFrom2To3(json: any): any {
+    for(const backup of json.backups){
+      if(!backup.data){
+        backup.data = {
+          totalSize: backup.dataSize,
+          status: backup.dataStatus,
+          transfer: null,
+        } as BackupInfo;
+        delete backup.dataSize;
+        delete backup.dataStatus;
+      }
+      if(!backup.db){
+        backup.db = {
+          totalSize: backup.dbSize,
+          status: backup.dbStatus,
+          transfer: null,
+        } as BackupInfo;
+        delete backup.dbSize;
+        delete backup.dbStatus;
+      }
+
+    }
+    json.version = LabBackupHistory.CURRENT_VERSION;
+    return json;
   }
 
   /**
@@ -129,5 +162,7 @@ export class LabBackupHistory {
   public getRunningBackups(): LabBackupStorage[] {
     return this.backups.filter(backup => backup.status === 'IN_PROGRESS');
   }
+
+ 
 
 }

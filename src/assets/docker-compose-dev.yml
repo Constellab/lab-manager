@@ -195,7 +195,7 @@ networks:
   gencovery-network-prod:
     external: true
 
-# the volume names are the same as the one in the dockerlab local docker-compose.yml
+# the volume names are the same as the one in the lab-configurer local docker-compose.yml
 # this is because volume are relative to host machine and not docker image
 volumes:
   lab-manager-config:

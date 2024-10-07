@@ -1,6 +1,7 @@
 import { ChildProcess } from "child_process";
 import { BucketConfig } from "../core/models/bucket-config.class";
 import { StringHelper } from "../core/helpers/string.helper";
+import { RCloneFinalStatsDetail } from "../core/services/rclone/rclone.class";
 
 
 export type BackupFrequency = 'DAILY' | 'WEEKLY';
@@ -43,6 +44,13 @@ export interface BackupStatusObject {
   message: string;
 }
 
+export interface BackupInfo {
+  status: BackupStatusObject;
+  totalSize: number;
+  transfer?: RCloneFinalStatsDetail;
+}
+
+
 export interface LabBackupStorageI {
   id: string;
   type: 's3' | 'azureBlob';
@@ -51,10 +59,10 @@ export interface LabBackupStorageI {
   startUploadAt: Date;
   endUploadAt?: Date;
   status: BackupStatus;
-  dataStatus: BackupStatusObject;
-  dbStatus: BackupStatusObject;
-  dataSize: number;
-  dbSize: number;
+
+  data: BackupInfo;
+  db: BackupInfo;
+
   frequency: BackupFrequency;
   triggerMode: BackupTriggerMode;
   s3Prefix: string;
@@ -65,18 +73,15 @@ export interface LabBackupStorageI {
 
 
 export class LabBackupStorage {
-
-
-  
   // store in the json
   id: string;
   startUploadAt: Date;
   endUploadAt?: Date;
   status: BackupStatus;
-  dataStatus: BackupStatusObject;
-  dbStatus: BackupStatusObject;
-  dataSize: number;
-  dbSize: number;
+
+  data: BackupInfo;
+  db: BackupInfo;
+
   frequency: BackupFrequency;
   triggerMode: BackupTriggerMode;
   s3Prefix: string;
@@ -92,20 +97,50 @@ export class LabBackupStorage {
     this.s3Prefix = s3Prefix;
     this.status = 'IN_PROGRESS';
     this.startUploadAt = new Date();
-    this.dataStatus = {
-      message: 'Backup started',
-      status: 'IN_PROGRESS',
+    this.data = {
+      totalSize: 0,
+      status:{
+        message: 'Backup started',
+        status: 'IN_PROGRESS',
+      }
     };
     
-    this.dbStatus = {
-      message: 'Backup started',
-      status: 'IN_PROGRESS',
+    this.data = {
+      totalSize: 0,
+      status:{ 
+        message: 'Backup started',
+        status: 'IN_PROGRESS',
+      }
     };
   }
   
   public setBackupBucketDto(backupBucketDto: BackupBucketDTO): void {
     this.frequency = backupBucketDto.backupFrequency;
     this.bucketConfig = backupBucketDto.bucketConfig;
+  }
+
+  public setDataTotalSize(size: number): void {
+    this.data.totalSize = size;
+  }
+
+  public setDbTotalSize(size: number): void {
+    this.db.totalSize = size;
+  }
+
+  public getDataStatus(): BackupStatus {
+    return this.data.status.status;
+  }
+
+  public getDbStatus(): BackupStatus {
+    return this.db.status.status;
+  }
+
+  public setStats(backupType: BackupType, transfer: RCloneFinalStatsDetail): void {
+    if(backupType === "DATA"){      
+      this.data.transfer = transfer;
+    }else{
+      this.db.transfer = transfer;
+    }
   }
 
 
@@ -116,15 +151,15 @@ export class LabBackupStorage {
     }
 
     if (backupType === 'DATA') {
-      this.dataStatus = backupStatus
+      this.data.status = backupStatus
     } else {
-      this.dbStatus = backupStatus
+      this.db.status = backupStatus
     }
 
     // if both are done, set the endUploadAt
-    if (this.dataStatus.status !== 'IN_PROGRESS' && this.dbStatus.status !== 'IN_PROGRESS') {
+    if (this.data.status.status !== 'IN_PROGRESS' && this.db.status.status !== 'IN_PROGRESS') {
       // if one of the two is in error, set the status to error
-      this.status = this.dataStatus.status === 'ERROR' || this.dbStatus.status === 'ERROR' ? 'ERROR' : 'SUCCESS';
+      this.status = this.data.status.status === 'ERROR' || this.db.status.status === 'ERROR' ? 'ERROR' : 'SUCCESS';
       this.endUploadAt = new Date();
     }
 
@@ -189,10 +224,8 @@ export class LabBackupStorage {
     storage.startUploadAt = new Date(json.startUploadAt);
     storage.endUploadAt = json.endUploadAt ? new Date(json.endUploadAt) : null;
     storage.status = json.status;
-    storage.dataStatus = json.dataStatus;
-    storage.dbStatus = json.dbStatus;
-    storage.dataSize = json.dataSize;
-    storage.dbSize = json.dbSize;
+    storage.data = json.data;
+    storage.db = json.db;
     return storage;
   }
 
@@ -203,10 +236,8 @@ export class LabBackupStorage {
       startUploadAt: this.startUploadAt,
       endUploadAt: this.endUploadAt,
       status: this.status,
-      dataStatus: this.dataStatus,
-      dbStatus: this.dbStatus,
-      dataSize: this.dataSize,
-      dbSize: this.dbSize,
+      data: this.data,
+      db: this.db,
       frequency: this.frequency,
       triggerMode: this.triggerMode,
       s3Prefix: this.s3Prefix,

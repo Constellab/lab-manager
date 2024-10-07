@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { BucketConfig } from '../../models/bucket-config.class';
-import { CommandService, SpawnResponse, SpawnResult } from '../command/command.service';
-import { filter, map } from 'rxjs';
+import { CommandService, SpawnResult } from '../command/command.service';
+import { map } from 'rxjs';
+import { RCloneRespsonse, RCloneResult } from './rclone.class';
 
 
 @Injectable()
@@ -11,7 +12,7 @@ export class RcloneService {
   }
 
 
-  public syncFolderToS3(config: BucketConfig, localSourcePath: string, s3DestinationPath: string): SpawnResponse {
+  public syncFolderToS3(config: BucketConfig, localSourcePath: string, s3DestinationPath: string): RCloneRespsonse {
     if (!s3DestinationPath.startsWith('/')) s3DestinationPath = '/' + s3DestinationPath;
 
     const options = this.getOptions(config);
@@ -21,7 +22,7 @@ export class RcloneService {
     return this.runSyncRCloneCommand(options, localSourcePath, bucketType + bucketName + s3DestinationPath);
   }
 
-  public syncFolderFromS3(config: BucketConfig, s3SourcePath: string, localDestinationPath: string): SpawnResponse {
+  public syncFolderFromS3(config: BucketConfig, s3SourcePath: string, localDestinationPath: string): RCloneRespsonse {
     if (!s3SourcePath.startsWith('/')) s3SourcePath = '/' + s3SourcePath
 
     const options = this.getOptions(config);
@@ -63,7 +64,32 @@ export class RcloneService {
     }
   }
 
-  private runSyncRCloneCommand(options: string[], source: string, destination: string): SpawnResponse {
+  public testRclone(): RCloneRespsonse {
+    const obs = this.runSyncRCloneCommand([
+      // '--dry-run',
+      '--s3-endpoint', 'https://s3.gra.io.cloud.ovh.net/',
+      '--s3-region', 'gra', '--s3-access-key-id', 'ce7e6d93a1f6400fb4c19b3aebaf2547', 
+      '--s3-secret-access-key', '04c55d337299410c9858043ede58b717', 
+      '--use-json-log', 
+      '-P',
+      '--stats', '2s', 
+      '--stats-log-level', 'NOTICE', 
+      '--stats-one-line', 
+      '--stats-unit=bytes',
+    ], 
+    '/home/lab-manager/.vscode', 
+    // '/home/lab-manager/node_modules', 
+    ':s3:constellab-lab-bakcup-pre-prod-gra/test'
+    );
+
+    obs.observable.subscribe({
+      next: data => console.log(data),
+      error: error => console.error('ERRRROROOOR ', error),
+    });
+    return obs;
+  }
+
+  private runSyncRCloneCommand(options: string[], source: string, destination: string): RCloneRespsonse {
     const spanwResult = this.commandService.spawn('rclone',
       [
         '-P',
@@ -76,26 +102,40 @@ export class RcloneService {
     return {
       childProcess: spanwResult.childProcess,
       observable: spanwResult.observable.pipe(
-        // filter useful to only get the progess messages
-        filter(data => data.data.startsWith('Transferred') && data.data.includes('%')),
-        map(data => this.cleanProgressMessage(data))
+        map(data => this.convertRcloneLogs(data))
       )
     }
   }
 
-
-
-  private cleanProgressMessage(result: SpawnResult): SpawnResult {
-    // remove the part of the message after text : 'Error'
-    const index = result.data.indexOf('Error');
-    if (index > 0) {
-      return {
-        data: result.data.substring(0, index),
-        status: result.status
+  private convertRcloneLogs(data: SpawnResult): RCloneResult {
+    // catch the last status message
+    // it is marked as error and is a json object
+    // data: '{"level":"warning","msg":"         0 / 0 Bytes, -, 0 Bytes/s, 
+    // ETA -\\n","source":"accounting/stats.go:355",
+    // "stats":{"bytes":0,"checks":4,"deletes":0,"elapsedTime":0.320786925,"errors":0,"fatalError":false,"renames":0,"retryError":false,"speed":0,
+    // "transferTime":0.094387746,"transfers":0},"time":"2024-10-07T10:43:06.979148+00:00"}\n'
+    if(data.status === 'error' && this.stringIsFinalStatsJson(data.data) ){
+      const lines = data.data.split('\n');
+      for(const line of lines){
+        if(this.stringIsFinalStatsJson(line)){
+          return {
+            type: 'finalStats',
+            data: JSON.parse(line)
+          }
+        }
       }
     }
 
-    return result;
+    return {
+      type: data.status === 'error' ? 'error' : 'progress',
+      data: data.data
+    };
+  }
+
+  private stringIsFinalStatsJson(data: string): boolean {
+    return data.startsWith('{')
+      && data.includes('"stats"')  && data.includes('"checks"')   
+    && data.includes('"deletes"')   && data.includes('"bytes"');
   }
 
 }

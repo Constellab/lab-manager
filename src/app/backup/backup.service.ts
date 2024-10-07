@@ -12,6 +12,7 @@ import { ContainerService } from '../docker/container/container.service';
 import { join } from 'path';
 import { TaskService } from '../core/services/task/task.service';
 import { Observable, lastValueFrom, tap } from 'rxjs';
+import { RCloneResult } from '../core/services/rclone/rclone.class';
 
 type BackupType = 'DATA' | 'DB';
 
@@ -64,11 +65,11 @@ export class BackupService implements OnModuleInit {
 
       // check if there is a running backup, to mark it as error
       for (const running of backupHistory.getRunningBackups()) {
-        if (running.dbStatus.status === 'IN_PROGRESS') {
+        if (running.getDbStatus() === 'IN_PROGRESS') {
           this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped',
             'DB', running);
         }
-        if (running.dataStatus.status === 'IN_PROGRESS') {
+        if (running.getDataStatus() === 'IN_PROGRESS') {
           this.updateCurrentStatusStorageErrorMessage('The lab was restarted while the backup was running, the backup has been stopped',
             'DATA', running);
         }
@@ -208,7 +209,7 @@ export class BackupService implements OnModuleInit {
     // Synchronize the DB
     this.syncDb(backup).catch(e => {
       this.logger.error(`Error while syncing the DB. Error : ${e.message}`);
-      if (backup.dbStatus.status === 'IN_PROGRESS') {
+      if (backup.getDbStatus() === 'IN_PROGRESS') {
         this.updateCurrentStatusStorageErrorMessage(`Error while syncing the DB. Error : ${e.message}`, 'DB', backup);
       }
     });
@@ -216,7 +217,7 @@ export class BackupService implements OnModuleInit {
     // Synchronize the data
     this.syncData(backup).catch(e => {
       this.logger.error(`Error while syncing the data. Error : ${e.message}`);
-      if (backup.dataStatus.status === 'IN_PROGRESS') {
+      if (backup.getDataStatus() === 'IN_PROGRESS') {
         this.updateCurrentStatusStorageErrorMessage(`Error while syncing the data. Error : ${e.message}`, 'DATA', backup);
       }
     });
@@ -244,7 +245,7 @@ export class BackupService implements OnModuleInit {
 
     // get the dump size
     const dumpSize = this.fileService.getFileSize(dumpPathInCurrentContainer);
-    backup.dbSize = dumpSize;
+    backup.setDbTotalSize(dumpSize);
 
     // sync the dump folder with the bucket
     this.callSyncToS3(backup, this.getDbDumpFolderInCurrentContainer(), this.dbS3FolderDestination, 'DB');
@@ -276,7 +277,7 @@ export class BackupService implements OnModuleInit {
     try {
       // get folder size 
       const dataSize = await this.fileService.getFolderSize(dataFolder);
-      backup.dataSize = dataSize;
+      backup.setDataTotalSize(dataSize);
     } catch (e) {
       this.logger.error(`Error while getting the data folder size. Error : ${e.message}`);
     }
@@ -294,14 +295,19 @@ export class BackupService implements OnModuleInit {
     // listen to progress
     response.observable.subscribe(
       {
-        next: (spawnResult: SpawnResult) => this.onProgress(spawnResult.data, backupType, backup),
+        next: (result) => this.onProgress(result, backupType, backup),
         error: (error: SpawnResult) => this.updateCurrentStatusStorageErrorMessage(error.data, backupType, backup),
         complete: () => this.uploadCompleted(backupType, backup),
       });
   }
 
-  private onProgress(message: string, backupType: BackupType, backup: LabBackupStorage): void {
-    backup.updateMessage(backupType, 'IN_PROGRESS', message);
+  private onProgress(result: RCloneResult, backupType: BackupType, backup: LabBackupStorage): void {
+    if(result.type === 'finalStats'){
+      backup.setStats(backupType, result.data.stats);
+    }
+    else{
+      backup.updateMessage(backupType, 'IN_PROGRESS', result.data);
+    }
   }
 
   private updateCurrentStatusStorageErrorMessage(message: string, backupType: BackupType, backup: LabBackupStorage): void {
@@ -355,10 +361,10 @@ export class BackupService implements OnModuleInit {
         backup.dataProcess.kill();
       }
 
-      if (backup.dataStatus.status === 'IN_PROGRESS') {
+      if (backup.getDataStatus() === 'IN_PROGRESS') {
         this.onCompleted('DATA', 'ERROR', 'Backup stopped manually', backup);
       }
-      if (backup.dbStatus.status === 'IN_PROGRESS') {
+      if (backup.getDbStatus() === 'IN_PROGRESS') {
         this.onCompleted('DB', 'ERROR', 'Backup stopped manually', backup);
       }
     }
@@ -481,7 +487,7 @@ export class BackupService implements OnModuleInit {
     }
   }
 
-  private restoreData(restoreDTO: BackupRestoreDTO): Observable<SpawnResult> {
+  private restoreData(restoreDTO: BackupRestoreDTO): Observable<RCloneResult> {
     this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Starting restore of the DB');
     const dataFolder = this.configService.getProdDataFolder();
 
@@ -517,20 +523,22 @@ export class BackupService implements OnModuleInit {
   }
 
   private callSyncFromS3(restoreDTO: BackupRestoreDTO, s3SourceFolder: string,
-                         localDestinationPath: string): Observable<SpawnResult> {
+                         localDestinationPath: string): Observable<RCloneResult> {
 
     const response = this.rcloneService.syncFolderFromS3(restoreDTO.bucketConfig,
       restoreDTO.s3Prefix + '/' + s3SourceFolder, localDestinationPath);
 
     // listen to progress
     return response.observable.pipe(
-      tap((spawnResult: SpawnResult) => this.onRestoreProgress(spawnResult.data))
+      tap((spawnResult) => this.onRestoreProgress(spawnResult))
     );
 
   }
 
-  private onRestoreProgress(message: string): void {
-    this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, message, false);
+  private onRestoreProgress(message: RCloneResult): void {
+    if(message.type === 'progress'){
+      this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, message.data, false);
+    }
   }
 
   private onRestoreBackupError(message: string): void {

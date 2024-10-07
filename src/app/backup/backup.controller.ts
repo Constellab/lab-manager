@@ -3,13 +3,15 @@ import { Controller, Get, Post } from '@nestjs/common';
 import { BackupInfoDTO, BackupRestoreDTO, BackupTriggerMode, LabBackupStorageI } from './backup.class';
 import { BackupService } from './backup.service';
 import { LabBackupHistory } from './backup-history.class';
+import { RcloneService } from '../core/services/rclone/rclone.service';
 
 
 @Controller('backup')
 export class BackupController {
 
 
-  constructor(private backupService: BackupService) {
+  constructor(private backupService: BackupService,
+    private cloneService: RcloneService) {
   }
 
 
@@ -42,5 +44,9 @@ export class BackupController {
     return this.backupService.restoreBackup(backupRestore);
   }
 
-
+  // TODO TO REMOVE
+  @Post('test')
+  kk(): any {
+    return this.cloneService.testRclone();
+  }
 }

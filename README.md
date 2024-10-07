@@ -11,7 +11,7 @@ docker network create gencovery-network-prod
 In local, we recommend to develop this app in a docker container to have a similare environment as the lab.
 
 Here are the steps to setup the docker container:
- - run the docker container ```lab-manager``` from the ```dockerlab``` repository ```dockerlab\local\docker-compose.yml```. ```docker-compose up -d lab-manager```
+ - run the docker container ```lab-manager``` from the ```lab-configurer``` repository ```lab-configurer\local\docker-compose.yml```. ```docker-compose up -d lab-manager```
  - open the vscode in the container
  - clone this repository in ```/home``` folder of the container
  - install the dependencies ```npm install```
