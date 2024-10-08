@@ -13,6 +13,7 @@ import { join } from 'path';
 import { TaskService } from '../core/services/task/task.service';
 import { Observable, lastValueFrom, tap } from 'rxjs';
 import { RCloneResult } from '../core/services/rclone/rclone.class';
+import { rxjsDebug } from '../core/utils/rxjs-debug';
 
 type BackupType = 'DATA' | 'DB';
 
@@ -79,12 +80,12 @@ export class BackupService implements OnModuleInit {
       this.saveBackupHistory(backupHistory);
 
       this.logger.log('Syncing backup history with space server')
-      this.externalSpaceService.syncBackupHistory(backupHistory.backups.map(b => b.toJson())).catch(
-        e => this.logger.error(`Error while syncing the backup history with the space server. Error : ${e.message}`)
+      this.externalSpaceService.syncBackupHistory(backupHistory).catch(
+        e => this.logError(`Error while syncing the backup history with the space server. Error : ${e.message}`, e)
       );
       this.logger.log('Syncing backup history with space server done')
     } catch(e){
-      this.logger.error(`Error during backup module init. Error : ${e.message}`)
+      this.logError(`Error during backup module init. Error : ${e.message}`, e)
     }
   }
 
@@ -109,7 +110,7 @@ export class BackupService implements OnModuleInit {
 
       backupInfo = await this.externalSpaceService.getBackupInfo();
     } catch (e) {
-      this.logger.error(`[AutoBackup] Error while getting the backup info: ${e.message}, skipping`);
+      this.logError(`[AutoBackup] Error while getting the backup info: ${e.message}, skipping`, e);
       return;
     }
 
@@ -118,12 +119,12 @@ export class BackupService implements OnModuleInit {
       // we can do the backup
       await this.createMultipleProdBackup(backupInfo, 'AUTOMATIC');
     } catch (e) {
-      this.logger.error(`[AutoBackup] Error while creating the backup : ${e.message}, skipping`);
+      this.logError(`[AutoBackup] Error while creating the backup : ${e.message}, skipping`, e);
       return;
     }
   }
 
-  public async createMultipleProdBackup(createBackup: BackupInfoDTO, triggerMode: BackupTriggerMode): Promise<LabBackupStorage[]> {
+  public async createMultipleProdBackup(createBackup: BackupInfoDTO, triggerMode: BackupTriggerMode): Promise<LabBackupHistory> {
     if (createBackup.version !== BackupService.SUPPORTED_BACKUP_INFO_VERSION) {
       throw new BadRequestException(`The backup info version '${createBackup.version}' ` +
         `is not supported by this version of the lab manager`);
@@ -172,7 +173,7 @@ export class BackupService implements OnModuleInit {
     }
     catch (e) {
       // for now we still run the backup even if we can't get the activity
-      this.logger.error(`Error while getting the lab activity: ${e.message}. Running the backup anyway`);
+      this.logError(`Error while getting the lab activity: ${e.message}. Running the backup anyway`, e);
     }
 
     // delete the DB dump if it exists
@@ -191,7 +192,7 @@ export class BackupService implements OnModuleInit {
       backups.push(this.createProdBackup(bucket, triggerMode, createBackup.s3Prefix));
     }
 
-    return backups;
+    return new LabBackupHistory(backups);
   }
 
 
@@ -208,7 +209,7 @@ export class BackupService implements OnModuleInit {
 
     // Synchronize the DB
     this.syncDb(backup).catch(e => {
-      this.logger.error(`Error while syncing the DB. Error : ${e.message}`);
+      this.logError(`Error while syncing the DB. Error : ${e.message}`, e);
       if (backup.getDbStatus() === 'IN_PROGRESS') {
         this.updateCurrentStatusStorageErrorMessage(`Error while syncing the DB. Error : ${e.message}`, 'DB', backup);
       }
@@ -216,7 +217,7 @@ export class BackupService implements OnModuleInit {
 
     // Synchronize the data
     this.syncData(backup).catch(e => {
-      this.logger.error(`Error while syncing the data. Error : ${e.message}`);
+      this.logError(`Error while syncing the data. Error : ${e.message}`, e);
       if (backup.getDataStatus() === 'IN_PROGRESS') {
         this.updateCurrentStatusStorageErrorMessage(`Error while syncing the data. Error : ${e.message}`, 'DATA', backup);
       }
@@ -279,7 +280,7 @@ export class BackupService implements OnModuleInit {
       const dataSize = await this.fileService.getFolderSize(dataFolder);
       backup.setDataTotalSize(dataSize);
     } catch (e) {
-      this.logger.error(`Error while getting the data folder size. Error : ${e.message}`);
+      this.logError(`Error while getting the data folder size. Error : ${e.message}`, e);
     }
 
     this.callSyncToS3(backup, dataFolder, this.dataS3FolderDestination, 'DATA');
@@ -293,7 +294,7 @@ export class BackupService implements OnModuleInit {
     backup.setProcess(backupType, response.childProcess);
 
     // listen to progress
-    response.observable.subscribe(
+    response.observable.pipe(rxjsDebug()).subscribe(
       {
         next: (result) => this.onProgress(result, backupType, backup),
         error: (error: SpawnResult) => this.updateCurrentStatusStorageErrorMessage(error.data, backupType, backup),
@@ -401,8 +402,8 @@ export class BackupService implements OnModuleInit {
 
       this.saveBackupHistory(backupHistory);
 
-      this.externalSpaceService.syncBackupHistory([backup.toJson()]).catch(
-        e => this.logger.error(`Error while syncing the backup history with the space server. Error : ${e.message}`)
+      this.externalSpaceService.syncBackupHistory(new LabBackupHistory([backup])).catch(
+        e => this.logError(`Error while syncing the backup history with the space server. Error : ${e.message}`, e)
       );
     } catch (e) {
       Logger.error('Error while writing backup history file', e);
@@ -548,6 +549,14 @@ export class BackupService implements OnModuleInit {
   private onRestoreBackupSuccess(): void {
     this.taskService.markTaskAsSuccess(BackupService.RESTORE_BACKUP_TASK, 'Backup restored successfully');
   }
+
+  private logError(message: string, error: Error): void {
+    this.logger.error(message);
+    if(error.stack){
+      this.logger.error(error.stack);
+    }
+  }
+
 
 }
 

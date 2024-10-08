@@ -4,7 +4,8 @@ import { ApiService } from 'src/app/core/services/api/api.service';
 import { ApiHttpOption } from 'src/app/core/services/api/api.class';
 import { FileService } from 'src/app/core/services/file/file.service';
 import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
-import { BackupInfoDTO, LabBackupStorageI } from 'src/app/backup/backup.class';
+import { BackupInfoDTO } from 'src/app/backup/backup.class';
+import { LabBackupHistory } from 'src/app/backup/backup-history.class';
 
 
 /**
@@ -31,9 +32,9 @@ export class ExternalSpaceApiService {
     );
   }
 
-  public syncBackupHistory(backups: LabBackupStorageI[]): Promise<void> {
+  public syncBackupHistory(backupHistory: LabBackupHistory): Promise<void> {
     return lastValueFrom(
-      this.apiService.post(this.constructRoute('lab/backup-history'), backups, this.getRequestOptions({}))
+      this.apiService.post(this.constructRoute('lab/backup-history-v2'), backupHistory.toJson(), this.getRequestOptions({}))
     );
   }
 

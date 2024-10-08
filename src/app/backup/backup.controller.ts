@@ -1,52 +1,46 @@
 import { Body, Param } from '@nestjs/common';
 import { Controller, Get, Post } from '@nestjs/common';
-import { BackupInfoDTO, BackupRestoreDTO, BackupTriggerMode, LabBackupStorageI } from './backup.class';
+import { BackupInfoDTO, BackupRestoreDTO, BackupTriggerMode } from './backup.class';
 import { BackupService } from './backup.service';
-import { LabBackupHistory } from './backup-history.class';
-import { RcloneService } from '../core/services/rclone/rclone.service';
+import { LabBackupHistory, LabBackupHistoryI } from './backup-history.class';
 
 
 @Controller('backup')
 export class BackupController {
 
 
-  constructor(private backupService: BackupService,
-    private cloneService: RcloneService) {
+  constructor(private backupService: BackupService) {
   }
 
 
   @Post('prod/:mode')
   async createProdBackup(@Body() createBackup: BackupInfoDTO,
-    @Param('mode') triggerMode: BackupTriggerMode): Promise<LabBackupStorageI[]> {
+    @Param('mode') triggerMode: BackupTriggerMode): Promise<LabBackupHistoryI> {
     const backup = await this.backupService.createMultipleProdBackup(createBackup, triggerMode);
-    return backup.map(backup => backup.toJson());
+    return backup.toJson();
   }
 
 
   @Post('stop-current')
-  stopCurrentBackup(): LabBackupStorageI[] {
-    return this.backupService.stopCurrentBackups().map(backup => backup.toJson());
+  stopCurrentBackup(): LabBackupHistoryI {
+    const backups = this.backupService.stopCurrentBackups();
+    return new LabBackupHistory(backups).toJson();
   }
 
   @Get('last-status')
-  getLastBackup(): LabBackupStorageI[] {
-    return this.backupService.getCurrentBackupStatus().map(backup => backup.toJson());
+  getLastBackup(): LabBackupHistoryI {
+    const backups = this.backupService.getCurrentBackupStatus();
+    return new LabBackupHistory(backups).toJson();
   }
 
 
   @Get('history')
-  getBackupHistory(): LabBackupHistory {
+  getBackupHistory(): LabBackupHistoryI {
     return this.backupService.getBackupHistory().toJson();
   }
 
   @Post('restore')
   restoreBackup(@Body() backupRestore: BackupRestoreDTO): Promise<void> {
     return this.backupService.restoreBackup(backupRestore);
-  }
-
-  // TODO TO REMOVE
-  @Post('test')
-  kk(): any {
-    return this.cloneService.testRclone();
   }
 }

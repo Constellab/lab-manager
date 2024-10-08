@@ -1,4 +1,10 @@
-import { BackupBucketDTO, BackupFrequency, BackupInfo, LabBackupStorage } from "./backup.class";
+import { BackupBucketDTO, BackupFrequency, BackupInfo, LabBackupStorage, LabBackupStorageI } from "./backup.class";
+
+export interface LabBackupHistoryI {
+  version: number;
+  backups: LabBackupStorageI[];
+}
+
 
 export class LabBackupHistory {
 
@@ -10,9 +16,9 @@ export class LabBackupHistory {
   private static readonly WEEK = 7 * LabBackupHistory.DAY; // 7 days
   private static readonly ONE_MINUTE = 60 * 1000; // 1 minute
 
-  constructor() {
+  constructor(backups: LabBackupStorage[] = []) {
     this.version = LabBackupHistory.CURRENT_VERSION;
-    this.backups = [];
+    this.backups = backups;
   }
 
   public static fromJson(json: any): LabBackupHistory {
@@ -21,9 +27,7 @@ export class LabBackupHistory {
       json = this.migrateFrom2To3(json);
     }
 
-    const history = new LabBackupHistory();
-
-    history.backups = json.backups.map((backup: any) => LabBackupStorage.fromJson(backup));
+    const history = new LabBackupHistory(json.backups.map((backup: any) => LabBackupStorage.fromJson(backup)));
     history.sortBackups();
 
     return history;
@@ -132,7 +136,7 @@ export class LabBackupHistory {
     return backup;
   }
 
-  public toJson(): any {
+  public toJson(): LabBackupHistoryI {
     return {
       version: this.version,
       backups: this.backups.map(backup => backup.toJson()),

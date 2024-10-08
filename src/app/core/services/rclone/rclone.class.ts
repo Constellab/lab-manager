@@ -9,6 +9,8 @@ export interface RCloneFinalStatsDetail {
   elapsed: number;
   deleteErrors: number;
   deletes: number;
+  speed: number;
+  renames: number;
 }
 
 /**

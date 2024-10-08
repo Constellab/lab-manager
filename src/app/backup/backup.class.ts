@@ -44,10 +44,21 @@ export interface BackupStatusObject {
   message: string;
 }
 
+export interface BackupTransferInfo {
+  sizeInBytes: number;
+  durationInSeconds: number;
+  speedInBytesPerSecond: number;
+  nbErrors: number;
+  nbChecks: number;
+  nbFile: number;
+  nbDeleted: number;
+  nbRenamed: number;
+}
+
 export interface BackupInfo {
   status: BackupStatusObject;
   totalSize: number;
-  transfer?: RCloneFinalStatsDetail;
+  transfer?: BackupTransferInfo;
 }
 
 
@@ -105,7 +116,7 @@ export class LabBackupStorage {
       }
     };
     
-    this.data = {
+    this.db = {
       totalSize: 0,
       status:{ 
         message: 'Backup started',
@@ -136,10 +147,20 @@ export class LabBackupStorage {
   }
 
   public setStats(backupType: BackupType, transfer: RCloneFinalStatsDetail): void {
+    const transferInfo: BackupTransferInfo = {
+      sizeInBytes: transfer.bytes,
+      durationInSeconds: transfer.elapsed,
+      speedInBytesPerSecond: transfer.speed,
+      nbErrors: transfer.errors,
+      nbChecks: transfer.checks,
+      nbFile: transfer.transfers,
+      nbDeleted: transfer.deletes,
+      nbRenamed: transfer.renames
+    }
     if(backupType === "DATA"){      
-      this.data.transfer = transfer;
+      this.data.transfer = transferInfo;
     }else{
-      this.db.transfer = transfer;
+      this.db.transfer = transferInfo;
     }
   }
 

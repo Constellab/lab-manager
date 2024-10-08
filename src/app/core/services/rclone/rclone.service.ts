@@ -64,35 +64,14 @@ export class RcloneService {
     }
   }
 
-  public testRclone(): RCloneRespsonse {
-    const obs = this.runSyncRCloneCommand([
-      // '--dry-run',
-      '--s3-endpoint', 'https://s3.gra.io.cloud.ovh.net/',
-      '--s3-region', 'gra', '--s3-access-key-id', 'ce7e6d93a1f6400fb4c19b3aebaf2547', 
-      '--s3-secret-access-key', '04c55d337299410c9858043ede58b717', 
-      '--use-json-log', 
-      '-P',
-      '--stats', '2s', 
-      '--stats-log-level', 'NOTICE', 
-      '--stats-one-line', 
-      '--stats-unit=bytes',
-    ], 
-    '/home/lab-manager/.vscode', 
-    // '/home/lab-manager/node_modules', 
-    ':s3:constellab-lab-bakcup-pre-prod-gra/test'
-    );
-
-    obs.observable.subscribe({
-      next: data => console.log(data),
-      error: error => console.error('ERRRROROOOR ', error),
-    });
-    return obs;
-  }
-
   private runSyncRCloneCommand(options: string[], source: string, destination: string): RCloneRespsonse {
     const spanwResult = this.commandService.spawn('rclone',
       [
         '-P',
+        '--stats', '5s', // update log every 5 seconds
+        '--stats-one-line', // only log important stats
+        '--use-json-log',  // enable last stats logs as json
+        '--stats-log-level', 'NOTICE',  // enable last stats logs
         '--drive-chunk-size', '128M',
         '--transfers', '16',
         ...options,
@@ -110,10 +89,6 @@ export class RcloneService {
   private convertRcloneLogs(data: SpawnResult): RCloneResult {
     // catch the last status message
     // it is marked as error and is a json object
-    // data: '{"level":"warning","msg":"         0 / 0 Bytes, -, 0 Bytes/s, 
-    // ETA -\\n","source":"accounting/stats.go:355",
-    // "stats":{"bytes":0,"checks":4,"deletes":0,"elapsedTime":0.320786925,"errors":0,"fatalError":false,"renames":0,"retryError":false,"speed":0,
-    // "transferTime":0.094387746,"transfers":0},"time":"2024-10-07T10:43:06.979148+00:00"}\n'
     if(data.status === 'error' && this.stringIsFinalStatsJson(data.data) ){
       const lines = data.data.split('\n');
       for(const line of lines){
