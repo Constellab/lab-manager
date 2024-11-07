@@ -171,6 +171,8 @@ services:
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - SPACE_FRONT_URL=${SPACE_FRONT_URL}
       - SPACE_API_URL=${SPACE_API_URL}
+      - PROD_FRONT_URL=https://#FRONT_LAB_HOST#
+      - DEV_FRONT_URL=https://#FRONT_DEV_LAB_HOST#
       # TODO TO REMOVE ONCE all lab are on v0.8.2
       - CENTRAL_FRONT_URL=${SPACE_FRONT_URL}
       - CENTRAL_API_URL=${SPACE_API_URL}
@@ -195,6 +197,14 @@ services:
       #Enable HTTPS
       - "traefik.http.routers.lab-router.entrypoints=websecure"
       - "traefik.http.routers.lab-router.tls.certresolver=myresolver"
+
+      # Configure lab to port 81
+      - "traefik.http.routers.dev-lab-router.rule=#FRONT_DEV_LAB_HOST#"
+      - "traefik.http.routers.dev-lab-router.service=dev-lab-service"
+      - "traefik.http.services.dev-lab-service.loadbalancer.server.port=81"
+      #Enable HTTPS
+      - "traefik.http.routers.dev-lab-router.entrypoints=websecure"
+      - "traefik.http.routers.dev-lab-router.tls.certresolver=myresolver"
 
       # Redirect http to https
       - "traefik.frontend.redirect.entryPoint=https"

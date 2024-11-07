@@ -52,6 +52,7 @@ export class DockerCommandService implements DockerCommandServiceI {
   //////////////////////////////// DOCKER ////////////////////////////////
 
   public async getContainerInfo(containerName: string): Promise<DockerPsFull> {
+    // le size peut rendre la réponse trop longue
     const result = await this.runDockerPs(`{\\"id\\":\\"{{.ID}}\\",\\"command\\":{{.Command}},\\"createdAt\\":\\"{{.CreatedAt}}\\",\\"image\\":\\"{{.Image}}\\",\\"mounts\\":\\"{{.Mounts}}\\",\\"names\\":\\"{{.Names}}\\",\\"networks\\":\\"{{.Networks}}\\",\\"ports\\":\\"{{.Ports}}\\",\\"runningFor\\":\\"{{.RunningFor}}\\",\\"size\\":\\"{{.Size}}\\",\\"state\\":\\"{{.State}}\\",\\"status\\":\\"{{.Status}}\\"}`,
       containerName);
 

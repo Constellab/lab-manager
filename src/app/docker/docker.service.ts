@@ -254,7 +254,11 @@ export class DockerService {
       {
         subDomain: 'lab',
         replacementText: '#FRONT_LAB_HOST#'
-      }
+      },
+      {
+        subDomain: 'dev-lab',
+        replacementText: '#FRONT_DEV_LAB_HOST#'
+      },
     ]
     for(const toReplace of toReplaces) {
       // build the standard host string like : host(`glab.${VIRTUAL_HOST}`)
