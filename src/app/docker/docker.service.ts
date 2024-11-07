@@ -273,8 +273,8 @@ export class DockerService {
         }
       }
 
-      // replace the content in the docker-compose file
-      dockerComposeContent = dockerComposeContent.replace(toReplace.replacementText, newContent);
+      // replace all the content in the docker-compose file
+      dockerComposeContent = dockerComposeContent.replace(new RegExp(toReplace.replacementText, 'g'), newContent);
     }
 
     this.fileService.writeDockerCompose(dockerComposeContent)
