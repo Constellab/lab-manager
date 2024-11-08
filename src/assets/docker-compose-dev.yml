@@ -115,8 +115,8 @@ services:
       - SPACE_FRONT_URL=https://preconstellab.space
       - SPACE_API_URL=https://api.preconstellab.com
       # same edv and prod url
-      - PROD_FRONT_URL=http://localhost:89
-      - DEV_FRONT_URL=http://localhost:89
+      - PROD_FRONT_URLS=['http://localhost:89']
+      - DEV_FRONT_URLS=['http://localhost:89']
       - COMMUNITY_FRONT_URL=https://hub-pre-prod.gencovery.com
       - COMMUNITY_API_URL=https://hub-back-pre-prod.constellab-pre-prod.gencovery.com
       - CAPTCHA_SITE_KEY=

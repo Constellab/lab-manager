@@ -240,46 +240,69 @@ export class DockerService {
     const gpuConfig = await this.gpuService.getDockerComposeGpuConfig();
     dockerComposeContent = dockerComposeContent.replace(/#GPU_CONFIG#/g, gpuConfig);
     
+    const frontProdDomains = ['front', 'lab'];
+    const frontDevDomains = ['dev-lab'];
+  
     // list of variable in the docker-compose file that need to be replaced
     const toReplaces = [
       {
-        subDomain: 'glab',
+        subDomains:['glab'],
         replacementText: '#GLAB_HOST#'
       },
       {
-        subDomain: 'dashboard',
+        subDomains: ['dashboard'],
         replacementText: '#GLAB_DASHBOARD_HOST#'
       },
-      // TODO TO BE REMOVED
       {
-        subDomain: 'lab',
-        replacementText: '#FRONT_LAB_HOST#'
-      },
-      {
-        subDomain: 'dev-lab',
-        replacementText: '#FRONT_DEV_LAB_HOST#'
+        subDomains: [...frontProdDomains, ...frontDevDomains],
+        replacementText: '#GLAB_DASHBOARD_HOST#'
       },
     ]
+
     for(const toReplace of toReplaces) {
-      // build the standard host string like : host(`glab.${VIRTUAL_HOST}`)
-      let newContent = 'host(`' + toReplace.subDomain + '.${VIRTUAL_HOST}`)';
+    
+      const newContent = this.buildHostString(toReplace.subDomains);
+      
+      // replace all the content in the docker-compose file
+      dockerComposeContent = dockerComposeContent.replace(new RegExp(toReplace.replacementText, 'g'), newContent);
+    }
+
+    // provide the PROD_FRONT_URLS and DEV_FRONT_URLS to the docker-compose file
+    const prodFrontUrls = this.buildFrontUrls(frontProdDomains);
+    dockerComposeContent = dockerComposeContent.replace(new RegExp('#FRONT_PROD_URLS#', 'g'), prodFrontUrls);
+
+    const devFrontUrls = this.buildFrontUrls(frontDevDomains);
+    dockerComposeContent = dockerComposeContent.replace(new RegExp('#FRONT_DEV_URLS#', 'g'), devFrontUrls);
+
+    this.fileService.writeDockerCompose(dockerComposeContent)
+    this.logger.log(`${dockerComposeFileName} file generated`);
+  }
+
+  private buildHostString(subDomains: string[]): string {
+    // build the standard host string like : host(`glab.${VIRTUAL_HOST}`)
+    const  hosts: string[] = [];
+    
+    for (const subDomain of subDomains) {
+      hosts.push('host(`' + subDomain + '.${VIRTUAL_HOST}`)');
       
       const additionalDomains = this.configService.getAddtionalDomains();
       // if there are additional hosts, add them to the host string
       if(additionalDomains && additionalDomains.length > 0) {
         for(const additionalHost of additionalDomains) {
-          // add an host for each additional host, keep the same sub domain
-          newContent += ` || host(\`${toReplace.subDomain}.${additionalHost}\`)`
+        // add an host for each additional host, keep the same sub domain
+          hosts.push(`host(\`${subDomain}.${additionalHost}\`)`);
         }
       }
-
-      // replace all the content in the docker-compose file
-      dockerComposeContent = dockerComposeContent.replace(new RegExp(toReplace.replacementText, 'g'), newContent);
     }
 
-    this.fileService.writeDockerCompose(dockerComposeContent)
-    this.logger.log(`${dockerComposeFileName} file generated`);
+    return hosts.join(' || ');
   }
+
+  private buildFrontUrls(subDomains: string[]): string {
+    return JSON.stringify(subDomains.map(subDomain => 'https://' + subDomain + '.${VIRTUAL_HOST}'));
+  }
+
+
 
   private async beforeDockerCommand(options: BeforeDockerCommandOptions): Promise<void> {
     if (!options) return;
