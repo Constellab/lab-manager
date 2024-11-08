@@ -48,6 +48,10 @@ export class DockerService {
     return await this.dockerCommand.getContainerInfo(containerName);
   }
 
+  public getContainerSize(containerName: string): Promise<string> {
+    return this.dockerCommand.getContainerSize(containerName);
+  }
+
   public async pullContainers(beforeOptions: BeforeDockerCommandOptions = {}): Promise<void> {
     await this.beforeDockerCommand(beforeOptions);
 

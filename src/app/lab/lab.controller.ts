@@ -64,6 +64,12 @@ export class LabController {
     return this.labService.getContainerDetail(containerName);
   }
 
+  @Get('containers/:containerName/size')
+  async getContainerSize(@Param('containerName') containerName: string): Promise<{size: string}> {
+    const size = await this.labService.getContainerSize(containerName);
+    return {size};
+  }
+
   @Get('containers/:containerName/logs')
   getLogs(@Param('containerName') containerName: string): Promise<string> {
     return this.labService.getLogs(containerName);

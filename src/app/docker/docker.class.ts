@@ -20,7 +20,6 @@ export interface DockerPsFull extends DockerPs{
   networks: string;
   ports: string;
   runningFor: string;
-  size: string;
   state: 'running' | 'exited';
   status: string;
 }

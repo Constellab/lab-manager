@@ -102,6 +102,10 @@ export class LabService  {
     return this.dockerService.getContainersDetail(containerName);
   }
 
+  public async getContainerSize(containerName: string): Promise<string> {
+    return this.dockerService.getContainerSize(containerName);
+  }
+
   public async startComposeContainer(serviceName: string): Promise<void> {
     await this.checkLabIsConfigured();
     return this.dockerService.upContainerCommand([serviceName]);

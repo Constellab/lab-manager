@@ -53,14 +53,23 @@ export class DockerCommandService implements DockerCommandServiceI {
 
   public async getContainerInfo(containerName: string): Promise<DockerPsFull> {
     // le size peut rendre la réponse trop longue
-    const result = await this.runDockerPs(`{\\"id\\":\\"{{.ID}}\\",\\"command\\":{{.Command}},\\"createdAt\\":\\"{{.CreatedAt}}\\",\\"image\\":\\"{{.Image}}\\",\\"mounts\\":\\"{{.Mounts}}\\",\\"names\\":\\"{{.Names}}\\",\\"networks\\":\\"{{.Networks}}\\",\\"ports\\":\\"{{.Ports}}\\",\\"runningFor\\":\\"{{.RunningFor}}\\",\\"size\\":\\"{{.Size}}\\",\\"state\\":\\"{{.State}}\\",\\"status\\":\\"{{.Status}}\\"}`,
-      containerName);
+    const result = await this.runDockerPs(`{\\"id\\":\\"{{.ID}}\\",\\"command\\":{{.Command}},\\"createdAt\\":\\"{{.CreatedAt}}\\",`+ 
+      `\\"image\\":\\"{{.Image}}\\",\\"mounts\\":\\"{{.Mounts}}\\",\\"names\\":\\"{{.Names}}\\",\\"networks\\":\\"{{.Networks}}\\",`+
+      `\\"ports\\":\\"{{.Ports}}\\",\\"runningFor\\":\\"{{.RunningFor}}\\",\\"state\\":\\"{{.State}}\\",\\"status\\":\\"{{.Status}}\\"}`,
+    containerName);
 
     if (result.length === 0) {
       throw new BadRequestException(`Container '${containerName}' not found`);
     }
 
     return result[0];
+  }
+
+  // specific method to get size of container
+  // not included in detail because it can take a while
+  public async getContainerSize(containerName: string): Promise<string> {
+    const result = await this.commandService.execCommand(`docker ps -s -f name=${containerName} --format "{{.Size}}"`);
+    return result;
   }
 
   public async dockerPs(): Promise<DockerPs[]> {
