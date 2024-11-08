@@ -182,13 +182,6 @@ services:
       - CAPTCHA_SITE_KEY=${CAPTCHA_SITE_KEY}
     labels:
       - "traefik.enable=true"
-      # Configure Host domain to port 81
-      - "traefik.http.routers.front-router.rule=host(`front.${VIRTUAL_HOST}`)"
-      - "traefik.http.routers.front-router.service=front-service"
-      - "traefik.http.services.front-service.loadbalancer.server.port=81"
-      #Enable HTTPS
-      - "traefik.http.routers.front-router.entrypoints=websecure"
-      - "traefik.http.routers.front-router.tls.certresolver=myresolver"
 
       # Configure lab to port 81
       - "traefik.http.routers.lab-router.rule=#FRONT_LAB_HOST#"
@@ -197,14 +190,6 @@ services:
       #Enable HTTPS
       - "traefik.http.routers.lab-router.entrypoints=websecure"
       - "traefik.http.routers.lab-router.tls.certresolver=myresolver"
-
-      # Configure lab to port 81
-      - "traefik.http.routers.dev-lab-router.rule=#FRONT_DEV_LAB_HOST#"
-      - "traefik.http.routers.dev-lab-router.service=dev-lab-service"
-      - "traefik.http.services.dev-lab-service.loadbalancer.server.port=81"
-      #Enable HTTPS
-      - "traefik.http.routers.dev-lab-router.entrypoints=websecure"
-      - "traefik.http.routers.dev-lab-router.tls.certresolver=myresolver"
 
       # Redirect http to https
       - "traefik.frontend.redirect.entryPoint=https"

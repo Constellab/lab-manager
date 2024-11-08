@@ -255,7 +255,7 @@ export class DockerService {
       },
       {
         subDomains: [...frontProdDomains, ...frontDevDomains],
-        replacementText: '#GLAB_DASHBOARD_HOST#'
+        replacementText: '#FRONT_LAB_HOST#'
       },
     ]
 
