@@ -299,7 +299,7 @@ export class DockerService {
   }
 
   private buildFrontUrls(subDomains: string[]): string {
-    return JSON.stringify(subDomains.map(subDomain => 'https://' + subDomain + '.${VIRTUAL_HOST}'));
+    return subDomains.map(subDomain => 'https://' + subDomain + '.${VIRTUAL_HOST}').join(',');
   }
 
 
