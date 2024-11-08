@@ -69,7 +69,8 @@ export class EnvVariableService {
       // GLAB TAG
       envVariables.addEnvVariable('GLAB_TAG', configJson.glab_tag);
 
-      envVariables.addEnvVariable('SPACE_API_KEY', privateJson.space.api_key);
+      envVariables.addEnvVariable('SPACE_PROD_API_KEY', privateJson.space.prod_api_key);
+      envVariables.addEnvVariable('SPACE_DEV_API_KEY', privateJson.space.dev_api_key);
       envVariables.addEnvVariable('SPACE_API_URL', privateJson.space.api_url);
       envVariables.addEnvVariable('SPACE_FRONT_URL', privateJson.space.front_url);
 

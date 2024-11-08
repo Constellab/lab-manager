@@ -119,7 +119,8 @@ export class InitService {
       }
 
       // configure space information a space api key
-      privateJson.space.api_key = labInitConfig.space.apiKey;
+      privateJson.space.prod_api_key = labInitConfig.space.prodApiKey;
+      privateJson.space.dev_api_key = labInitConfig.space.devApiKey;
       privateJson.space.api_url = labInitConfig.space.apiUrl;
       privateJson.space.front_url = labInitConfig.space.frontUrl;
 

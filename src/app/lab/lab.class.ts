@@ -32,7 +32,8 @@ export interface LabStatus {
 export interface LabInitConfig {
   space: {
     apiUrl: string;
-    apiKey: string;
+    prodApiKey: string;
+    devApiKey: string;
     frontUrl: string;
   },
   community: {

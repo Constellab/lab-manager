@@ -62,6 +62,8 @@ services:
       - LAB_ENVIRONMENT=ON_CLOUD
       - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
+      - SPACE_API_KEY=
+      - SPACE_API_URL=
       - FRONT_URL=http://localhost:80
       - FRONT_VERSION=${FRONT_VERSION}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
@@ -114,7 +116,7 @@ services:
       - VIRTUAL_HOST=
       - SPACE_FRONT_URL=https://preconstellab.space
       - SPACE_API_URL=https://api.preconstellab.com
-      # same edv and prod url
+      # same dev and prod url
       - PROD_FRONT_URLS=http://localhost:89
       - DEV_FRONT_URLS=http://localhost:89
       - COMMUNITY_FRONT_URL=https://hub-pre-prod.gencovery.com

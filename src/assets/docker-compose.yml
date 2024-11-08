@@ -13,11 +13,11 @@ services:
       - LAB_ENVIRONMENT=ON_CLOUD
       - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
-      - SPACE_API_KEY=${SPACE_API_KEY}
+      - SPACE_API_KEY=${SPACE_PROD_API_KEY}
       - SPACE_API_URL=${SPACE_API_URL}
       - SPACE_FRONT_URL=${SPACE_FRONT_URL}
       # TODO TO REMOVE ONCE all lab are on v0.8.2
-      - CENTRAL_API_KEY=${SPACE_API_KEY}
+      - CENTRAL_API_KEY=${SPACE_PROD_API_KEY}
       - CENTRAL_API_URL=${SPACE_API_URL}
       # end remove
       - FRONT_URL=https://front.${VIRTUAL_HOST}
@@ -86,6 +86,13 @@ services:
       - LAB_ENVIRONMENT=ON_CLOUD
       - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
+      - SPACE_API_KEY=${SPACE_DEV_API_KEY}
+      - SPACE_API_URL=${SPACE_API_URL}
+      # TODO TO REMOVE ONCE all lab are on v0.8.2
+      - CENTRAL_API_KEY=${SPACE_DEV_API_KEY}
+      - CENTRAL_API_URL=${SPACE_API_URL}
+      # end remove
+      - SPACE_FRONT_URL=${SPACE_FRONT_URL}
       - FRONT_URL=https://front.${VIRTUAL_HOST}
       - FRONT_VERSION=${FRONT_VERSION}
       - GPU=${GPU}
