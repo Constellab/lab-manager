@@ -20,7 +20,7 @@ services:
       - CENTRAL_API_KEY=${SPACE_PROD_API_KEY}
       - CENTRAL_API_URL=${SPACE_API_URL}
       # end remove
-      - FRONT_URL=https://front.${VIRTUAL_HOST}
+      - FRONT_URL=https://lab.${VIRTUAL_HOST}
       - FRONT_VERSION=${FRONT_VERSION}
       - GPU=${GPU}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
