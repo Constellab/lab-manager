@@ -1,16 +1,21 @@
 import { Body, Controller, Get, Param, Post, Put, StreamableFile } from '@nestjs/common';
-import { ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull, PullBiotaDbOptions } from '../docker/docker.class';
+import {
+  ComposeRestartOptions,
+  ComposeUpOptions,
+  DockerPs,
+  DockerPsFull,
+  PullBiotaDbOptions,
+} from '../docker/docker.class';
 import { LabInitConfig, LabStatus } from './lab.class';
 import { LabService } from './lab.service';
-import { ConfigFile } from '../core/models/config-file.class';
+import { BrickConfigsDTO, ConfigFile } from '../core/models/config-file.class';
 import { TaskStatusInfo } from '../core/models/task.class';
 import { createReadStream } from 'fs';
+import { AdminerInfo } from '../docker/container/container.class';
 
 @Controller('lab')
 export class LabController {
-
-  constructor(private labService: LabService) {
-  }
+  constructor(private labService: LabService) {}
 
   @Get('status')
   getStatus(): Promise<LabStatus> {
@@ -27,9 +32,22 @@ export class LabController {
     return this.labService.stopCurrentTask();
   }
 
+  /**
+   * Route to configure the lab manager and initialize the lab
+   * @param labInitConfig
+   */
   @Post('init-all')
   initAll(@Body() labInitConfig: LabInitConfig): void {
-    this.labService.initLab(labInitConfig);
+    this.labService.configureAndInitLab(labInitConfig);
+  }
+
+  /**
+   * Route to initialize the lab manager
+   * @param labInitConfig
+   */
+  @Post('init')
+  init(): void {
+    this.labService.initLab();
   }
 
   @Post('configure-lab-manager')
@@ -42,15 +60,24 @@ export class LabController {
     return this.labService.pullBiotaDb(labInitConfig);
   }
 
-
   @Get('config')
   getConfig(): ConfigFile {
     return this.labService.getConfig();
   }
 
+  @Get('bricks-config')
+  getBrickConfig(): BrickConfigsDTO {
+    return this.labService.getBricksConfig();
+  }
+
   @Put('config')
-  updateConfig(@Body() updateConfig: ConfigFile): void {
-    this.labService.updateConfig(updateConfig);
+  updateConfig(@Body() updateConfig: ConfigFile): Promise<void> {
+    return this.labService.updateConfig(updateConfig);
+  }
+
+  @Put('bricks-config')
+  updateBrickConfig(@Body() updateConfig: BrickConfigsDTO): Promise<void> {
+    return this.labService.updateBrickConfig(updateConfig);
   }
 
   ///////////////////////// CONTAINER /////////////////////////
@@ -58,16 +85,16 @@ export class LabController {
   listContainers(): Promise<DockerPs[]> {
     return this.labService.listContainers();
   }
-  
+
   @Get('containers/:containerName')
   getContainersDetail(@Param('containerName') containerName: string): Promise<DockerPsFull> {
     return this.labService.getContainerDetail(containerName);
   }
 
   @Get('containers/:containerName/size')
-  async getContainerSize(@Param('containerName') containerName: string): Promise<{size: string}> {
+  async getContainerSize(@Param('containerName') containerName: string): Promise<{ size: string }> {
     const size = await this.labService.getContainerSize(containerName);
-    return {size};
+    return { size };
   }
 
   @Get('containers/:containerName/logs')
@@ -83,11 +110,10 @@ export class LabController {
     return new StreamableFile(fileStream);
   }
 
-
   /**
    * Start a container service from docker-compose file
-   * @param serviceName 
-   * @returns 
+   * @param serviceName
+   * @returns
    */
   @Put('containers/:serviceName/start')
   startComposeContainer(@Param('serviceName') serviceName: string): Promise<void> {
@@ -103,7 +129,7 @@ export class LabController {
   deleteContainer(@Param('containerName') containerName: string): Promise<boolean> {
     return this.labService.deleteContainer(containerName);
   }
-  
+
   @Post('up-containers')
   async upContainers(@Body() options: ComposeUpOptions): Promise<void> {
     return await this.labService.upContainers(options);
@@ -145,4 +171,8 @@ export class LabController {
     return this.labService.stopAdminer();
   }
 
+  @Get('adminer/info')
+  getAdminerInfo(): Promise<AdminerInfo> {
+    return this.labService.getAdminerInfo();
+  }
 }

@@ -13,45 +13,50 @@ import { hashSync } from 'bcrypt';
 
 @Injectable()
 export class InitService {
-
   private readonly logger = new Logger(InitService.name);
 
-  constructor(private configService: CoreConfigService,
+  constructor(
+    private configService: CoreConfigService,
     private configFileService: ConfigFileService,
     private fileService: FileService,
     private dockerService: DockerService,
     private biotaService: BiotaService,
     private envVariableService: EnvVariableService,
-    private taskService: TaskService) {
+    private taskService: TaskService
+  ) {}
+
+  public async configureAndInitLab(labInitConfig: LabInitConfig): Promise<void> {
+    if (!this.configFileService.configFileExists()) {
+      throw new BadRequestException('You must configure the bricks before calling init');
+    }
+    try {
+      this.logger.log('[FULL INIT] Full init started');
+
+      // CONFIGURE LAB MANAGER
+      await this.configureLabManager(labInitConfig);
+
+      await this.init();
+
+      this.logger.log('[FULL INIT] Full init ended successfully');
+    } catch (e) {
+      this.logger.error('[FULL INIT] Full init ended with error :' + e);
+      if (e.stack) {
+        this.logger.error(e.stack);
+      }
+    }
   }
 
-  public async initAll(labInitConfig: LabInitConfig): Promise<void> {
+  public async initLab(): Promise<void> {
     if (!this.configFileService.configFileExists()) {
       throw new BadRequestException('You must configure the bricks before calling init');
     }
     try {
       this.logger.log('[INIT] Init started');
+      this.initAppVolume();
 
-      // CONFIGURE LAB MANAGER
-      await this.configureLabManager(labInitConfig);
-
-      // PULL BIOTA DB
-      await this.biotaService.pullBiota();
-
-      // PULL IMAGES
-      await this.dockerService.pullContainers();
-
-      // UP CONTAINERS
-      await this.dockerService.restartContainers({});
-
-      // save the init version
-      this.fileService.updatePrivateFileData({last_init_manager_version: this.configService.getLabManagerVersion()})
-
-      // clean unused docker images
-      await this.dockerService.systemPrune()
+      await this.init();
 
       this.logger.log('[INIT] Init ended successfully');
-
     } catch (e) {
       this.logger.error('[INIT] Init ended with error :' + e);
       if (e.stack) {
@@ -60,19 +65,39 @@ export class InitService {
     }
   }
 
+  private async init(): Promise<void> {
+    this.dockerService.generateDockerCompose();
+
+    await this.envVariableService.setAllEnvVariables(
+      this.configFileService.readConfigFile(),
+      this.fileService.readPrivateFile()
+    );
+
+    // PULL BIOTA DB
+    await this.biotaService.pullBiota();
+
+    // PULL IMAGES
+    await this.dockerService.pullContainers();
+
+    // UP CONTAINERS
+    await this.dockerService.restartContainers({});
+
+    // save the init version
+    this.fileService.updatePrivateFileData({
+      last_init_manager_version: this.configService.getLabManagerVersion(),
+    });
+
+    // clean unused docker images
+    await this.dockerService.systemPrune();
+  }
+
   /**
    * Configure the lab manager to be ready to start the docker containers (but not start them)
    */
-  public async configureLabManager(labInitConfig: LabInitConfig): Promise<void>{
-    this.logger.log('Configuring lab manager');
-
+  public async configureLabManager(labInitConfig: LabInitConfig): Promise<void> {
     this.initAppVolume();
 
-    this.generateFiles(labInitConfig);
-    await this.envVariableService.setAllEnvVariables(this.configFileService.readConfigFile(),
-      this.fileService.readPrivateFile());
-
-    this.logger.log('Lab manager configured');
+    this.generatePrivateFile(labInitConfig);
   }
 
   private initAppVolume(): void {
@@ -90,12 +115,10 @@ export class InitService {
       this.fileService.createDirIfNotExists(join(appFolder, 'conf'));
 
       this.taskService.markTaskAsSuccess(taskName, 'App volume generated');
-    }
-    catch (e) {
+    } catch (e) {
       this.taskService.markTaskAsError(taskName, `Error while generating app volume : ${e.message}`);
       throw e;
     }
-
   }
 
   private generateFiles(labInitConfig: LabInitConfig): void {
@@ -131,20 +154,26 @@ export class InitService {
 
       // Backup info
       privateJson.backup = {
-        enable: labInitConfig.labConfig?.enableBackup ?? true
-      }
+        enable: labInitConfig.labConfig?.enableBackup ?? true,
+      };
 
       // set token, only update the hash when the token has changed.
-      // otherwise a new hash is created each time and as the hash is used 
+      // otherwise a new hash is created each time and as the hash is used
       // as env variable for codelab, this would force re-creation.
       // if the token has not changed and the hash was already set
-      if(oldPrivateJson && oldPrivateJson.lab.token === labInitConfig.codelabToken && oldPrivateJson.lab.hashToken){
-        privateJson.lab.token = oldPrivateJson.lab.token;
-        privateJson.lab.hashToken = oldPrivateJson.lab.hashToken;
-      }else{
-        privateJson.lab.token = labInitConfig.codelabToken;
-        // Generate the htpasswd for the Lab token for CODELAB using Bcrypt
-        privateJson.lab.hashToken = hashSync(privateJson.lab.token, 10);
+      if (labInitConfig.codelabToken) {
+        if (
+          oldPrivateJson &&
+          oldPrivateJson.lab.codelabToken === labInitConfig.codelabToken &&
+          oldPrivateJson.lab.codelabHashToken
+        ) {
+          privateJson.lab.codelabToken = oldPrivateJson.lab.codelabToken;
+          privateJson.lab.codelabHashToken = oldPrivateJson.lab.codelabHashToken;
+        } else {
+          privateJson.lab.codelabToken = labInitConfig.codelabToken;
+          // Generate the htpasswd for the Lab token for CODELAB using Bcrypt
+          privateJson.lab.codelabHashToken = hashSync(privateJson.lab.codelabToken, 10);
+        }
       }
 
       // DB information

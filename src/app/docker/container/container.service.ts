@@ -4,10 +4,13 @@ import { TraefikService } from 'src/app/core/services/traefik/traefik.service';
 import { DockerCommandService } from '../docker-command/docker-command.service';
 import { ConfigFileService } from 'src/app/core/services/config-file/config-file.service';
 import { ExecCommandMode } from 'src/app/core/services/command/command.service';
+import { DockerPs, DockerRunOptionsPort } from '../docker.class';
+import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
+import { FileService } from 'src/app/core/services/file/file.service';
+import { AdminerInfo } from './container.class';
 
 @Injectable()
 export class ContainerService {
-
   private static readonly GLAB = 'glab';
   private static readonly CODELAB = 'codelab';
   private static readonly FRONT = 'front';
@@ -22,44 +25,46 @@ export class ContainerService {
   public static readonly ADMINER_NAME = 'adminer';
   public static readonly ADMINER_IMAGE: string = 'adminer:4.8.1';
 
+  private static readonly ADMINER_DESKTOP_PORT = 8081;
+
   private readonly logger = new Logger(ContainerService.name);
 
-  constructor(private dockerCommand: DockerCommandService,
+  constructor(
+    private dockerCommand: DockerCommandService,
     private taskService: TaskService,
     private traefikService: TraefikService,
-    private configFileService: ConfigFileService) {
-  }
+    private coreConfigService: CoreConfigService,
+    private fileService: FileService
+  ) {}
 
   /////////////////////////////// COMPOSE CONTAINER ///////////////////////////////
 
-  public getServiceNames(): string[] {
+  public getComposeServiceNames(): string[] {
     const containers = [
       ContainerService.GLAB,
       ContainerService.CODELAB,
       ContainerService.FRONT,
       ContainerService.DB_GWS_CORE_PROD,
       ContainerService.DB_GWS_CORE_DEV,
-      ContainerService.DB_GWS_CORE_DEV_TEST];
+      ContainerService.DB_GWS_CORE_DEV_TEST,
+      ContainerService.DB_GWS_BIOTA, // the container is always active (even if there is no biota db)
+    ];
 
-    // add biota container only if biota is active
-    if (this.configFileService.biotaIsActive()) {
-      containers.push(ContainerService.DB_GWS_BIOTA);
-    }
     return containers;
   }
   /**
-    * Start one container from the docker-compose file
-    * @param serviceName
-    * @returns true if the container was started, false if the container was already running
-    * @throws error if the container can't be started
-    */
+   * Start one container from the docker-compose file
+   * @param serviceName
+   * @returns true if the container was started, false if the container was already running
+   * @throws error if the container can't be started
+   */
   public async startComposeContainer(serviceName: string): Promise<boolean> {
     if (await this.containerIsRunning(serviceName)) return false;
 
     this.logger.log(`Starting compose service ${serviceName}`);
     await this.dockerCommand.composeUp([], [serviceName]);
 
-    if (!await this.waitForContainerToBeReady(serviceName)) {
+    if (!(await this.waitForContainerToBeReady(serviceName))) {
       throw new Error(`The container ${serviceName} is not running`);
     }
 
@@ -74,12 +79,12 @@ export class ContainerService {
    * @throws error if the container can't be stopped
    */
   public async downComposeContainer(serviceName: string): Promise<boolean> {
-    if (!await this.containerIsRunning(serviceName)) return false;
+    if (!(await this.containerIsRunning(serviceName))) return false;
 
     this.logger.log(`Stopping compose service ${serviceName}`);
     await this.dockerCommand.composeDown([serviceName]);
 
-    if (!await this.waitForContainerToBeStopped(serviceName)) {
+    if (!(await this.waitForContainerToBeStopped(serviceName))) {
       throw new Error(`The container ${serviceName} is not stopped`);
     }
 
@@ -90,9 +95,9 @@ export class ContainerService {
   /**
    * Execute a command in a container from the docker-compose file.
    * If the container is not running, it will be started and stopped after the command.
-   * @param serviceName 
-   * @param command 
-   * @returns 
+   * @param serviceName
+   * @param command
+   * @returns
    */
   private async execCommandInComposeContainer(serviceName: string, command: string): Promise<string> {
     const wasStarted = await this.startComposeContainer(serviceName);
@@ -109,10 +114,21 @@ export class ContainerService {
   }
 
   public checkIsComposeService(serviceName: string): boolean {
-    return this.getServiceNames().includes(serviceName);
+    return this.getComposeServiceNames().includes(serviceName);
   }
 
   /////////////////////////////// CONTAINERS ///////////////////////////////
+
+  public async getAllContainerNames(): Promise<string[]> {
+    const services = this.getComposeServiceNames();
+
+    if (await this.adminerIsRunning()) {
+      services.push(ContainerService.ADMINER_NAME);
+    }
+
+    return services;
+  }
+
   public async containerExists(containerName: string): Promise<boolean> {
     return (await this.dockerCommand.dockerContainerInfo(containerName)) != null;
   }
@@ -125,7 +141,6 @@ export class ContainerService {
     return container.state === 'running';
   }
 
-
   /**
    * Check if the containers is running. Then based on image type check if the container is ready.
    */
@@ -136,15 +151,22 @@ export class ContainerService {
     // check if the container is ready
 
     // if the container is a mysql container, check if the mysql is ready
-    if ([ContainerService.DB_GWS_CORE_PROD, ContainerService.DB_GWS_CORE_DEV,
-      ContainerService.DB_GWS_CORE_DEV_TEST, ContainerService.DB_GWS_BIOTA].includes(containerName)) {
+    if (
+      [
+        ContainerService.DB_GWS_CORE_PROD,
+        ContainerService.DB_GWS_CORE_DEV,
+        ContainerService.DB_GWS_CORE_DEV_TEST,
+        ContainerService.DB_GWS_BIOTA,
+      ].includes(containerName)
+    ) {
       try {
         // check if the mysql socket is ready
-        await this.dockerCommand.dockerExec(containerName,
+        await this.dockerCommand.dockerExec(
+          containerName,
           `sh -c "mysqladmin ping --host='localhost' --user='root' --password=\\$MYSQL_ROOT_PASSWORD"`,
-          ExecCommandMode.NO_LOG);
-      }
-      catch (e) {
+          ExecCommandMode.NO_LOG
+        );
+      } catch (e) {
         return false;
       }
     }
@@ -155,7 +177,7 @@ export class ContainerService {
   public async deleteContainer(containerName: string): Promise<boolean> {
     // return false if the container is not running
     const container = await this.dockerCommand.dockerContainerInfo(containerName);
-    if(container == null) return false;
+    if (container == null) return false;
 
     const taskName = `DELETE ${containerName}`;
     this.taskService.newTask(taskName);
@@ -196,7 +218,6 @@ export class ContainerService {
   }
 
   public async waitForContainerStatus(containerName: string, mode: 'ready' | 'stopped'): Promise<boolean> {
-
     // test if the container is start or stop each 3 seconds during 60 seconds
     let i = 0;
     while (i < 20) {
@@ -207,21 +228,23 @@ export class ContainerService {
         isOk = !(await this.containerIsRunning(containerName));
       }
       if (isOk) return true;
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       i++;
     }
 
     return false;
   }
 
+  public async getAllContainerPs(): Promise<DockerPs[]> {
+    const containerNames = await this.getAllContainerNames();
+    return this.dockerCommand.dockerPS(containerNames);
+  }
 
   /////////////////////////////// BIOTA ///////////////////////////////
-
 
   public deleteBiotaService(): Promise<boolean> {
     return this.deleteContainer(ContainerService.DB_GWS_BIOTA);
   }
-
 
   public async startBiotaService(): Promise<void> {
     const taskName = 'START BIOTA';
@@ -229,8 +252,7 @@ export class ContainerService {
 
     try {
       // start biota service from docker-compose
-      const result = await this.dockerCommand.composeUp([],
-        [ContainerService.DB_GWS_BIOTA])
+      const result = await this.dockerCommand.composeUp([], [ContainerService.DB_GWS_BIOTA]);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -243,17 +265,46 @@ export class ContainerService {
     return this.containerIsRunning(ContainerService.ADMINER_NAME);
   }
 
-  public async startAdminerService(): Promise<boolean> {
+  public async startAdminerContainer(): Promise<boolean> {
     const taskName = 'START ADMINER';
     this.taskService.newTask(taskName);
-  
+
+    // check if the container exists
+    const container = await this.dockerCommand.dockerContainerInfo(ContainerService.ADMINER_NAME);
+
+    if (container != null && container.state === 'running') {
+      this.taskService.markTaskAsSuccess(taskName, 'Ok');
+      return true;
+    }
+
+    if (container != null && container.state !== 'exited') {
+      // just start the container
+      try {
+        await this.dockerCommand.startContainer(ContainerService.ADMINER_NAME);
+        this.taskService.markTaskAsSuccess(taskName, 'Ok');
+        return true;
+      } catch (e) {
+        this.taskService.markTaskAsError(taskName, e.toString());
+        throw e;
+      }
+    }
+
     try {
       const containerName = ContainerService.ADMINER_NAME;
-      const labels = this.traefikService.getTraefikLabels(containerName, '8080');
+
+      let labels: string[] = null;
+      const ports: DockerRunOptionsPort[] = [];
+      if (this.coreConfigService.isLocal()) {
+        ports.push({ host: ContainerService.ADMINER_DESKTOP_PORT, container: 8080 });
+      } else {
+        labels = this.traefikService.getTraefikLabels(containerName, '8080');
+      }
 
       const networks = [ContainerService.NETWORK_DEV, ContainerService.NETWORK_PROD];
       const result = await this.dockerCommand.dockerRun(ContainerService.ADMINER_IMAGE, containerName, {
-        networks: networks, labels: labels
+        networks: networks,
+        labels: labels,
+        ports: ports,
       });
       this.taskService.markTaskAsSuccess(taskName, 'Ok');
       return result;
@@ -263,21 +314,64 @@ export class ContainerService {
     }
   }
 
-  public async deleteAdminerService(): Promise<boolean> {
+  public async deleteAdminerContainer(): Promise<boolean> {
     return this.deleteContainer(ContainerService.ADMINER_NAME);
   }
 
+  public async getAdminerInfo(): Promise<AdminerInfo> {
+    let url: string;
+    if (this.coreConfigService.isLocal()) {
+      url = `http://localhost:${ContainerService.ADMINER_DESKTOP_PORT}`;
+    } else {
+      url = `${ContainerService.ADMINER_NAME}.${this.coreConfigService.getVirtualHost()}`;
+    }
+
+    const privateFile = this.fileService.readPrivateFile();
+
+    const adminerInfo: AdminerInfo = {
+      url: url,
+
+      gwsCoreProd: {
+        host: 'gws_core_prod_db',
+        username: 'gws_core',
+        dbName: 'gws_core',
+        password: privateFile.db.gws_core_prod_password,
+      },
+
+      gwsCoreDev: {
+        host: 'gws_core_dev_db',
+        username: 'gws_core',
+        dbName: 'gws_core',
+        password: privateFile.db.gws_core_dev_password,
+      },
+
+      gwsBiota: {
+        host: 'gws_biota_db',
+        username: 'gws_biota',
+        dbName: 'gws_biota',
+        password: 'gencovery',
+      },
+    };
+
+    return adminerInfo;
+  }
 
   /////////////////////////////// PROD DB ///////////////////////////////
 
   public async dumpProdDb(dumpLocation: string): Promise<string> {
-    return await this.execCommandInComposeContainer(ContainerService.DB_GWS_CORE_PROD,
-      `sh -c "mysqldump --user='root' --password=\\$MYSQL_ROOT_PASSWORD --max_allowed_packet=256M \\$MYSQL_DATABASE > ${dumpLocation}"`);
+    return await this.execCommandInComposeContainer(
+      ContainerService.DB_GWS_CORE_PROD,
+      `sh -c "mysqldump --user='root' --password=\\$MYSQL_ROOT_PASSWORD` +
+        ` --max_allowed_packet=256M \\$MYSQL_DATABASE > ${dumpLocation}"`
+    );
   }
 
   public async restoreProdDb(dumpLocation: string): Promise<string> {
-    return await this.execCommandInComposeContainer(ContainerService.DB_GWS_CORE_PROD,
-      `sh -c "mysql --user='root' --password=\\$MYSQL_ROOT_PASSWORD --max_allowed_packet=256M \\$MYSQL_DATABASE < ${dumpLocation}"`);
+    return await this.execCommandInComposeContainer(
+      ContainerService.DB_GWS_CORE_PROD,
+      `sh -c "mysql --user='root' --password=\\$MYSQL_ROOT_PASSWORD` +
+        ` --max_allowed_packet=256M \\$MYSQL_DATABASE < ${dumpLocation}"`
+    );
   }
 
   public async prodDbIsRunning(): Promise<boolean> {

@@ -1,33 +1,33 @@
 # Docker compose file used in dev (local env). It removes the volumes and traefik config
 name: lab-manager-dev
 services:
-
   # Production Glab
   glab:
     image: constellab/glab:${TAG_PREFIX}${GLAB_TAG}
     environment:
-      - LAB_ID=1
-      - LAB_NAME=MyLab
-      - LAB_MODE=dev
-      - LAB_ENVIRONMENT=LOCAL
+      - LAB_ID=${LAB_ID}
+      - LAB_NAME=${LAB_NAME}
+      - LAB_MODE=${LAB_MODE}
+      - LAB_ENVIRONMENT=${LAB_ENVIRONMENT}
       - LAB_PROD_API_URL=http://localhost:3100
-      - LAB_DEV_API_URL=http://localhost:3100
-      - SPACE_API_KEY=
-      - SPACE_API_URL=
+      - LAB_DEV_API_URL=http://codelab:3000
+      - SPACE_API_KEY=${SPACE_PROD_API_KEY}
+      - SPACE_API_URL=${SPACE_API_URL}
+      - SPACE_FRONT_URL=${SPACE_FRONT_URL}
       - FRONT_URL=http://localhost:89
-      - FRONT_VERSION=
-      - CONDA_VERSION=latest
+      - FRONT_VERSION=${FRONT_VERSION}
       - GPU=${GPU}
       - VIRTUAL_HOST=
       - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       # COMMUNITY
-      - COMMUNITY_API_URL=https://hub-back-pre-prod.constellab-pre-prod.gencovery.com
-      - COMMUNITY_FRONT_URL=https://hub-pre-prod.gencovery.com/
-      - COMMUNITY_API_KEY= # no need for the key, we will not download private bricks
+      - COMMUNITY_API_URL=${COMMUNITY_API_URL}
+      - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}
+      - COMMUNITY_API_KEY=${COMMUNITY_API_KEY}
       # GWS_CORE database
       - GWS_CORE_DB_HOST=gws_core_prod_db
       - GWS_CORE_DB_USER=gws_core
-      - GWS_CORE_DB_PASSWORD=gencovery
+      - GWS_CORE_DB_PASSWORD=${GWS_CORE_PROD_DB_PASSWORD}
       - GWS_CORE_DB_NAME=gws_core
       - GWS_CORE_DB_PORT=3306
       # GWS_BIOTA database
@@ -36,19 +36,22 @@ services:
       - GWS_BIOTA_DB_PASSWORD=gencovery
       - GWS_BIOTA_DB_NAME=gws_biota
       - GWS_BIOTA_DB_PORT=3306
+      # STREAMLIT
+      - STREAMLIT_APP_SERVER_PORT=8501
+      - STREAMLIT_APP_SERVER_HOST=http://localhost.8501
     depends_on:
       - gws_core_prod_db
       - gws_biota_db
     volumes:
-     # this volume include conf and settings
+      # this volume include conf and settings
       - lab-manager-config:/conf
-    # volume for prod lab
+      # volume for prod lab
       - lab-manager-prod-lab:/lab
       - lab-manager-prod-data:/data
     networks:
       - gencovery-network-prod
     container_name: glab
-    ports: 
+    ports:
       - 3100:3000
     #GPU_CONFIG#
 
@@ -59,25 +62,26 @@ services:
       - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}
       - LAB_MODE=dev
-      - LAB_ENVIRONMENT=ON_CLOUD
-      - LAB_PROD_API_URL=https://glab-prod.${VIRTUAL_HOST}
-      - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
-      - SPACE_API_KEY=
-      - SPACE_API_URL=
-      - FRONT_URL=http://localhost:80
+      - LAB_ENVIRONMENT=${LAB_ENVIRONMENT}
+      - LAB_PROD_API_URL=http://glab:3000
+      - LAB_DEV_API_URL=http://localhost:3100
+      - SPACE_API_KEY=${SPACE_PROD_API_KEY}
+      - SPACE_API_URL=${SPACE_API_URL}
+      - SPACE_FRONT_URL=${SPACE_FRONT_URL}
+      - FRONT_URL=http://localhost:89
       - FRONT_VERSION=${FRONT_VERSION}
-      - VIRTUAL_HOST=${VIRTUAL_HOST}
-      - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
-      - CONDA_VERSION=latest
       - GPU=${GPU}
+      - VIRTUAL_HOST=
+      - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       # COMMUNITY
-      - COMMUNITY_API_URL=https://hub-back-pre-prod.constellab-pre-prod.gencovery.com
-      - COMMUNITY_FRONT_URL=https://hub-pre-prod.gencovery.com/
+      - COMMUNITY_API_URL=${COMMUNITY_API_URL}
+      - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}
       - COMMUNITY_API_KEY=${COMMUNITY_API_KEY}
       # GWS_CORE database
       - GWS_CORE_DB_HOST=gws_core_dev_db
       - GWS_CORE_DB_USER=gws_core
-      - GWS_CORE_DB_PASSWORD=gencovery
+      - GWS_CORE_DB_PASSWORD=${GWS_CORE_DEV_DB_PASSWORD}
       - GWS_CORE_DB_NAME=gws_core
       - GWS_CORE_DB_PORT=3306
       # Test database
@@ -101,7 +105,7 @@ services:
     networks:
       - gencovery-network-dev
     container_name: codelab
-    ports: 
+    ports:
       - 8083:8080
     #GPU_CONFIG#
 
@@ -112,20 +116,20 @@ services:
       - API_URL=http://localhost:3100
       - LAB_PROD_API_URL=http://localhost:3100
       - LAB_DEV_API_URL=http://localhost:3100
-      - CODE_SERVER_URL=https://codelab.${VIRTUAL_HOST}
+      - CODELAB_URL=http://localhost:8083
       - VIRTUAL_HOST=
-      - SPACE_FRONT_URL=https://preconstellab.space
-      - SPACE_API_URL=https://api.preconstellab.com
+      - SPACE_FRONT_URL=${SPACE_FRONT_URL}
+      - SPACE_API_URL=${SPACE_API_URL}
       # same dev and prod url
       - PROD_FRONT_URLS=http://localhost:89
       - DEV_FRONT_URLS=http://localhost:89
-      - COMMUNITY_FRONT_URL=https://hub-pre-prod.gencovery.com
-      - COMMUNITY_API_URL=https://hub-back-pre-prod.constellab-pre-prod.gencovery.com
+      - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}
+      - COMMUNITY_API_URL=${COMMUNITY_API_URL}
       - CAPTCHA_SITE_KEY=
     networks:
       - gencovery-network-prod
     container_name: front
-    ports: 
+    ports:
       - 89:81
 
   # GWS Core Production DB
@@ -133,16 +137,16 @@ services:
     image: mariadb:10.7.4
     command: --max_allowed_packet=256M
     environment:
-      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_ROOT_PASSWORD=${GWS_CORE_PROD_DB_PASSWORD}
       - MYSQL_USER=gws_core
-      - MYSQL_PASSWORD=gencovery
+      - MYSQL_PASSWORD=${GWS_CORE_PROD_DB_PASSWORD}
       - MYSQL_DATABASE=gws_core
     volumes:
       - lab-manager-prod-db:/var/lib/mysql
     networks:
       - gencovery-network-prod
     container_name: gws_core_prod_db
-    ports: 
+    ports:
       - 3406:3306
 
   # GWS Core Development DB
@@ -150,16 +154,16 @@ services:
     image: mariadb:10.7.4
     command: --max_allowed_packet=256M
     environment:
-      - MYSQL_ROOT_PASSWORD=gencovery
+      - MYSQL_ROOT_PASSWORD=${GWS_CORE_DEV_DB_PASSWORD}
       - MYSQL_USER=gws_core
-      - MYSQL_PASSWORD=gencovery
+      - MYSQL_PASSWORD=${GWS_CORE_DEV_DB_PASSWORD}
       - MYSQL_DATABASE=gws_core
     volumes:
       - lab-manager-dev-db:/var/lib/mysql
     networks:
       - gencovery-network-dev
     container_name: gws_core_dev_db
-    ports: 
+    ports:
       - 3407:3306
 
   # GWS Test db
@@ -174,7 +178,7 @@ services:
     networks:
       - gencovery-network-dev
     container_name: test_gws_dev_db
-    ports: 
+    ports:
       - 3408:3306
 
   # GWS Biota Production DB
@@ -194,7 +198,6 @@ services:
       - lab-manager-biota:/var/lib/mysql
     ports:
       - 3409:3306
-
 
 networks:
   gencovery-network-dev:

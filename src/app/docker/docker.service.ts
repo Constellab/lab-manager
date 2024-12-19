@@ -3,7 +3,6 @@ import { ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull } from 
 import { FileService } from '../core/services/file/file.service';
 import { TaskService } from '../core/services/task/task.service';
 import { ContainerStatusInfo } from '../lab/lab.class';
-import { PrivateFile } from 'src/app/core/models/private-file.class';
 import { GPUService } from 'src/app/core/services/gpu/gpu.service';
 import { DockerCommandService } from './docker-command/docker-command.service';
 import { ContainerService } from './container/container.service';
@@ -28,10 +27,10 @@ export class DockerService {
   }
 
   public async listContainers(): Promise<DockerPs[]> {
-    const containers = await this.dockerCommand.dockerPs();
+    const containers = await this.containerService.getAllContainerPs();
 
     // add the default containers if they are not in the list
-    const defaultContainers = this.containerService.getServiceNames();
+    const defaultContainers = this.containerService.getComposeServiceNames();
     for (const defaultContainer of defaultContainers) {
       if (!containers.find(c => c.names === defaultContainer)) {
         containers.push({
@@ -87,7 +86,7 @@ export class DockerService {
 
     try {
       if (!services || services.length === 0) {
-        services = this.containerService.getServiceNames();
+        services = this.containerService.getComposeServiceNames();
       }
       const result = await this.dockerCommand.composeUp([], services);
       this.taskService.markTaskAsSuccess(taskName, result);
@@ -184,9 +183,9 @@ export class DockerService {
   }
 
   public async getContainersStatus(): Promise<ContainerStatusInfo> {
-    const containers: DockerPs[] = await this.dockerCommand.dockerPs();
+    const containers: DockerPs[] = await this.containerService.getAllContainerPs();
 
-    const containerNames: string[] = this.containerService.getServiceNames();
+    const containerNames: string[] = this.containerService.getComposeServiceNames();
 
     const containersDown: string[] = [];
     const containersStop: string[] = [];

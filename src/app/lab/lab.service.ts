@@ -1,43 +1,51 @@
-import {BadRequestException, Injectable, Logger} from '@nestjs/common';
-import {LabInitConfig, LabStatus} from './lab.class';
-import {BeforeDockerCommandOptions, DockerService} from '../docker/docker.service';
-import {TaskService} from '../core/services/task/task.service';
-import {CoreConfigService} from '../core/services/config/core-config.service';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { LabInitConfig, LabStatus } from './lab.class';
+import { BeforeDockerCommandOptions, DockerService } from '../docker/docker.service';
+import { TaskService } from '../core/services/task/task.service';
+import { CoreConfigService } from '../core/services/config/core-config.service';
 import { FileService } from '../core/services/file/file.service';
 import { ConfigFileService } from '../core/services/config-file/config-file.service';
 import { BiotaService } from './biota/biota.service';
 import { InitService } from './init/init.service';
-import { ConfigFile } from '../core/models/config-file.class';
-import { ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull, PullBiotaDbOptions } from '../docker/docker.class';
+import { BrickConfigsDTO, ConfigFile } from '../core/models/config-file.class';
+import {
+  ComposeRestartOptions,
+  ComposeUpOptions,
+  DockerPs,
+  DockerPsFull,
+  PullBiotaDbOptions,
+} from '../docker/docker.class';
 import { EnvVariableService } from './env-variable/env-variable.service';
 import { ContainerService } from '../docker/container/container.service';
 import { TaskStatusInfo } from '../core/models/task.class';
+import { BrickGWS, BrickGWSTechnicalInfo } from '../core/services/external/external-community.class';
+import { ExternalCommunityApiService } from '../core/services/external/external-community-api.service';
+import { AdminerInfo } from '../docker/container/container.class';
 
 const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
   generateComposeFile: true,
 };
 
 @Injectable()
-export class LabService  {
-
+export class LabService {
   private readonly logger = new Logger(LabService.name);
 
-
-  constructor(private dockerService: DockerService,
+  constructor(
+    private dockerService: DockerService,
     private taskService: TaskService,
-    private configService: CoreConfigService,
+    private coreConfigService: CoreConfigService,
     private containerService: ContainerService,
     private fileService: FileService,
     private configFileService: ConfigFileService,
     private biotaService: BiotaService,
     private initService: InitService,
-    private envVariableService: EnvVariableService) {
-  }
-
+    private envVariableService: EnvVariableService,
+    private communityService: ExternalCommunityApiService
+  ) {}
 
   public async getStatus(): Promise<LabStatus> {
     let lastInitManagerVersion: string = null;
-    if(this.fileService.privateFileExists()){
+    if (this.fileService.privateFileExists()) {
       lastInitManagerVersion = this.fileService.readPrivateFile().data?.last_init_manager_version ?? null;
     }
 
@@ -45,25 +53,54 @@ export class LabService  {
       containersStatus: await this.dockerService.getContainersStatus(),
       currentTask: this.taskService.currentTask,
       adminerIsRunning: await this.containerService.adminerIsRunning(),
-      version: this.configService.getLabManagerVersion(),
+      version: this.coreConfigService.getLabManagerVersion(),
       biota: {
         exists: this.biotaService.biotaDbExists(),
         dbUrl: this.biotaService.getCurrentVersionUrl(),
       },
       isConfigured: this.configFileService.configFileExists(),
       isInitialized: this.fileService.privateFileExists(),
-      lastInitVersion: lastInitManagerVersion
+      lastInitVersion: lastInitManagerVersion,
+      labFrontUrl: this.getLabFrontUrl(),
     };
   }
 
-  public initLab(labInitConfig: LabInitConfig): void {
-    this.initService.initAll(labInitConfig).catch((err) => {
+  public getLabFrontUrl(): string {
+    if (this.coreConfigService.isLocal()) {
+      return 'http://localhost:89';
+    }
+    return `https://lab.${this.coreConfigService.getVirtualHost()}`;
+  }
+
+  public configureAndInitLab(labInitConfig: LabInitConfig): void {
+    this.checkInitConfig(labInitConfig);
+
+    this.initService.configureAndInitLab(labInitConfig).catch((err) => {
+      this.logger.error(err);
+    });
+  }
+
+  public initLab(): void {
+    this.initService.initLab().catch((err) => {
       this.logger.error(err);
     });
   }
 
   public configureLabManager(labInitConfig: LabInitConfig): Promise<void> {
+    this.checkInitConfig(labInitConfig);
     return this.initService.configureLabManager(labInitConfig);
+  }
+
+  private checkInitConfig(labInitConfig: LabInitConfig): void {
+    if (
+      !labInitConfig.space ||
+      !labInitConfig.community ||
+      !labInitConfig.gwsCoreProdPassword ||
+      !labInitConfig.gwsCoreDevPassword ||
+      !labInitConfig.labConfig
+    ) {
+      throw new BadRequestException('The provided configuration is missing some required fields');
+    }
   }
 
   public getCurrentTask(): TaskStatusInfo | null {
@@ -76,19 +113,27 @@ export class LabService  {
 
   private async checkLabIsConfigured(): Promise<void> {
     if (!this.configFileService.configFileExists()) {
-      throw new BadRequestException('The lab bricks are not configured. Please configure the lab before calling this method');
+      throw new BadRequestException(
+        'The lab bricks are not configured. Please configure the lab before calling this method'
+      );
     }
 
     if (!this.fileService.privateFileExists()) {
-      throw new BadRequestException('The lab is not initialized. Please initialize the lab before calling this method');
+      throw new BadRequestException(
+        'The lab is not initialized. Please initialize the lab before calling this method'
+      );
     }
 
-    if(!this.fileService.exists(this.fileService.dockerComposePath)){
-      throw new BadRequestException('The docker compose file was not generated. Please initialize the lab before calling this method');
+    if (!this.fileService.exists(this.fileService.dockerComposePath)) {
+      throw new BadRequestException(
+        'The docker compose file was not generated. Please initialize the lab before calling this method'
+      );
     }
 
-    if(!this.fileService.exists(this.fileService.envFilePath)){
-      throw new BadRequestException('The env file was not generated. Please initialize the lab before calling this method');
+    if (!this.fileService.exists(this.fileService.envFilePath)) {
+      throw new BadRequestException(
+        'The env file was not generated. Please initialize the lab before calling this method'
+      );
     }
   }
 
@@ -126,7 +171,6 @@ export class LabService  {
     return this.dockerService.upContainers(options, initAllBeforeDockerCommand);
   }
 
-
   public async restartContainers(options: ComposeRestartOptions): Promise<void> {
     await this.checkLabIsConfigured();
     return this.dockerService.restartContainers(options, initAllBeforeDockerCommand);
@@ -154,7 +198,7 @@ export class LabService  {
   public exportLogsToFile(containerName: string): Promise<string> {
     return this.dockerService.exportLogsToFile(containerName, '/tmp/logs_export.txt');
   }
-  
+
   public async systemPrune(): Promise<void> {
     return this.dockerService.systemPrune();
   }
@@ -166,27 +210,108 @@ export class LabService  {
     return this.biotaService.pullBiota(options.forceUpdate, true);
   }
 
-
   //////////////////////////// CONFIG ////////////////////////////
   public getConfig(): ConfigFile {
     return this.configFileService.getConfig();
+  }
+
+  public getBricksConfig(): BrickConfigsDTO {
+    const configFile = this.getConfig();
+    if (!configFile) {
+      return {
+        glabTag: null,
+        brickVersions: [],
+      };
+    }
+    return {
+      glabTag: configFile.glab_tag,
+      brickVersions: configFile.environment?.bricks ?? [],
+    };
   }
 
   public async updateConfig(config: ConfigFile): Promise<void> {
     await this.configFileService.updateConfig(config);
 
     // if the private file exists, we update the env variables
-    if(this.fileService.privateFileExists()){
+    if (this.fileService.privateFileExists()) {
       this.envVariableService.setAllEnvVariables(config, this.fileService.readPrivateFile());
     }
   }
 
+  public async updateBrickConfig(brickConfigs: BrickConfigsDTO): Promise<void> {
+    // check if gws_core is in the bricks
+    const gwsCore = brickConfigs.brickVersions.find((brick) => brick.name === BrickGWS.GWS_CORE);
+
+    if (!gwsCore) {
+      throw new BadRequestException('The brick gws_core is required in the bricks configuration');
+    }
+
+    const configFile: ConfigFile = {
+      lab_id: null,
+      name: null,
+      front_version: null,
+      glab_tag: brickConfigs.glabTag,
+      environment: {
+        bricks: brickConfigs.brickVersions.map((brick) => ({ name: brick.name, version: brick.version })),
+        variables: {},
+      },
+      variables: {},
+    };
+
+    // get gws_core version info
+    const brickInfo = await this.communityService.getBrickInfos(BrickGWS.GWS_CORE, gwsCore.version);
+
+    // retrieve front version
+    // TODO TO REMOVE
+    // const frontVersion = '2.0.2';
+    const frontVersion = brickInfo.technicalInfo[BrickGWSTechnicalInfo.GWS_CORE_FRONT_VERSION];
+    if (frontVersion == null) {
+      throw new BadRequestException('The front version is not set in the gws_core brick technical info');
+    }
+    configFile.front_version = frontVersion;
+
+    // retrieve glab tag
+    if (!configFile.glab_tag) {
+      // TODO TO REMOVE
+      // const glabTag = '2.4.0';
+      const glabTag = brickInfo.technicalInfo[BrickGWSTechnicalInfo.GWS_CORE_GLAB_VERSION];
+      if (glabTag == null) {
+        throw new BadRequestException(
+          'The glab tag is not set in the config file and could not be found in the gws_core' +
+            ' brick technical info'
+        );
+      }
+
+      configFile.glab_tag = glabTag;
+    }
+
+    // if biota is in the bricks, we add the db url
+    const biota = brickConfigs.brickVersions.find((brick) => brick.name === BrickGWS.GWS_BIOTA);
+
+    if (biota) {
+      const biotaInfo = await this.communityService.getBrickInfos(BrickGWS.GWS_BIOTA, biota.version);
+
+      const dbUrl = biotaInfo.technicalInfo[BrickGWSTechnicalInfo.GWS_BIOTA_DB_URL];
+      if (dbUrl == null) {
+        throw new BadRequestException('The db url is not set in the gws_biota brick technical info');
+      }
+
+      configFile.biota_maria_db_url = dbUrl;
+    }
+
+    this.configFileService.updateConfig(configFile);
+  }
+
   //////////////////////////// ADMINER ////////////////////////////
   public async startAdminer(): Promise<boolean> {
-    return this.containerService.startAdminerService();
+    return this.containerService.startAdminerContainer();
   }
 
   public async stopAdminer(): Promise<boolean> {
-    return this.containerService.deleteAdminerService();
+    return this.containerService.deleteAdminerContainer();
+  }
+
+  public async getAdminerInfo(): Promise<AdminerInfo> {
+    return this.containerService.getAdminerInfo();
   }
 }

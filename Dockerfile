@@ -2,7 +2,7 @@
 # https://blog.logrocket.com/containerized-development-nestjs-docker/
 
 # Build step
-FROM node:20-alpine3.19 as builder
+FROM node:20-alpine3.19 AS builder
 WORKDIR /lab-manager
 
 # Copy package and package-lock.json file for modules installation
@@ -22,7 +22,7 @@ WORKDIR /lab-manager
 
 ENV NODE_VERSION=20.12.2
 # do not name RCLONE_VERSION as it is a reserved name
-ENV CUSTOM_RCLONE_VERSION=1.53.3-4ubuntu1.22.04.2
+ENV CUSTOM_RCLONE_VERSION=1.53.3-4ubuntu1.22.04.3
 ENV DOCKER_COMPOSE_VERSION=2.26.1
 
 

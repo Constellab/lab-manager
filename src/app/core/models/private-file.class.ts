@@ -12,14 +12,14 @@ export interface PrivateFile {
     api_key: string;
   };
   lab: {
-    username: string;
-    token: string;
-    hashToken: string;
+    codelabUsername: string;
+    codelabToken: string;
+    codelabHashToken: string;
     captchaSiteKey: string;
   };
   backup: {
     enable: boolean;
-  }
+  };
   db: {
     gws_core_prod_password: string;
     gws_core_dev_password: string;
@@ -54,9 +54,9 @@ export function getPrivateFileTemplate(): PrivateFile {
       api_key: null,
     },
     lab: {
-      username: 'codelab',
-      token: null,
-      hashToken: null,
+      codelabUsername: 'codelab',
+      codelabToken: null,
+      codelabHashToken: null,
       captchaSiteKey: null,
     },
     backup: {

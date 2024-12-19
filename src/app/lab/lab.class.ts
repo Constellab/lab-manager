@@ -1,4 +1,4 @@
-import {TaskStatusInfo} from '../core/models/task.class';
+import { TaskStatusInfo } from '../core/models/task.class';
 
 /**
  * global status for the containers
@@ -10,7 +10,6 @@ export interface ContainerStatusInfo {
   info?: string;
 }
 
-
 export interface LabStatus {
   containersStatus: ContainerStatusInfo;
   currentTask?: TaskStatusInfo;
@@ -18,12 +17,13 @@ export interface LabStatus {
   version: string;
   biota: {
     exists: boolean;
-    dbUrl ?: string;
+    dbUrl?: string;
   };
   isConfigured: boolean;
   isInitialized: boolean;
   // version of the lab manager that has been used to init the lab
   lastInitVersion: string;
+  labFrontUrl: string;
 }
 
 /**
@@ -35,18 +35,18 @@ export interface LabInitConfig {
     prodApiKey: string;
     devApiKey: string;
     frontUrl: string;
-  },
+  };
   community: {
     apiUrl: string;
     apiKey: string;
     frontUrl: string;
-  },
-  codelabToken: string;
+  };
+  codelabToken: string | null;
   gwsCoreProdPassword: string;
   gwsCoreDevPassword: string;
   labConfig: {
     enableBackup: boolean;
-  }
-  captchaSiteKey: string;
-  openaiApiKey: string;
+  };
+  captchaSiteKey: string | null;
+  openaiApiKey: string | null;
 }

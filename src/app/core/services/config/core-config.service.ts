@@ -1,15 +1,13 @@
-import {Injectable, LogLevel} from '@nestjs/common';
-import {ConfigService} from '@nestjs/config';
-import {EnvironmentProfile} from '../../models/config.class';
-import {join} from 'path';
+import { Injectable, LogLevel } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { EnvironmentProfile } from '../../models/config.class';
+import { join } from 'path';
 
 export const ENVIRONMENT_PROFILE_KEY = 'ENVIRONMENT_PROFILE';
 
 @Injectable()
 export class CoreConfigService {
-
-  constructor(private configService: ConfigService) {
-  }
+  constructor(private configService: ConfigService) {}
 
   public getEnvironmentProfile(): EnvironmentProfile {
     return this.configService.get(ENVIRONMENT_PROFILE_KEY);
@@ -19,9 +17,13 @@ export class CoreConfigService {
     return this.getEnvironmentProfile() === 'prod';
   }
 
+  public isDekstop(): boolean {
+    return this.getEnvironmentProfile() === 'desktop';
+  }
+
   public isLocal(): boolean {
     const env: EnvironmentProfile = this.getEnvironmentProfile();
-    return env === 'dev' || env === 'test';
+    return env === 'dev' || env === 'test' || env === 'desktop';
   }
 
   public getLabManagerVersion(): string {
@@ -44,22 +46,47 @@ export class CoreConfigService {
     return this.configService.get('VIRTUAL_HOST');
   }
 
-
   /**
    * Provided for on premise installations. Can be used to add additional hosts to the lab manager
    * to enable access to apps from other domains.
    */
   public getAddtionalDomains(): string[] {
     const domains = this.configService.get('ADDITIONAL_DOMAINS');
-    try{
+    try {
       return JSON.parse(domains);
-    }catch (e){
-      throw Error('Error while parsing environment variable ADDITIONAL_DOMAINS to array. It must be a valid JSON array.');
+    } catch (e) {
+      throw Error(
+        'Error while parsing environment variable ADDITIONAL_DOMAINS to array. It must be a valid JSON array.'
+      );
     }
+  }
+
+  public getLabManagerStandaloneFrontVersion(): string {
+    return this.configService.get('LAB_MANAGER_STANDALONE_FRONT_VERSION');
+  }
+
+  public getLabName(): string | null {
+    return this.configService.get('LAB_NAME');
+  }
+
+  public getLabId(): string | null {
+    return this.configService.get('LAB_ID');
+  }
+
+  public getCommunityApiUrl(): string {
+    return this.configService.get('COMMUNITY_API_URL');
+  }
+
+  public getCommunityFrontUrl(): string {
+    return this.configService.get('COMMUNITY_FRONT_URL');
   }
 
   public getAppFolder(): string {
     return '/app';
+  }
+
+  public getPort(): number {
+    return this.getConfigNumber('PORT');
   }
 
   public getProdFolderPath(): string {
@@ -79,14 +106,14 @@ export class CoreConfigService {
   }
 
   public getBiotaDbFolder(): string {
-    return join(this.getGwsDbFolder() ,'gws_biota');
+    return join(this.getGwsDbFolder(), 'gws_biota');
   }
 
-  public getGwsCoreDbFolder(): string{
-    return join(this.getGwsDbFolder() , 'gws_core');
+  public getGwsCoreDbFolder(): string {
+    return join(this.getGwsDbFolder(), 'gws_core');
   }
 
-  public getGwsCoreDbProdMariaDbFolder(): string{
+  public getGwsCoreDbProdMariaDbFolder(): string {
     return join(this.getGwsCoreDbFolder(), 'prod', 'mariadb');
   }
 

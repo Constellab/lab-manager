@@ -8,13 +8,12 @@ import { TaskStatus, TaskStatusInfo } from '../../models/task.class';
  */
 @Injectable()
 export class TaskService {
-
   private task$: BehaviorSubject<TaskStatusInfo> = new BehaviorSubject<TaskStatusInfo>(null);
 
   private readonly logger = new Logger(TaskService.name);
 
   public getTask$(): Observable<TaskStatusInfo> {
-    return this.task$.asObservable().pipe(filter(task => task != null));
+    return this.task$.asObservable().pipe(filter((task) => task != null));
   }
 
   public get currentTask(): TaskStatusInfo | null {
@@ -24,13 +23,16 @@ export class TaskService {
   public newTask(name: string, info?: string): void {
     if (this.currentTask != null && this.currentTask.status === 'RUNNING') {
       // eslint-disable-next-line max-len
-      throw new BadRequestException(`Can't start the task ${name} because the task ${this.currentTask.name} is still running, please wait for this task to finish before running a new task`);
+      throw new BadRequestException(
+        `Can't start the task ${name} because the task ${this.currentTask.name}` +
+          ` is still running, please wait for this task to finish before running a new task`
+      );
     }
 
     this.task$.next({
       status: 'RUNNING',
       name: name,
-      info: info
+      info: info,
     });
 
     let log = `New task '${name}'`;
@@ -40,26 +42,19 @@ export class TaskService {
     this.logger.log(log);
   }
 
-  public markTaskAsError(name: string, info: string,
-    logMessage: boolean = true
-  ): void {
+  public markTaskAsError(name: string, info: string, logMessage: boolean = true): void {
     this.updateTask(name, 'ERROR', info, logMessage);
   }
 
-  public markTaskAsSuccess(name: string, info?: string,
-    logMessage: boolean = true
-  ): void {
+  public markTaskAsSuccess(name: string, info?: string, logMessage: boolean = true): void {
     this.updateTask(name, 'SUCCESS', info, logMessage);
   }
 
-  public updateTaskInfo(name: string, info: string,
-    logMessage: boolean = true
-  ): void {
+  public updateTaskInfo(name: string, info: string, logMessage: boolean = true): void {
     this.updateTask(name, this.currentTask.status, info, logMessage);
   }
 
-  public updateTask(name: string, status: TaskStatus, info?: string,
-    logMessage: boolean = true): void {
+  public updateTask(name: string, status: TaskStatus, info?: string, logMessage: boolean = true): void {
     if (this.currentTask == null) {
       throw new BadRequestException(`There is no running task`);
     }
@@ -79,7 +74,7 @@ export class TaskService {
       log += `, info : '${info}'`;
     }
 
-    if(logMessage){
+    if (logMessage) {
       if (status == 'ERROR') {
         this.logger.error(log);
       } else {
@@ -96,7 +91,7 @@ export class TaskService {
     this.task$.next({
       name: this.currentTask.name,
       status: 'ERROR',
-      info: 'Stopped manually'
+      info: 'Stopped manually',
     });
 
     this.logger.log(`Manually stopping task '${this.currentTask.name}'`);

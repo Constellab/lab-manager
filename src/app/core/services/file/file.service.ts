@@ -1,6 +1,15 @@
 import { BadRequestException, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { getPrivateFileTemplate, PrivateFile, PrivateFileData } from '../../models/private-file.class';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from 'fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from 'fs';
 import { readdir, stat } from 'fs/promises';
 
 import { dirname, join } from 'path';
@@ -9,32 +18,29 @@ import { CoreConfigService } from '../config/core-config.service';
 
 @Injectable()
 export class FileService implements OnModuleInit {
-
   private readonly assets = 'assets';
 
   private readonly privateFileName = 'private.json';
 
   private readonly envFileName = 'lab-manager.env';
 
-
-  constructor(@Inject(CORE_MODULE_PROVIDER) private config: CoreModuleConfig,
-    private configService: CoreConfigService) {
-  }
+  constructor(
+    @Inject(CORE_MODULE_PROVIDER) private config: CoreModuleConfig,
+    private configService: CoreConfigService
+  ) {}
 
   onModuleInit(): void {
     // TODO TO DELETE, migration on new private file format
-    if(this.privateFileExists()){
+    if (this.privateFileExists()) {
       const privateFile: any = this.readPrivateFile();
-      
-      if(privateFile.central){
+
+      if (privateFile.central) {
         privateFile.space = privateFile.central;
         delete privateFile.central;
-        this.createPrivateFile(privateFile)
+        this.createPrivateFile(privateFile);
       }
     }
   }
-
-
 
   //////////////////////// PRIVATE FILE ///////////////////////////////////
 
@@ -65,15 +71,13 @@ export class FileService implements OnModuleInit {
       biota_current_db_url_version: null,
       last_init_manager_version: null,
     };
-    privateFile.data = { ...dataTemplate, ...privateFile.data ?? {}, ...data };
+    privateFile.data = { ...dataTemplate, ...(privateFile.data ?? {}), ...data };
     this.createPrivateFile(privateFile);
   }
 
   private get privateFilePath(): string {
     return this.getVolumePath(this.privateFileName);
   }
-
-
 
   //////////////////////// DOCKER COMPOSE //////////////////////
 
@@ -97,7 +101,7 @@ export class FileService implements OnModuleInit {
 
   public get dockerComposeFileName(): string {
     if (this.configService.isLocal()) {
-      return 'docker-compose-dev.yml';
+      return 'docker-compose-local.yml';
     } else {
       return 'docker-compose.yml';
     }
@@ -209,7 +213,7 @@ export class FileService implements OnModuleInit {
 
     const files = await readdir(dirPath, { withFileTypes: true });
 
-    const paths = files.map(async file => {
+    const paths = files.map(async (file) => {
       const path = join(dirPath, file.name);
 
       if (file.isDirectory()) return await this.getFolderSize(path);
@@ -225,6 +229,4 @@ export class FileService implements OnModuleInit {
 
     return (await Promise.all(paths)).flat(Infinity).reduce((i, size) => i + size, 0);
   }
-
-
 }

@@ -6,25 +6,24 @@ import { FileService } from 'src/app/core/services/file/file.service';
 import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
 import { BackupInfoDTO } from 'src/app/backup/backup.class';
 import { LabBackupHistory } from 'src/app/backup/backup-history.class';
-
+import { LabManagerRecommendedVersion } from './external-space.class';
 
 /**
  * Class to call route of space using space api
  */
 @Injectable()
 export class ExternalSpaceApiService {
-
   private static readonly API_KEY_HEADER = 'Authorization';
   private static readonly API_KEY_SCHEMA = 'api-key';
   private static readonly LAB_MANAGER_VERSION = 'lab-manager-version';
 
   private static readonly BASE_API_ROUTE = 'external-labs-manager';
 
-  constructor(private apiService: ApiService,
-              private fileService: FileService,
-              private configService: CoreConfigService) { 
-  }
-
+  constructor(
+    private apiService: ApiService,
+    private fileService: FileService,
+    private configService: CoreConfigService
+  ) {}
 
   public getBackupInfo(): Promise<BackupInfoDTO> {
     return lastValueFrom(
@@ -34,7 +33,17 @@ export class ExternalSpaceApiService {
 
   public syncBackupHistory(backupHistory: LabBackupHistory): Promise<void> {
     return lastValueFrom(
-      this.apiService.post(this.constructRoute('lab/backup-history-v2'), backupHistory.toJson(), this.getRequestOptions({}))
+      this.apiService.post(
+        this.constructRoute('lab/backup-history-v2'),
+        backupHistory.toJson(),
+        this.getRequestOptions({})
+      )
+    );
+  }
+
+  public getLabManagerRecommendedVersion(): Promise<LabManagerRecommendedVersion> {
+    return lastValueFrom(
+      this.apiService.get(this.constructRoute('recommended-version'), this.getRequestOptions({}))
     );
   }
 
@@ -44,7 +53,7 @@ export class ExternalSpaceApiService {
     const isLocal = this.configService.isLocal();
     let url: string;
     if (isLocal) {
-      url = 'http://host.docker.internal:3001'
+      url = 'http://host.docker.internal:3001';
     } else {
       const privateFile = this.fileService.readPrivateFile();
       url = privateFile.space.api_url;
@@ -68,6 +77,4 @@ export class ExternalSpaceApiService {
     header[ExternalSpaceApiService.LAB_MANAGER_VERSION] = this.configService.getLabManagerVersion();
     return header;
   }
-
-
 }

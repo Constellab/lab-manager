@@ -1,21 +1,31 @@
-import {BadRequestException, Injectable} from '@nestjs/common';
-import {ConfigFile} from '../../models/config-file.class';
-import {FileService} from '../file/file.service';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { ConfigFile } from '../../models/config-file.class';
+import { FileService } from '../file/file.service';
+import { CoreConfigService } from '../config/core-config.service';
 
 @Injectable()
 export class ConfigFileService {
-
   private readonly configFileName = 'config.json';
 
+  private readonly logger = new Logger(ConfigFileService.name);
 
-  constructor(private fileService: FileService) {
-  }
-
+  constructor(
+    private fileService: FileService,
+    private coreConfigService: CoreConfigService
+  ) {}
 
   /**
    * Update the config and store result in config file
    */
   public updateConfig(config: ConfigFile): void {
+    if (!config.name) {
+      config.name = this.getLabName();
+    }
+
+    if (!config.lab_id) {
+      config.lab_id = this.getLabId();
+    }
+
     this.fileService.writeJsonFile(this.configFilePath, config);
   }
 
@@ -25,7 +35,34 @@ export class ConfigFileService {
     }
 
     return this.readConfigFile();
+  }
 
+  private getLabName(): string {
+    if (this.configFileExists()) {
+      try {
+        const name = this.readConfigFile().name;
+        if (name) return name;
+      } catch (e) {
+        this.logger.error('Error while reading lab name from config file. ' + e);
+      }
+    }
+
+    // return the default name
+    return this.coreConfigService.getLabName();
+  }
+
+  private getLabId(): string {
+    if (this.configFileExists()) {
+      try {
+        const id = this.readConfigFile().lab_id;
+        if (id) return id;
+      } catch (e) {
+        this.logger.error('Error while reading lab id from config file. ' + e);
+      }
+    }
+
+    // return the default id
+    return this.coreConfigService.getLabId();
   }
 
   ///////////////////////////// FILE  ///////////////////////////////
@@ -49,9 +86,7 @@ export class ConfigFileService {
     return this.readConfigFile().biota_maria_db_url != null;
   }
 
-
   private get configFilePath(): string {
     return this.fileService.getVolumePath(this.configFileName);
   }
-
 }

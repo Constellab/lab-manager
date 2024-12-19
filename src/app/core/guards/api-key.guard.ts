@@ -17,6 +17,9 @@ export class ApiKeyGuard implements CanActivate {
       return true;
     }
 
+    // in desktop mode, this is local, no need for api key
+    if(this.configService.isDekstop()) return true;
+
     const req: Request = context.switchToHttp().getRequest();
 
     const apiKey = req.header(apiKeyHeader);

@@ -6,27 +6,27 @@ import { ApiHttpOption } from 'src/app/core/services/api/api.class';
 import { FileService } from 'src/app/core/services/file/file.service';
 import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
 
-
 /**
- * Class to call route of the lab using space api 
+ * Class to call route of the lab using space api
  */
 @Injectable()
 export class ExternalLabApiService {
-
   private static readonly API_KEY_HEADER = 'Authorization';
   private static readonly API_KEY_SCHEMA = 'api-key';
 
   private static readonly BASE_API_ROUTE = 'space-api';
   private static readonly API_PREFIX = 'glab';
 
-  constructor(private apiService: ApiService,
+  constructor(
+    private apiService: ApiService,
     private fileService: FileService,
-    private configService: CoreConfigService) { }
+    private configService: CoreConfigService
+  ) {}
 
   public healthCheck(): Promise<boolean> {
-    return lastValueFrom(
-      this.apiService.get(this.constructRoute('lab/health'))
-    ).catch(() => false);
+    return lastValueFrom(this.apiService.get(this.constructRoute('health-check'), { timeout: 1000 })).catch(
+      () => false
+    );
   }
 
   public getGlobalActivity(): Promise<LabGlobalActivity> {
@@ -35,15 +35,13 @@ export class ExternalLabApiService {
     );
   }
 
-
-
   ////////////////// METHODS TO BUILD THE REQUEST //////////////////
 
   private constructRoute(route: string): string {
     const isLocal = this.configService.isLocal();
     let url: string;
     if (isLocal) {
-      url = 'http://host.docker.internal:3000'
+      url = 'http://host.docker.internal:3100';
     } else {
       url = `https://${ExternalLabApiService.API_PREFIX}.${this.configService.getVirtualHost()}`;
     }
@@ -64,5 +62,4 @@ export class ExternalLabApiService {
     header[ExternalLabApiService.API_KEY_HEADER] = `${ExternalLabApiService.API_KEY_SCHEMA} ${apiKey}`;
     return header;
   }
-
 }

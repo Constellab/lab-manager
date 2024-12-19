@@ -9,12 +9,14 @@ export interface DockerPs {
   state: 'running' | 'exited' | 'none';
 }
 
+export interface DockerPsWithImage extends DockerPs {
+  image: string;
+}
 
-export interface DockerPsFull extends DockerPs{
+export interface DockerPsFull extends DockerPsWithImage {
   command: string;
   createdAt: string;
   id: string;
-  image: string;
   mounts: string;
   names: string;
   networks: string;
@@ -30,14 +32,20 @@ export interface ComposeUpOptions {
   destroyContainers?: boolean; // if true container will be destroyed and recreated
 }
 
-export interface ComposeRestartOptions extends ComposeUpOptions{
+export interface ComposeRestartOptions extends ComposeUpOptions {
   destroyContainers?: boolean; // if true container will be destroyed and recreated
 }
 
+export interface DockerRunOptionsPort {
+  host: number;
+  container: number;
+}
 
 export interface DockerRunOptions {
   networks?: string[];
   labels?: string[];
+  ports?: DockerRunOptionsPort[];
+  envs?: Record<string, string>;
 }
 
 export interface PullBiotaDbOptions {

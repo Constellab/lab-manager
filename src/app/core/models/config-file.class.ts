@@ -13,8 +13,15 @@ export interface ConfigFileEnv {
   variables: Record<string, string>;
 }
 
-export interface ConfigFileBrick{
+export interface ConfigFileBrick {
   name: string;
   version: string;
 }
 
+/**
+ * Simplified config with only glab and brick versions
+ */
+export interface BrickConfigsDTO {
+  glabTag: 'latest' | 'beta' | string;
+  brickVersions: ConfigFileBrick[];
+}
