@@ -1,17 +1,11 @@
 import { TaskStatusInfo } from '../core/models/task.class';
+import { ContainersStatusInfo } from '../docker/compose.class';
+import { ContainerStatus } from '../docker/docker.class';
 
-/**
- * global status for the containers
- */
-export type ContainersStatus = 'STOP' | 'DOWN' | 'UP' | 'PARTIALLY_UP';
+export type LabStatus = 'STOPPED' | 'RUNNING' | 'STARTING' | 'ERROR';
 
-export interface ContainerStatusInfo {
-  status: ContainersStatus;
-  info?: string;
-}
-
-export interface LabStatus {
-  containersStatus: ContainerStatusInfo;
+export interface LabManagerStatus {
+  containersStatus: ContainersStatusInfo;
   currentTask?: TaskStatusInfo;
   adminerIsRunning: boolean;
   version: string;
@@ -24,6 +18,8 @@ export interface LabStatus {
   // version of the lab manager that has been used to init the lab
   lastInitVersion: string;
   labFrontUrl: string;
+  labStatus: LabStatus;
+  glabContainerStatus: ContainerStatus;
 }
 
 /**

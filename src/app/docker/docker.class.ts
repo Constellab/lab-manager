@@ -1,19 +1,12 @@
-export interface DockerPs {
-  names: string;
-  /**
-   * The status of the container
-   * running: The container is running
-   * exited: The container is stopped
-   * none: The container does not exist
-   */
-  state: 'running' | 'exited' | 'none';
-}
 
-export interface DockerPsWithImage extends DockerPs {
+// type for container state
+export type DockerContainerState = 'running' | 'exited' | 'created' | 'paused' | 'restarting' | 'dead';
+
+// type for container computed status
+export type ContainerStatus = 'running' | 'stopped' | 'error' | 'none';
+
+export interface DockerPsFull {
   image: string;
-}
-
-export interface DockerPsFull extends DockerPsWithImage {
   command: string;
   createdAt: string;
   id: string;
@@ -22,8 +15,49 @@ export interface DockerPsFull extends DockerPsWithImage {
   networks: string;
   ports: string;
   runningFor: string;
-  state: 'running' | 'exited';
   status: string;
+}
+
+// result of a simple docker inspect
+export class DockerInspect {
+  names: string;
+  status: ContainerStatus;
+  exitCode: number;
+  image: string;
+
+  constructor(names: string, state: DockerContainerState | null, exitCode: number, image: string) {
+    this.names = names;
+    this.exitCode = exitCode;
+    this.image = image;
+
+    this.status = this.convertStateToStatus(state, exitCode);
+  }
+
+  private convertStateToStatus(state: DockerContainerState, exitCode: number): ContainerStatus {
+    if (state == null) return 'none';
+    if (state === 'running' || state == 'restarting') return 'running';
+    if (state === 'created' || state === 'paused') return 'stopped';
+
+    if (state === 'exited' || state === 'dead') {
+      if (exitCode === 0) {
+        return 'stopped';
+      } else {
+        return 'error';
+      }
+    }
+  }
+
+  public isRunning(): boolean {
+    return this.status === 'running';
+  }
+
+  public isError(): boolean {
+    return this.exitCode !== 0;
+  }
+
+  public exists(): boolean {
+    return this.status !== 'none';
+  }
 }
 
 export interface ComposeUpOptions {
@@ -50,4 +84,13 @@ export interface DockerRunOptions {
 
 export interface PullBiotaDbOptions {
   forceUpdate?: boolean;
+}
+
+export interface DockerProgress {
+  progress: string;
+  message: string;
+}
+
+export interface ErrorLogs {
+  logs: string;
 }

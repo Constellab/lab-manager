@@ -24,9 +24,9 @@ export class ExternalLabApiService {
   ) {}
 
   public healthCheck(): Promise<boolean> {
-    return lastValueFrom(this.apiService.get(this.constructRoute('health-check'), { timeout: 1000 })).catch(
-      () => false
-    );
+    return lastValueFrom(
+      this.apiService.get(this.constructRoute('health-check'), { timeout: 1000, logError: false })
+    ).catch(() => false);
   }
 
   public getGlobalActivity(): Promise<LabGlobalActivity> {

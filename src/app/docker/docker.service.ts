@@ -1,50 +1,36 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ComposeRestartOptions, ComposeUpOptions, DockerPs, DockerPsFull } from './docker.class';
+import { ComposeRestartOptions, ComposeUpOptions, DockerInspect, DockerProgress, DockerPsFull, ErrorLogs } from './docker.class';
 import { FileService } from '../core/services/file/file.service';
 import { TaskService } from '../core/services/task/task.service';
-import { ContainerStatusInfo } from '../lab/lab.class';
 import { GPUService } from 'src/app/core/services/gpu/gpu.service';
 import { DockerCommandService } from './docker-command/docker-command.service';
 import { ContainerService } from './container/container.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
+import { Containers } from './compose.class';
 
 export interface BeforeDockerCommandOptions {
   generateComposeFile?: boolean;
 }
 
-
 @Injectable()
 export class DockerService {
-
   private readonly logger = new Logger(DockerService.name);
 
-  constructor(private dockerCommand: DockerCommandService,
+  constructor(
+    private dockerCommand: DockerCommandService,
     private fileService: FileService,
     private containerService: ContainerService,
     private taskService: TaskService,
     private gpuService: GPUService,
-    private configService: CoreConfigService) {
-  }
+    private configService: CoreConfigService
+  ) {}
 
-  public async listContainers(): Promise<DockerPs[]> {
-    const containers = await this.containerService.getAllContainerPs();
-
-    // add the default containers if they are not in the list
-    const defaultContainers = this.containerService.getComposeServiceNames();
-    for (const defaultContainer of defaultContainers) {
-      if (!containers.find(c => c.names === defaultContainer)) {
-        containers.push({
-          names: defaultContainer,
-          state: 'none'
-        });
-      }
-    }
-
-    return containers.sort((a, b) => a.names.localeCompare(b.names));
+  public async listContainers(): Promise<DockerInspect[]> {
+    return await this.containerService.getAllContainerInspect();
   }
 
   public async getContainersDetail(containerName: string): Promise<DockerPsFull> {
-    return await this.dockerCommand.getContainerInfo(containerName);
+    return await this.dockerCommand.getContainerFullInfo(containerName);
   }
 
   public getContainerSize(containerName: string): Promise<string> {
@@ -66,7 +52,10 @@ export class DockerService {
     }
   }
 
-  public async upContainers(options: ComposeUpOptions, beforeOptions: BeforeDockerCommandOptions = {}): Promise<void> {
+  public async upContainers(
+    options: ComposeUpOptions,
+    beforeOptions: BeforeDockerCommandOptions = {}
+  ): Promise<void> {
     await this.beforeDockerCommand(beforeOptions);
 
     if (options.updateContainers) {
@@ -135,7 +124,10 @@ export class DockerService {
     }
   }
 
-  public async restartContainers(options: ComposeRestartOptions, beforeOptions: BeforeDockerCommandOptions = {}): Promise<void> {
+  public async restartContainers(
+    options: ComposeRestartOptions,
+    beforeOptions: BeforeDockerCommandOptions = {}
+  ): Promise<void> {
     await this.beforeDockerCommand(beforeOptions);
 
     if (options.updateContainers) {
@@ -147,7 +139,8 @@ export class DockerService {
 
       await this.upContainerCommand();
     } else {
-      // do a stop and a up because if a new image is available with same tag, restart doesn't update it. Stop and up does.
+      // do a stop and a up because if a new image is available
+      // with same tag, restart doesn't update it. Stop and up does.
       await this.composeStop();
       await this.upContainerCommand();
     }
@@ -157,9 +150,33 @@ export class DockerService {
     }
   }
 
-
   public async getLogs(containerName: string): Promise<string> {
     return await this.dockerCommand.getLogs(containerName);
+  }
+
+  public async getErrorLogs(containerName: string): Promise<string> {
+    return await this.dockerCommand.getErrorLogs(containerName);
+  }
+
+  public async getContainerProgressLogs(containerName: string): Promise<DockerProgress[]> {
+    const logs = await this.dockerCommand.getLogs(containerName);
+
+    // filter the logs to get only the progress logs
+    // format of message : 2024-12-20 14:31:09 - INFO - [PROGRESS]12%[PROGRESS] Installing dependencies
+    const progressLogs = logs.split('\n').filter((line) => line.includes('[PROGRESS]'));
+
+    const progress: DockerProgress[] = [];
+
+    for (const progressLog of progressLogs) {
+      const progressLogParts = progressLog.split('[PROGRESS]');
+      if(progressLogParts.length < 2) continue;
+      progress.push({
+        progress: progressLogParts[1],
+        message: progressLogParts[2].trim(),
+      });
+    }
+
+    return progress;
   }
 
   public exportLogsToFile(containerName: string, filePath: string): Promise<string> {
@@ -182,55 +199,16 @@ export class DockerService {
     }
   }
 
-  public async getContainersStatus(): Promise<ContainerStatusInfo> {
-    const containers: DockerPs[] = await this.containerService.getAllContainerPs();
-
+  public async getComposeContainers(): Promise<Containers> {
     const containerNames: string[] = this.containerService.getComposeServiceNames();
 
-    const containersDown: string[] = [];
-    const containersStop: string[] = [];
-    const containersUp: string[] = [];
-
+    const containers = new Containers();
     for (const containerName of containerNames) {
-      const container: DockerPs = containers.find(c => c.names === containerName);
-
-      if (container == null) {
-        containersDown.push(containerName);
-        continue;
-      }
-
-      if (container.state === 'running') {
-        containersUp.push(containerName);
-      } else {
-        containersStop.push(containerName);
-      }
+      const inspect = await this.dockerCommand.dockerInspect(containerName);
+      containers.addContainer(inspect);
     }
 
-    if (containersUp.length === containerNames.length) {
-      return {
-        status: 'UP',
-        info: 'All containers are running'
-      };
-    }
-
-    if (containersDown.length === containerNames.length) {
-      return {
-        status: 'DOWN',
-        info: 'The containers does not exist'
-      };
-    }
-
-    if (containersStop.length === containerNames.length) {
-      return {
-        status: 'STOP',
-        info: 'All containers are stopped'
-      };
-    }
-
-    return {
-      status: 'PARTIALLY_UP',
-      info: 'Containers are partially up'
-    };
+    return containers;
   }
 
   public async generateDockerCompose(): Promise<void> {
@@ -238,36 +216,37 @@ export class DockerService {
     this.logger.log(`Generating ${dockerComposeFileName} file`);
     let dockerComposeContent = this.fileService.readDockerComposeTemplate();
 
-    
     // replace the GPU config in the docker-compose file
     const gpuConfig = await this.gpuService.getDockerComposeGpuConfig();
     dockerComposeContent = dockerComposeContent.replace(/#GPU_CONFIG#/g, gpuConfig);
-    
+
     const frontProdDomains = ['front', 'lab'];
     const frontDevDomains = ['dev-lab'];
-  
+
     // list of variable in the docker-compose file that need to be replaced
     const toReplaces = [
       {
-        subDomains:['glab'],
-        replacementText: '#GLAB_HOST#'
+        subDomains: ['glab'],
+        replacementText: '#GLAB_HOST#',
       },
       {
         subDomains: ['dashboard'],
-        replacementText: '#GLAB_DASHBOARD_HOST#'
+        replacementText: '#GLAB_DASHBOARD_HOST#',
       },
       {
         subDomains: [...frontProdDomains, ...frontDevDomains],
-        replacementText: '#FRONT_LAB_HOST#'
+        replacementText: '#FRONT_LAB_HOST#',
       },
-    ]
+    ];
 
-    for(const toReplace of toReplaces) {
-    
+    for (const toReplace of toReplaces) {
       const newContent = this.buildHostString(toReplace.subDomains);
-      
+
       // replace all the content in the docker-compose file
-      dockerComposeContent = dockerComposeContent.replace(new RegExp(toReplace.replacementText, 'g'), newContent);
+      dockerComposeContent = dockerComposeContent.replace(
+        new RegExp(toReplace.replacementText, 'g'),
+        newContent
+      );
     }
 
     // provide the PROD_FRONT_URLS and DEV_FRONT_URLS to the docker-compose file
@@ -277,22 +256,22 @@ export class DockerService {
     const devFrontUrls = this.buildFrontUrls(frontDevDomains);
     dockerComposeContent = dockerComposeContent.replace(new RegExp('#FRONT_DEV_URLS#', 'g'), devFrontUrls);
 
-    this.fileService.writeDockerCompose(dockerComposeContent)
+    this.fileService.writeDockerCompose(dockerComposeContent);
     this.logger.log(`${dockerComposeFileName} file generated`);
   }
 
   private buildHostString(subDomains: string[]): string {
     // build the standard host string like : host(`glab.${VIRTUAL_HOST}`)
-    const  hosts: string[] = [];
-    
+    const hosts: string[] = [];
+
     for (const subDomain of subDomains) {
       hosts.push('host(`' + subDomain + '.${VIRTUAL_HOST}`)');
-      
+
       const additionalDomains = this.configService.getAddtionalDomains();
       // if there are additional hosts, add them to the host string
-      if(additionalDomains && additionalDomains.length > 0) {
-        for(const additionalHost of additionalDomains) {
-        // add an host for each additional host, keep the same sub domain
+      if (additionalDomains && additionalDomains.length > 0) {
+        for (const additionalHost of additionalDomains) {
+          // add an host for each additional host, keep the same sub domain
           hosts.push(`host(\`${subDomain}.${additionalHost}\`)`);
         }
       }
@@ -302,10 +281,8 @@ export class DockerService {
   }
 
   private buildFrontUrls(subDomains: string[]): string {
-    return subDomains.map(subDomain => 'https://' + subDomain + '.${VIRTUAL_HOST}').join(',');
+    return subDomains.map((subDomain) => 'https://' + subDomain + '.${VIRTUAL_HOST}').join(',');
   }
-
-
 
   private async beforeDockerCommand(options: BeforeDockerCommandOptions): Promise<void> {
     if (!options) return;

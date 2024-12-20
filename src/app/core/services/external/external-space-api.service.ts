@@ -6,7 +6,7 @@ import { FileService } from 'src/app/core/services/file/file.service';
 import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
 import { BackupInfoDTO } from 'src/app/backup/backup.class';
 import { LabBackupHistory } from 'src/app/backup/backup-history.class';
-import { LabManagerRecommendedVersion } from './external-space.class';
+import { LabManagerRecommendedVersion, UpdateLabManagerCommand } from './external-space.class';
 
 /**
  * Class to call route of space using space api
@@ -27,7 +27,7 @@ export class ExternalSpaceApiService {
 
   public getBackupInfo(): Promise<BackupInfoDTO> {
     return lastValueFrom(
-      this.apiService.get(this.constructRoute('lab/backup-info'), this.getRequestOptions({}))
+      this.apiService.get(this.constructRoute('lab/backup-info'), this.getRequestOptions())
     );
   }
 
@@ -36,14 +36,20 @@ export class ExternalSpaceApiService {
       this.apiService.post(
         this.constructRoute('lab/backup-history-v2'),
         backupHistory.toJson(),
-        this.getRequestOptions({})
+        this.getRequestOptions()
       )
     );
   }
 
   public getLabManagerRecommendedVersion(): Promise<LabManagerRecommendedVersion> {
     return lastValueFrom(
-      this.apiService.get(this.constructRoute('recommended-version'), this.getRequestOptions({}))
+      this.apiService.get(this.constructRoute('recommended-version'))
+    );
+  }
+
+  public getUpdateLabManagerCommand(): Promise<UpdateLabManagerCommand> {
+    return lastValueFrom(
+      this.apiService.get(this.constructRoute('desktop/update-lab-manager-command'), this.getRequestOptions())
     );
   }
 
@@ -63,7 +69,7 @@ export class ExternalSpaceApiService {
   }
 
   // get the axios request config with the api key in the header
-  private getRequestOptions(options: ApiHttpOption): ApiHttpOption {
+  private getRequestOptions(options: ApiHttpOption = {}): ApiHttpOption {
     const apiKey = this.configService.getLabManagerApiKey();
 
     return Object.assign(options, { headers: this.getHeader(apiKey) });

@@ -2,16 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { TaskService } from 'src/app/core/services/task/task.service';
 import { TraefikService } from 'src/app/core/services/traefik/traefik.service';
 import { DockerCommandService } from '../docker-command/docker-command.service';
-import { ConfigFileService } from 'src/app/core/services/config-file/config-file.service';
 import { ExecCommandMode } from 'src/app/core/services/command/command.service';
-import { DockerPs, DockerRunOptionsPort } from '../docker.class';
+import { DockerInspect, DockerRunOptionsPort } from '../docker.class';
 import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
 import { FileService } from 'src/app/core/services/file/file.service';
 import { AdminerInfo } from './container.class';
 
 @Injectable()
 export class ContainerService {
-  private static readonly GLAB = 'glab';
+  public static readonly GLAB = 'glab';
   private static readonly CODELAB = 'codelab';
   private static readonly FRONT = 'front';
   private static readonly DB_GWS_CORE_PROD = 'gws_core_prod_db';
@@ -126,19 +125,17 @@ export class ContainerService {
       services.push(ContainerService.ADMINER_NAME);
     }
 
-    return services;
+    return services.sort();
   }
 
   public async containerExists(containerName: string): Promise<boolean> {
-    return (await this.dockerCommand.dockerContainerInfo(containerName)) != null;
+    const container = await this.dockerCommand.dockerInspect(containerName);
+    return container.exists();
   }
 
   public async containerIsRunning(containerName: string): Promise<boolean> {
-    const container = await this.dockerCommand.dockerContainerInfo(containerName);
-
-    if (container == null) return false;
-
-    return container.state === 'running';
+    const container = await this.dockerCommand.dockerInspect(containerName);
+    return container.isRunning();
   }
 
   /**
@@ -176,8 +173,8 @@ export class ContainerService {
 
   public async deleteContainer(containerName: string): Promise<boolean> {
     // return false if the container is not running
-    const container = await this.dockerCommand.dockerContainerInfo(containerName);
-    if (container == null) return false;
+    const container = await this.dockerCommand.dockerInspect(containerName);
+    if (!container.exists()) return false;
 
     const taskName = `DELETE ${containerName}`;
     this.taskService.newTask(taskName);
@@ -235,9 +232,16 @@ export class ContainerService {
     return false;
   }
 
-  public async getAllContainerPs(): Promise<DockerPs[]> {
+  public async getAllContainerInspect(): Promise<DockerInspect[]> {
     const containerNames = await this.getAllContainerNames();
-    return this.dockerCommand.dockerPS(containerNames);
+    const inspects: DockerInspect[] = [];
+
+    for (const containerName of containerNames) {
+      const inspect = await this.dockerCommand.dockerInspect(containerName);
+      inspects.push(inspect);
+    }
+
+    return inspects;
   }
 
   /////////////////////////////// BIOTA ///////////////////////////////
@@ -270,14 +274,14 @@ export class ContainerService {
     this.taskService.newTask(taskName);
 
     // check if the container exists
-    const container = await this.dockerCommand.dockerContainerInfo(ContainerService.ADMINER_NAME);
+    const container = await this.dockerCommand.dockerInspect(ContainerService.ADMINER_NAME);
 
-    if (container != null && container.state === 'running') {
+    if (container.isRunning()) {
       this.taskService.markTaskAsSuccess(taskName, 'Ok');
       return true;
     }
 
-    if (container != null && container.state !== 'exited') {
+    if (container.exists()) {
       // just start the container
       try {
         await this.dockerCommand.startContainer(ContainerService.ADMINER_NAME);

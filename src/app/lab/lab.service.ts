@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { LabInitConfig, LabStatus } from './lab.class';
+import { LabInitConfig, LabManagerStatus, LabStatus } from './lab.class';
 import { BeforeDockerCommandOptions, DockerService } from '../docker/docker.service';
 import { TaskService } from '../core/services/task/task.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
@@ -11,8 +11,10 @@ import { BrickConfigsDTO, ConfigFile } from '../core/models/config-file.class';
 import {
   ComposeRestartOptions,
   ComposeUpOptions,
-  DockerPs,
+  DockerInspect,
+  DockerProgress,
   DockerPsFull,
+  ErrorLogs,
   PullBiotaDbOptions,
 } from '../docker/docker.class';
 import { EnvVariableService } from './env-variable/env-variable.service';
@@ -21,6 +23,9 @@ import { TaskStatusInfo } from '../core/models/task.class';
 import { BrickGWS, BrickGWSTechnicalInfo } from '../core/services/external/external-community.class';
 import { ExternalCommunityApiService } from '../core/services/external/external-community-api.service';
 import { AdminerInfo } from '../docker/container/container.class';
+import { ExternalLabApiService } from '../core/services/external/external-lab-api.service';
+import { ExternalSpaceApiService } from '../core/services/external/external-space-api.service';
+import { UpdateLabManagerCommand } from '../core/services/external/external-space.class';
 
 const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
   generateComposeFile: true,
@@ -40,17 +45,40 @@ export class LabService {
     private biotaService: BiotaService,
     private initService: InitService,
     private envVariableService: EnvVariableService,
-    private communityService: ExternalCommunityApiService
+    private communityService: ExternalCommunityApiService,
+    private externalLabService: ExternalLabApiService,
+    private spaceService: ExternalSpaceApiService
   ) {}
 
-  public async getStatus(): Promise<LabStatus> {
+  public async getStatus(): Promise<LabManagerStatus> {
     let lastInitManagerVersion: string = null;
     if (this.fileService.privateFileExists()) {
       lastInitManagerVersion = this.fileService.readPrivateFile().data?.last_init_manager_version ?? null;
     }
 
+    const containers = await this.dockerService.getComposeContainers();
+    const contianersStatus = containers.getContainersStatus();
+
+    const labIsRunning = await this.externalLabService.healthCheck();
+
+    let labStatus: LabStatus = 'STOPPED';
+    if (labIsRunning) {
+      labStatus = 'RUNNING';
+      // if all the containers are up, but lab not accessible, we consider the lab is starting
+    } else if (contianersStatus.status === 'UP') {
+      labStatus = 'STARTING';
+    } else if (contianersStatus.status === 'ERROR') {
+      labStatus = 'ERROR';
+    } else if (
+      contianersStatus.status === 'PARTIALLY_UP' ||
+      contianersStatus.status === 'DOWN' ||
+      contianersStatus.status === 'STOP'
+    ) {
+      labStatus = 'STOPPED';
+    }
+
     return {
-      containersStatus: await this.dockerService.getContainersStatus(),
+      containersStatus: contianersStatus,
       currentTask: this.taskService.currentTask,
       adminerIsRunning: await this.containerService.adminerIsRunning(),
       version: this.coreConfigService.getLabManagerVersion(),
@@ -62,8 +90,24 @@ export class LabService {
       isInitialized: this.fileService.privateFileExists(),
       lastInitVersion: lastInitManagerVersion,
       labFrontUrl: this.getLabFrontUrl(),
+      labStatus: labStatus,
+      glabContainerStatus: containers.getContainer(ContainerService.GLAB)?.status ?? 'none',
     };
   }
+
+  public async getStartingLabProgress(): Promise<DockerProgress | null> {
+    const glabProgress = await this.dockerService.getContainerProgressLogs(ContainerService.GLAB);
+
+    if(glabProgress.length === 0) return null;
+    // return last progress
+    return glabProgress[glabProgress.length - 1];
+  }
+
+  public async getStartingLabError(): Promise<ErrorLogs> {
+    const logs = await this.dockerService.getErrorLogs(ContainerService.GLAB);
+    return {logs};
+  }
+
 
   public getLabFrontUrl(): string {
     if (this.coreConfigService.isLocal()) {
@@ -139,7 +183,7 @@ export class LabService {
 
   //////////////////////////// CONTAINERS ////////////////////////////
 
-  public async listContainers(): Promise<DockerPs[]> {
+  public async listContainers(): Promise<DockerInspect[]> {
     return this.dockerService.listContainers();
   }
 
@@ -252,7 +296,10 @@ export class LabService {
       front_version: null,
       glab_tag: brickConfigs.glabTag,
       environment: {
-        bricks: brickConfigs.brickVersions.map((brick) => ({ name: brick.name, version: brick.version })),
+        bricks: brickConfigs.brickVersions.map((brick) => ({
+          name: brick.name + 'kljkl', // TODO TO REMOVE
+          version: brick.version,
+        })),
         variables: {},
       },
       variables: {},
@@ -262,8 +309,6 @@ export class LabService {
     const brickInfo = await this.communityService.getBrickInfos(BrickGWS.GWS_CORE, gwsCore.version);
 
     // retrieve front version
-    // TODO TO REMOVE
-    // const frontVersion = '2.0.2';
     const frontVersion = brickInfo.technicalInfo[BrickGWSTechnicalInfo.GWS_CORE_FRONT_VERSION];
     if (frontVersion == null) {
       throw new BadRequestException('The front version is not set in the gws_core brick technical info');
@@ -272,8 +317,6 @@ export class LabService {
 
     // retrieve glab tag
     if (!configFile.glab_tag) {
-      // TODO TO REMOVE
-      // const glabTag = '2.4.0';
       const glabTag = brickInfo.technicalInfo[BrickGWSTechnicalInfo.GWS_CORE_GLAB_VERSION];
       if (glabTag == null) {
         throw new BadRequestException(
@@ -313,5 +356,15 @@ export class LabService {
 
   public async getAdminerInfo(): Promise<AdminerInfo> {
     return this.containerService.getAdminerInfo();
+  }
+
+  //////////////////////////// DESKTOP ////////////////////////////
+
+  public async getDesktopUpdateLabManagerCommand(): Promise<UpdateLabManagerCommand> {
+    if(!this.coreConfigService.isLocal()) {
+      throw new BadRequestException('This method is only available in local mode');
+    }
+
+    return this.spaceService.getUpdateLabManagerCommand();
   }
 }

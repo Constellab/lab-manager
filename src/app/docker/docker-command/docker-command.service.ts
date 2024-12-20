@@ -2,31 +2,43 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { DockerCommandServiceI } from './docker-command.class';
 import { CommandService, ExecCommandMode } from 'src/app/core/services/command/command.service';
 import { FileService } from 'src/app/core/services/file/file.service';
-import { DockerPs, DockerPsFull, DockerPsWithImage, DockerRunOptions } from '../docker.class';
+import { DockerInspect, DockerPsFull, DockerRunOptions } from '../docker.class';
 
-export interface DockerPSKey {
-  key: string;
-  dockerKey: string;
+export interface DockerFormatKey {
+  key: string; // key in the json
+  dockerKey: string; // docker key path
+  hasQuotes?: boolean; // if the value already has quotes
 }
 
-export class DockerPSKeys {
-  public static readonly NAMES: DockerPSKey = { key: 'names', dockerKey: 'Names' };
-  public static readonly STATE: DockerPSKey = { key: 'state', dockerKey: 'State' };
-  public static readonly IMAGE: DockerPSKey = { key: 'image', dockerKey: 'Image' };
-  public static readonly ID: DockerPSKey = { key: 'id', dockerKey: 'ID' };
-  public static readonly COMMAND: DockerPSKey = { key: 'command', dockerKey: 'Command' };
-  public static readonly CREATED_AT: DockerPSKey = { key: 'createdAt', dockerKey: 'CreatedAt' };
-  public static readonly MOUNTS: DockerPSKey = { key: 'mounts', dockerKey: 'Mounts' };
-  public static readonly NETWORKS: DockerPSKey = { key: 'networks', dockerKey: 'Networks' };
-  public static readonly PORTS: DockerPSKey = { key: 'ports', dockerKey: 'Ports' };
-  public static readonly RUNNING_FOR: DockerPSKey = { key: 'runningFor', dockerKey: 'RunningFor' };
-  public static readonly STATUS: DockerPSKey = { key: 'status', dockerKey: 'Status' };
+export class DockerFormatKeys {
+  public static readonly NAMES: DockerFormatKey = { key: 'names', dockerKey: 'Names' };
+  public static readonly IMAGE: DockerFormatKey = { key: 'image', dockerKey: 'Image' };
+  public static readonly ID: DockerFormatKey = { key: 'id', dockerKey: 'ID' };
+  public static readonly COMMAND: DockerFormatKey = { key: 'command', dockerKey: 'Command', hasQuotes: true };
+  public static readonly CREATED_AT: DockerFormatKey = { key: 'createdAt', dockerKey: 'CreatedAt' };
+  public static readonly MOUNTS: DockerFormatKey = { key: 'mounts', dockerKey: 'Mounts' };
+  public static readonly NETWORKS: DockerFormatKey = { key: 'networks', dockerKey: 'Networks' };
+  public static readonly PORTS: DockerFormatKey = { key: 'ports', dockerKey: 'Ports' };
+  public static readonly RUNNING_FOR: DockerFormatKey = { key: 'runningFor', dockerKey: 'RunningFor' };
+  public static readonly STATUS: DockerFormatKey = { key: 'status', dockerKey: 'Status' };
 
-  public static keysToString(keys: DockerPSKey[]): string {
+  public static readonly INSPECT_STATE: DockerFormatKey = { key: 'state', dockerKey: 'State.Status' };
+  public static readonly INSPECT_EXIT_CODE: DockerFormatKey = {
+    key: 'exitCode',
+    dockerKey: 'State.ExitCode',
+  };
+  public static readonly INSPECT_NAME: DockerFormatKey = { key: 'names', dockerKey: 'Name' };
+  public static readonly INSPECT_IMAGE: DockerFormatKey = { key: 'image', dockerKey: 'Config.Image' };
+
+  public static keysToString(keys: DockerFormatKey[]): string {
     // generate code to generate a string like above
     const content = keys
       .map((key) => {
-        return `\\"${key.key}\\":\\"{{.${key.dockerKey}}}\\"`;
+        if (key.hasQuotes) {
+          return `\\"${key.key}\\":{{.${key.dockerKey}}}`;
+        } else {
+          return `\\"${key.key}\\":\\"{{.${key.dockerKey}}}\\"`;
+        }
       })
       .join(',');
 
@@ -39,9 +51,6 @@ export class DockerPSKeys {
  */
 @Injectable()
 export class DockerCommandService implements DockerCommandServiceI {
-  private readonly BASIC_FORMAT = [DockerPSKeys.NAMES, DockerPSKeys.STATE];
-  private readonly BASIC_WITH_IMAGE_FORMAT = [DockerPSKeys.NAMES, DockerPSKeys.STATE, DockerPSKeys.IMAGE];
-
   constructor(
     private commandService: CommandService,
     private fileService: FileService
@@ -82,21 +91,20 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
   //////////////////////////////// DOCKER ////////////////////////////////
 
-  public async getContainerInfo(containerName: string): Promise<DockerPsFull> {
+  public async getContainerFullInfo(containerName: string): Promise<DockerPsFull> {
     // le size peut rendre la réponse trop longue
     const result = await this.runDockerPs(
       [
-        DockerPSKeys.ID,
-        DockerPSKeys.COMMAND,
-        DockerPSKeys.CREATED_AT,
-        DockerPSKeys.IMAGE,
-        DockerPSKeys.MOUNTS,
-        DockerPSKeys.NAMES,
-        DockerPSKeys.NETWORKS,
-        DockerPSKeys.PORTS,
-        DockerPSKeys.RUNNING_FOR,
-        DockerPSKeys.STATE,
-        DockerPSKeys.STATUS,
+        DockerFormatKeys.ID,
+        DockerFormatKeys.COMMAND,
+        DockerFormatKeys.CREATED_AT,
+        DockerFormatKeys.IMAGE,
+        DockerFormatKeys.MOUNTS,
+        DockerFormatKeys.NAMES,
+        DockerFormatKeys.NETWORKS,
+        DockerFormatKeys.PORTS,
+        DockerFormatKeys.RUNNING_FOR,
+        DockerFormatKeys.STATUS,
       ],
       [containerName]
     );
@@ -117,12 +125,8 @@ export class DockerCommandService implements DockerCommandServiceI {
     return result;
   }
 
-  public async dockerPS(containersNames: string[]): Promise<DockerPs[]> {
-    return this.runDockerPs(this.BASIC_FORMAT, containersNames);
-  }
-
-  private async runDockerPs(format: DockerPSKey[], containerNames: string[] = null): Promise<any[]> {
-    const strFormat = DockerPSKeys.keysToString(format);
+  private async runDockerPs(format: DockerFormatKey[], containerNames: string[] = null): Promise<any[]> {
+    const strFormat = DockerFormatKeys.keysToString(format);
 
     let command = `docker ps -a --no-trunc --format=${strFormat}`;
 
@@ -139,18 +143,40 @@ export class DockerCommandService implements DockerCommandServiceI {
       .map((value) => JSON.parse(value));
   }
 
-  public async dockerContainerInfo(containerName: string): Promise<DockerPsWithImage | null> {
-    const containers = await this.runDockerPs(this.BASIC_WITH_IMAGE_FORMAT, [containerName]);
-    if (containers.length === 0) return null;
-    return containers[0];
+  public async dockerInspect(containerName: string): Promise<DockerInspect> {
+    const strFormat = DockerFormatKeys.keysToString([
+      DockerFormatKeys.INSPECT_STATE,
+      DockerFormatKeys.INSPECT_EXIT_CODE,
+      DockerFormatKeys.INSPECT_NAME,
+      DockerFormatKeys.INSPECT_IMAGE,
+    ]);
+
+    const result = await this.commandService
+      .execCommand(`docker inspect ${containerName} --format=${strFormat}`, ExecCommandMode.NO_LOG)
+      .catch(() => null);
+
+    if (result === null) return new DockerInspect(containerName, null, 0, null);
+    const JSONResult = JSON.parse(result);
+    return new DockerInspect(containerName, JSONResult.state, JSONResult.exitCode, JSONResult.image);
   }
 
-  public getLogs(containerName: string): Promise<string> {
+  public async getLogs(containerName: string): Promise<string> {
     // --timestamps : add timestamps to logs
     // --tail 2000 : only get the last 2000 lines
     // 2>&1 : redirect stderr to stdout to get it in the result in the order it was written
     return this.commandService.execCommand(
       `docker logs --timestamps --tail 2000 ${containerName} 2>&1`,
+      ExecCommandMode.STDERR_AS_SUCCESS
+    );
+  }
+
+  public async getErrorLogs(containerName: string): Promise<string> {
+    // --timestamps : add timestamps to logs
+    // --tail 2000 : only get the last 2000 lines
+    // 2>&1 : redirect stderr to stdout to get it in the result in the order it was written
+    // 1>/dev/null : redirect stdout to /dev/null to only get stderr
+    return this.commandService.execCommand(
+      `docker logs --timestamps --tail 2000 ${containerName} 2>&1 1>/dev/null`,
       ExecCommandMode.STDERR_AS_SUCCESS
     );
   }

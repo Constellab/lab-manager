@@ -3,7 +3,7 @@ name: lab-manager-dev
 services:
   # Production Glab
   glab:
-    image: constellab/glab:${TAG_PREFIX}${GLAB_TAG}
+    image: glab:${TAG_PREFIX}${GLAB_TAG}
     environment:
       - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}

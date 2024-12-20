@@ -36,13 +36,13 @@ export class LabDesktopService implements OnModuleInit {
   private async startLabManagerStandaloneFront(): Promise<void> {
     this.logger.log(`Starting container '${LabDesktopService.CONTAINER_NAME}'`);
     // check if the container exists
-    const container = await this.dockerCommand.dockerContainerInfo(LabDesktopService.CONTAINER_NAME);
+    const container = await this.dockerCommand.dockerInspect(LabDesktopService.CONTAINER_NAME);
 
     const expectedVersion = this.coreConfigService.getLabManagerStandaloneFrontVersion();
     const expectedImage = LabDesktopService.IMAGE_NAME + ':' + expectedVersion;
 
     // if the container exists
-    if (container && container.state !== 'none') {
+    if (container.exists()) {
       // if the image of the front is not the correct one
       if (container.image !== expectedImage) {
         // delete the container
@@ -53,8 +53,15 @@ export class LabDesktopService implements OnModuleInit {
         await this.dockerCommand.dockerRmContainer(LabDesktopService.CONTAINER_NAME);
         this.logger.log(`Container '${LabDesktopService.CONTAINER_NAME}' deleted.`);
 
-        // if the container is not running
-      } else if (container.state !== 'running') {
+        // if the container is in error, we delete it
+      } else if (container.isError()) {
+        this.logger.log(
+          `The container '${LabDesktopService.CONTAINER_NAME}' is in error. Deleting the container.`
+        );
+        await this.dockerCommand.dockerRmContainer(LabDesktopService.CONTAINER_NAME);
+        this.logger.log(`Container '${LabDesktopService.CONTAINER_NAME}' deleted.`);
+        // if the container is not running, we start it
+      } else if (!container.isRunning()) {
         // start the container and return
         this.logger.log(`Starting the container '${LabDesktopService.CONTAINER_NAME}'`);
         await this.dockerCommand.startContainer(LabDesktopService.CONTAINER_NAME);

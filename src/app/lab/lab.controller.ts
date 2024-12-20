@@ -2,24 +2,37 @@ import { Body, Controller, Get, Param, Post, Put, StreamableFile } from '@nestjs
 import {
   ComposeRestartOptions,
   ComposeUpOptions,
-  DockerPs,
+  DockerInspect,
+  DockerProgress,
   DockerPsFull,
+  ErrorLogs,
   PullBiotaDbOptions,
 } from '../docker/docker.class';
-import { LabInitConfig, LabStatus } from './lab.class';
+import { LabInitConfig, LabManagerStatus } from './lab.class';
 import { LabService } from './lab.service';
 import { BrickConfigsDTO, ConfigFile } from '../core/models/config-file.class';
 import { TaskStatusInfo } from '../core/models/task.class';
 import { createReadStream } from 'fs';
 import { AdminerInfo } from '../docker/container/container.class';
+import { UpdateLabManagerCommand } from '../core/services/external/external-space.class';
 
 @Controller('lab')
 export class LabController {
   constructor(private labService: LabService) {}
 
   @Get('status')
-  getStatus(): Promise<LabStatus> {
+  getStatus(): Promise<LabManagerStatus> {
     return this.labService.getStatus();
+  }
+
+  @Get('starting/progress')
+  getStartingLabProgress(): Promise<DockerProgress> {
+    return this.labService.getStartingLabProgress();
+  }
+
+  @Get('starting/error')
+  getStartingProgress(): Promise<ErrorLogs> {
+    return this.labService.getStartingLabError();
   }
 
   @Get('current-task')
@@ -82,7 +95,7 @@ export class LabController {
 
   ///////////////////////// CONTAINER /////////////////////////
   @Get('containers')
-  listContainers(): Promise<DockerPs[]> {
+  listContainers(): Promise<DockerInspect[]> {
     return this.labService.listContainers();
   }
 
@@ -174,5 +187,12 @@ export class LabController {
   @Get('adminer/info')
   getAdminerInfo(): Promise<AdminerInfo> {
     return this.labService.getAdminerInfo();
+  }
+
+  ///////////////////////// DESKTOP /////////////////////////
+
+  @Get('desktop/update-lab-manager-command')
+  async getUpdateLabManagerCommand(): Promise<UpdateLabManagerCommand> {
+    return this.labService.getDesktopUpdateLabManagerCommand();
   }
 }

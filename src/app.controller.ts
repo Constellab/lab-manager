@@ -19,8 +19,6 @@ export class AppController {
 
   @Get('lab-manager-recommended-version')
   async getLabManagerRecommendedVersion(): Promise<LabManagerRecommendedVersion> {
-    // TODO to implement
-    return { labManagerRecommendedVersion: '1.14.0' };
     return this.spaceService.getLabManagerRecommendedVersion();
   }
 

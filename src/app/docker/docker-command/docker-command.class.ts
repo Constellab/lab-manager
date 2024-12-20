@@ -1,4 +1,4 @@
-import {DockerPsFull, DockerRunOptions} from '../../docker/docker.class';
+import { DockerPsFull, DockerRunOptions } from '../../docker/docker.class';
 
 /**
  * Interface for the public methods of the DockerCommandService to be able to create
@@ -6,14 +6,13 @@ import {DockerPsFull, DockerRunOptions} from '../../docker/docker.class';
  */
 
 export interface DockerCommandServiceI {
-
   composeUp(options?: string[]): Promise<string>;
 
   composeDown(): Promise<string>;
 
   composePull(): Promise<string>;
 
-  getContainerInfo(containerName: string): Promise<DockerPsFull>;
+  getContainerFullInfo(containerName: string): Promise<DockerPsFull>;
 
   getLogs(containerName: string): Promise<string>;
 
