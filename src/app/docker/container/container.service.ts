@@ -11,7 +11,7 @@ import { AdminerInfo } from './container.class';
 @Injectable()
 export class ContainerService {
   public static readonly GLAB = 'glab';
-  private static readonly CODELAB = 'codelab';
+  public static readonly CODELAB = 'codelab';
   private static readonly FRONT = 'front';
   private static readonly DB_GWS_CORE_PROD = 'gws_core_prod_db';
   private static readonly DB_GWS_BIOTA = 'gws_biota_db';
@@ -176,7 +176,7 @@ export class ContainerService {
     const container = await this.dockerCommand.dockerInspect(containerName);
     if (!container.exists()) return false;
 
-    const taskName = `DELETE ${containerName}`;
+    const taskName = `Delete service ${containerName}`;
     this.taskService.newTask(taskName);
 
     try {
@@ -193,7 +193,7 @@ export class ContainerService {
     // return false if the container is not running
     if (!(await this.containerExists(containerName))) return false;
 
-    const taskName = `STOP ${containerName}`;
+    const taskName = `Stop service ${containerName}`;
     this.taskService.newTask(taskName);
 
     try {
@@ -251,7 +251,7 @@ export class ContainerService {
   }
 
   public async startBiotaService(): Promise<void> {
-    const taskName = 'START BIOTA';
+    const taskName = 'Start biota service';
     this.taskService.newTask(taskName);
 
     try {
@@ -270,7 +270,7 @@ export class ContainerService {
   }
 
   public async startAdminerContainer(): Promise<boolean> {
-    const taskName = 'START ADMINER';
+    const taskName = 'Start adminer service';
     this.taskService.newTask(taskName);
 
     // check if the container exists

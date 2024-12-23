@@ -22,6 +22,5 @@ export interface ConfigFileBrick {
  * Simplified config with only glab and brick versions
  */
 export interface BrickConfigsDTO {
-  glabTag: 'latest' | 'beta' | string;
   brickVersions: ConfigFileBrick[];
 }

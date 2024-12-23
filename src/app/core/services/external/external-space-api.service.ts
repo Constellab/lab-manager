@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { lastValueFrom } from 'rxjs';
 import { ApiService } from 'src/app/core/services/api/api.service';
 import { ApiHttpOption } from 'src/app/core/services/api/api.class';
@@ -18,6 +18,8 @@ export class ExternalSpaceApiService {
   private static readonly LAB_MANAGER_VERSION = 'lab-manager-version';
 
   private static readonly BASE_API_ROUTE = 'external-labs-manager';
+
+  private readonly logger = new Logger(ExternalSpaceApiService.name);
 
   constructor(
     private apiService: ApiService,
@@ -44,19 +46,25 @@ export class ExternalSpaceApiService {
   public getLabManagerRecommendedVersion(): Promise<LabManagerRecommendedVersion> {
     return lastValueFrom(
       this.apiService.get(this.constructRoute('recommended-version'))
-    );
+    ).catch((err) => {
+      this.logger.error('Error while getting the recommended version', err);
+      throw new BadRequestException('Error while getting the recommended version of lab manager');
+    });
   }
 
   public getUpdateLabManagerCommand(): Promise<UpdateLabManagerCommand> {
     return lastValueFrom(
       this.apiService.get(this.constructRoute('desktop/update-lab-manager-command'), this.getRequestOptions())
-    );
+    ).catch((err) => {
+      this.logger.error('Error while getting the update lab manager command', err);
+      throw new BadRequestException('Error while getting the update lab manager command');
+    });
   }
 
   ////////////////// METHODS TO BUILD THE REQUEST //////////////////
 
   private constructRoute(route: string): string {
-    const isLocal = this.configService.isLocal();
+    const isLocal = this.configService.isLocal() && false;
     let url: string;
     if (isLocal) {
       url = 'http://host.docker.internal:3001';

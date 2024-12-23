@@ -24,11 +24,14 @@ export class DockerInspect {
   status: ContainerStatus;
   exitCode: number;
   image: string;
+  startedAt: string;
 
-  constructor(names: string, state: DockerContainerState | null, exitCode: number, image: string) {
+  constructor(names: string, state: DockerContainerState | null, exitCode: number, image: string,
+              startedAt: string)  {
     this.names = names;
     this.exitCode = exitCode;
     this.image = image;
+    this.startedAt = startedAt;
 
     this.status = this.convertStateToStatus(state, exitCode);
   }
@@ -87,10 +90,21 @@ export interface PullBiotaDbOptions {
 }
 
 export interface DockerProgress {
-  progress: string;
+  percent: number;
   message: string;
 }
 
 export interface ErrorLogs {
+  mainErrors: string[];
   logs: string;
+}
+
+export interface DockerLogs {
+  logs: string;
+}
+
+export interface StartLog {
+  progress: DockerProgress | null;
+  main_errors: string[];
+  errors: string[];
 }

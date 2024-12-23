@@ -3,6 +3,7 @@ import {
   ComposeRestartOptions,
   ComposeUpOptions,
   DockerInspect,
+  DockerLogs,
   DockerProgress,
   DockerPsFull,
   ErrorLogs,
@@ -25,13 +26,8 @@ export class LabController {
     return this.labService.getStatus();
   }
 
-  @Get('starting/progress')
-  getStartingLabProgress(): Promise<DockerProgress> {
-    return this.labService.getStartingLabProgress();
-  }
-
   @Get('starting/error')
-  getStartingProgress(): Promise<ErrorLogs> {
+  getStartingError(): Promise<ErrorLogs> {
     return this.labService.getStartingLabError();
   }
 
@@ -111,8 +107,15 @@ export class LabController {
   }
 
   @Get('containers/:containerName/logs')
-  getLogs(@Param('containerName') containerName: string): Promise<string> {
-    return this.labService.getLogs(containerName);
+  async getLogs(@Param('containerName') containerName: string): Promise<DockerLogs> {
+    const logs = await this.labService.getLogs(containerName);
+    return {logs};
+  }
+
+  @Get('containers/:containerName/logs/error')
+  async getErrorLogs(@Param('containerName') containerName: string): Promise<DockerLogs> {
+    const logs = await this.labService.getErrorLogs(containerName);
+    return {logs};
   }
 
   @Get('containers/:containerName/logs/export')

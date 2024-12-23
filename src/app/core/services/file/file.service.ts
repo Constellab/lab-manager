@@ -15,6 +15,7 @@ import { readdir, stat } from 'fs/promises';
 import { dirname, join } from 'path';
 import { CORE_MODULE_PROVIDER, CoreModuleConfig } from '../../models/core-module-config.class';
 import { CoreConfigService } from '../config/core-config.service';
+import { StartLog } from 'src/app/docker/docker.class';
 
 @Injectable()
 export class FileService implements OnModuleInit {
@@ -77,6 +78,19 @@ export class FileService implements OnModuleInit {
 
   private get privateFilePath(): string {
     return this.getVolumePath(this.privateFileName);
+  }
+
+  //////////////////////// LOG START FILE //////////////////////
+
+  public readLogStartFileIfExists(mode: 'dev' | 'prod'): StartLog | null {
+    const logFilePath = mode === 'prod' ? this.configService.getProdStartLogFile() : this.configService.getDevStartLogFile();
+
+    if (!this.exists(logFilePath)) {
+      return null;
+    }
+
+    const content = this.readFile(logFilePath);
+    return JSON.parse(content);
   }
 
   //////////////////////// DOCKER COMPOSE //////////////////////

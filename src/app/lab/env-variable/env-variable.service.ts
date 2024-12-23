@@ -36,7 +36,7 @@ export class EnvVariableService {
    * Set all the env variable necessary for the docker-compose file
    */
   public async setAllEnvVariables(configJson: ConfigFile, privateJson: PrivateFile): Promise<void> {
-    const taskName = 'SET_ENV_VARIABLES';
+    const taskName = 'Configure lab manager';
 
     try {
       this.taskService.newTask(taskName, 'Initializing env variable');

@@ -39,7 +39,7 @@ export class BackupService implements OnModuleInit {
   // verison of the info sent by space supported by this version of the lab manager
   private static readonly SUPPORTED_BACKUP_INFO_VERSION = 1;
 
-  private static readonly RESTORE_BACKUP_TASK = 'RESTORE BACKUP';
+  private static readonly RESTORE_BACKUP_TASK = 'Restore backup';
 
   private readonly logger = new Logger(BackupService.name);
 

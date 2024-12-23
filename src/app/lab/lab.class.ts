@@ -1,8 +1,14 @@
 import { TaskStatusInfo } from '../core/models/task.class';
 import { ContainersStatusInfo } from '../docker/compose.class';
-import { ContainerStatus } from '../docker/docker.class';
+import { ContainerStatus, DockerProgress } from '../docker/docker.class';
 
 export type LabStatus = 'STOPPED' | 'RUNNING' | 'STARTING' | 'ERROR';
+
+export class GlabStatus {
+  status: ContainerStatus;
+  startProgress: DockerProgress;
+  hasStartError: boolean;
+}
 
 export interface LabManagerStatus {
   containersStatus: ContainersStatusInfo;
@@ -19,7 +25,7 @@ export interface LabManagerStatus {
   lastInitVersion: string;
   labFrontUrl: string;
   labStatus: LabStatus;
-  glabContainerStatus: ContainerStatus;
+  glabStatus: GlabStatus;
 }
 
 /**

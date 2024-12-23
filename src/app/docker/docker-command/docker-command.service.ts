@@ -29,6 +29,7 @@ export class DockerFormatKeys {
   };
   public static readonly INSPECT_NAME: DockerFormatKey = { key: 'names', dockerKey: 'Name' };
   public static readonly INSPECT_IMAGE: DockerFormatKey = { key: 'image', dockerKey: 'Config.Image' };
+  public static readonly INSPECT_STARTED_AT: DockerFormatKey = { key: 'startedAt', dockerKey: 'State.StartedAt' };
 
   public static keysToString(keys: DockerFormatKey[]): string {
     // generate code to generate a string like above
@@ -149,16 +150,19 @@ export class DockerCommandService implements DockerCommandServiceI {
       DockerFormatKeys.INSPECT_EXIT_CODE,
       DockerFormatKeys.INSPECT_NAME,
       DockerFormatKeys.INSPECT_IMAGE,
+      DockerFormatKeys.INSPECT_STARTED_AT,
     ]);
 
     const result = await this.commandService
       .execCommand(`docker inspect ${containerName} --format=${strFormat}`, ExecCommandMode.NO_LOG)
       .catch(() => null);
 
-    if (result === null) return new DockerInspect(containerName, null, 0, null);
+    if (result === null) return new DockerInspect(containerName, null, 0, null, null);
     const JSONResult = JSON.parse(result);
-    return new DockerInspect(containerName, JSONResult.state, JSONResult.exitCode, JSONResult.image);
+    return new DockerInspect(containerName, JSONResult.state, JSONResult.exitCode, JSONResult.image,
+      JSONResult.startedAt);
   }
+
 
   public async getLogs(containerName: string): Promise<string> {
     // --timestamps : add timestamps to logs
@@ -171,12 +175,14 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
 
   public async getErrorLogs(containerName: string): Promise<string> {
+    const inspect = await this.dockerInspect(containerName);
     // --timestamps : add timestamps to logs
     // --tail 2000 : only get the last 2000 lines
+    // --since : only get logs since the container started (to avoid getting old logs)
     // 2>&1 : redirect stderr to stdout to get it in the result in the order it was written
     // 1>/dev/null : redirect stdout to /dev/null to only get stderr
     return this.commandService.execCommand(
-      `docker logs --timestamps --tail 2000 ${containerName} 2>&1 1>/dev/null`,
+      `docker logs --timestamps --tail 2000 ${containerName} --since ${inspect.startedAt} 2>&1 1>/dev/null`,
       ExecCommandMode.STDERR_AS_SUCCESS
     );
   }

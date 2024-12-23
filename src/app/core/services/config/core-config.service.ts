@@ -93,6 +93,10 @@ export class CoreConfigService {
     return join(this.getAppFolder(), 'prod');
   }
 
+  public getDevFolderPath(): string {
+    return join(this.getAppFolder(), 'dev');
+  }
+
   public getProdDataFolder(): string {
     return join(this.getProdFolderPath(), 'data');
   }
@@ -103,6 +107,14 @@ export class CoreConfigService {
 
   public getGwsDbFolder(): string {
     return this.getAppFolder() + '/gws_db';
+  }
+
+  public getProdStartLogFile(): string {
+    return join(this.getProdFolderPath(), 'lab', '.sys', 'start-log.json');
+  }
+
+  public getDevStartLogFile(): string {
+    return join(this.getDevFolderPath(), 'lab', '.sys', 'start-log.json');
   }
 
   public getBiotaDbFolder(): string {

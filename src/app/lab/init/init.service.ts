@@ -101,7 +101,7 @@ export class InitService {
   }
 
   private initAppVolume(): void {
-    const taskName = 'GENERATE_APP_VOLUME';
+    const taskName = 'Generate volumes';
 
     try {
       this.taskService.newTask(taskName, 'Generating app volume');
@@ -128,7 +128,7 @@ export class InitService {
   }
 
   private generatePrivateFile(labInitConfig: LabInitConfig): void {
-    const taskName = 'GENERATE_PRIVATE_FILE';
+    const taskName = 'Generate configuration file';
     try {
       this.taskService.newTask(taskName, 'Generating private.json file');
 

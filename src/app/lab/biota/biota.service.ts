@@ -15,7 +15,7 @@ export class BiotaService {
 
   private readonly logger = new Logger(BiotaService.name);
 
-  private readonly pullBiotaTaskName = 'PULL_BIOTA_DB';
+  private readonly pullBiotaTaskName = 'Downloading biota db';
   
 
   constructor(private commandService: CommandService,

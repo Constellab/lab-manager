@@ -9,13 +9,21 @@ import { BrickVersionDTO } from '../core/services/external/external-community.cl
 export class CommunityController {
   constructor(private communityService: ExternalCommunityApiService) {}
 
+  @Get('brick/:name/latest')
+  async getLatestVersion(
+    @Param('name') name: string
+  ): Promise<BrickVersionDTO> {
+    return this.communityService.getBrickLatestVersion(name);
+  }
+
   @Get('brick/:name/version/:version')
   async getCurrentTask(
     @Param('name') name: string,
     @Param('version') version: string
   ): Promise<BrickVersionDTO> {
-    return this.communityService.getBrickInfos(name, version);
+    return this.communityService.getBrickVersion(name, version);
   }
+
 
   @Post('brick')
   async getAllWithFilters(

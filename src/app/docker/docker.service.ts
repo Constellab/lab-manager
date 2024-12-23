@@ -40,7 +40,7 @@ export class DockerService {
   public async pullContainers(beforeOptions: BeforeDockerCommandOptions = {}): Promise<void> {
     await this.beforeDockerCommand(beforeOptions);
 
-    const taskName = 'PULL_CONTAINERS';
+    const taskName = 'Update services';
     this.taskService.newTask(taskName);
 
     try {
@@ -70,7 +70,7 @@ export class DockerService {
   }
 
   public async upContainerCommand(services: string[] = []): Promise<void> {
-    const taskName = 'UP_CONTAINERS';
+    const taskName = 'Start services';
     this.taskService.newTask(taskName);
 
     try {
@@ -86,7 +86,7 @@ export class DockerService {
   }
 
   public async stopContainers(services: string[] = []): Promise<void> {
-    const taskName = 'STOP_CONTAINERS';
+    const taskName = 'Stop services';
     this.taskService.newTask(taskName);
 
     try {
@@ -99,7 +99,7 @@ export class DockerService {
   }
 
   public async deleteContainers(services: string[] = []): Promise<void> {
-    const taskName = 'DELETE_CONTAINERS';
+    const taskName = 'Delete services';
     this.taskService.newTask(taskName);
 
     try {
@@ -112,7 +112,7 @@ export class DockerService {
   }
 
   public async composeStop(): Promise<void> {
-    const taskName = 'STOP_CONTAINERS';
+    const taskName = 'Stop services';
     this.taskService.newTask(taskName);
 
     try {
@@ -158,25 +158,24 @@ export class DockerService {
     return await this.dockerCommand.getErrorLogs(containerName);
   }
 
-  public async getContainerProgressLogs(containerName: string): Promise<DockerProgress[]> {
-    const logs = await this.dockerCommand.getLogs(containerName);
+  /**
+   * Get start error logs from the glab container
+   */
+  public async getGlabStartErrorLogs(mode: 'prod' | 'dev'): Promise<ErrorLogs> {    
+    const logs = this.fileService.readLogStartFileIfExists(mode);
+    if(!logs) return null;
 
-    // filter the logs to get only the progress logs
-    // format of message : 2024-12-20 14:31:09 - INFO - [PROGRESS]12%[PROGRESS] Installing dependencies
-    const progressLogs = logs.split('\n').filter((line) => line.includes('[PROGRESS]'));
+    return {
+      logs: logs.errors.join('\n'),
+      mainErrors: logs.main_errors,
+    };
+  }
 
-    const progress: DockerProgress[] = [];
+  public async getGlabStartProgressLogs(mode: 'prod' | 'dev'): Promise<DockerProgress> {
+    const logs = this.fileService.readLogStartFileIfExists(mode);
+    if(!logs) return null;
 
-    for (const progressLog of progressLogs) {
-      const progressLogParts = progressLog.split('[PROGRESS]');
-      if(progressLogParts.length < 2) continue;
-      progress.push({
-        progress: progressLogParts[1],
-        message: progressLogParts[2].trim(),
-      });
-    }
-
-    return progress;
+    return logs.progress;
   }
 
   public exportLogsToFile(containerName: string, filePath: string): Promise<string> {
@@ -187,7 +186,7 @@ export class DockerService {
     // in local mode, don't prune because it breaks the local docker environment
     if (this.configService.isLocal()) return;
 
-    const taskName = 'SYSTEM PRUNE';
+    const taskName = 'Clean system';
     this.taskService.newTask(taskName);
 
     try {

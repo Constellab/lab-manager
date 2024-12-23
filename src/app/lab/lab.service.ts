@@ -12,7 +12,6 @@ import {
   ComposeRestartOptions,
   ComposeUpOptions,
   DockerInspect,
-  DockerProgress,
   DockerPsFull,
   ErrorLogs,
   PullBiotaDbOptions,
@@ -77,6 +76,8 @@ export class LabService {
       labStatus = 'STOPPED';
     }
 
+    const glabStartLog = this.fileService.readLogStartFileIfExists('prod');
+
     return {
       containersStatus: contianersStatus,
       currentTask: this.taskService.currentTask,
@@ -91,21 +92,16 @@ export class LabService {
       lastInitVersion: lastInitManagerVersion,
       labFrontUrl: this.getLabFrontUrl(),
       labStatus: labStatus,
-      glabContainerStatus: containers.getContainer(ContainerService.GLAB)?.status ?? 'none',
+      glabStatus: {
+        status:  containers.getContainer(ContainerService.GLAB)?.status ?? 'none',
+        startProgress: glabStartLog?.progress,
+        hasStartError: glabStartLog?.errors?.length > 0,
+      },
     };
   }
 
-  public async getStartingLabProgress(): Promise<DockerProgress | null> {
-    const glabProgress = await this.dockerService.getContainerProgressLogs(ContainerService.GLAB);
-
-    if(glabProgress.length === 0) return null;
-    // return last progress
-    return glabProgress[glabProgress.length - 1];
-  }
-
   public async getStartingLabError(): Promise<ErrorLogs> {
-    const logs = await this.dockerService.getErrorLogs(ContainerService.GLAB);
-    return {logs};
+    return await this.dockerService.getGlabStartErrorLogs('prod');
   }
 
 
@@ -239,6 +235,10 @@ export class LabService {
     return this.dockerService.getLogs(containerName);
   }
 
+  public async getErrorLogs(containerName: string): Promise<string> {
+    return this.dockerService.getErrorLogs(containerName);
+  }
+
   public exportLogsToFile(containerName: string): Promise<string> {
     return this.dockerService.exportLogsToFile(containerName, '/tmp/logs_export.txt');
   }
@@ -263,12 +263,10 @@ export class LabService {
     const configFile = this.getConfig();
     if (!configFile) {
       return {
-        glabTag: null,
         brickVersions: [],
       };
     }
     return {
-      glabTag: configFile.glab_tag,
       brickVersions: configFile.environment?.bricks ?? [],
     };
   }
@@ -294,10 +292,10 @@ export class LabService {
       lab_id: null,
       name: null,
       front_version: null,
-      glab_tag: brickConfigs.glabTag,
+      glab_tag: null,
       environment: {
         bricks: brickConfigs.brickVersions.map((brick) => ({
-          name: brick.name + 'kljkl', // TODO TO REMOVE
+          name: brick.name,
           version: brick.version,
         })),
         variables: {},
@@ -306,7 +304,7 @@ export class LabService {
     };
 
     // get gws_core version info
-    const brickInfo = await this.communityService.getBrickInfos(BrickGWS.GWS_CORE, gwsCore.version);
+    const brickInfo = await this.communityService.getBrickVersion(BrickGWS.GWS_CORE, gwsCore.version);
 
     // retrieve front version
     const frontVersion = brickInfo.technicalInfo[BrickGWSTechnicalInfo.GWS_CORE_FRONT_VERSION];
@@ -316,23 +314,22 @@ export class LabService {
     configFile.front_version = frontVersion;
 
     // retrieve glab tag
-    if (!configFile.glab_tag) {
-      const glabTag = brickInfo.technicalInfo[BrickGWSTechnicalInfo.GWS_CORE_GLAB_VERSION];
-      if (glabTag == null) {
-        throw new BadRequestException(
-          'The glab tag is not set in the config file and could not be found in the gws_core' +
-            ' brick technical info'
-        );
-      }
-
-      configFile.glab_tag = glabTag;
+    const glabTag = brickInfo.technicalInfo[BrickGWSTechnicalInfo.GWS_CORE_GLAB_VERSION];
+    if (glabTag == null) {
+      throw new BadRequestException(
+        'The glab tag is not set in the config file and could not be found in the gws_core' +
+          ' brick technical info'
+      );
     }
+
+    configFile.glab_tag = glabTag;
+  
 
     // if biota is in the bricks, we add the db url
     const biota = brickConfigs.brickVersions.find((brick) => brick.name === BrickGWS.GWS_BIOTA);
 
     if (biota) {
-      const biotaInfo = await this.communityService.getBrickInfos(BrickGWS.GWS_BIOTA, biota.version);
+      const biotaInfo = await this.communityService.getBrickVersion(BrickGWS.GWS_BIOTA, biota.version);
 
       const dbUrl = biotaInfo.technicalInfo[BrickGWSTechnicalInfo.GWS_BIOTA_DB_URL];
       if (dbUrl == null) {

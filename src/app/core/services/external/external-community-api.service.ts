@@ -16,7 +16,15 @@ export class ExternalCommunityApiService {
     private fileService: FileService
   ) {}
 
-  public getBrickInfos(brickName: string, brickVersion: string): Promise<BrickVersionDTO> {
+  public async getBrickLatestVersion(brickName: string): Promise<BrickVersionDTO> {
+    // TODO TO IMPROVE WHEN ROUTE TO GET LATEST VERSION WILL BE IMPLEMENTED
+    const brick = await this.getByName(brickName);
+    const brickVersions = await this.getVersionsList(brick.id);
+    const latestVersion = brickVersions[0];
+    return this.getBrickVersion(brickName, latestVersion);
+  }
+
+  public getBrickVersion(brickName: string, brickVersion: string): Promise<BrickVersionDTO> {
     return lastValueFrom(
       this.apiService.get(
         this.constructRoute(
