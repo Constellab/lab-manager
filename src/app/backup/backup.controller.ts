@@ -4,22 +4,18 @@ import { BackupInfoDTO, BackupRestoreDTO, BackupTriggerMode } from './backup.cla
 import { BackupService } from './backup.service';
 import { LabBackupHistory, LabBackupHistoryI } from './backup-history.class';
 
-
 @Controller('backup')
 export class BackupController {
-
-
-  constructor(private backupService: BackupService) {
-  }
-
+  constructor(private backupService: BackupService) {}
 
   @Post('prod/:mode')
-  async createProdBackup(@Body() createBackup: BackupInfoDTO,
-    @Param('mode') triggerMode: BackupTriggerMode): Promise<LabBackupHistoryI> {
+  async createProdBackup(
+    @Body() createBackup: BackupInfoDTO,
+    @Param('mode') triggerMode: BackupTriggerMode
+  ): Promise<LabBackupHistoryI> {
     const backup = await this.backupService.createMultipleProdBackup(createBackup, triggerMode);
     return backup.toJson();
   }
-
 
   @Post('stop-current')
   stopCurrentBackup(): LabBackupHistoryI {
@@ -32,7 +28,6 @@ export class BackupController {
     const backups = this.backupService.getCurrentBackupStatus();
     return new LabBackupHistory(backups).toJson();
   }
-
 
   @Get('history')
   getBackupHistory(): LabBackupHistoryI {

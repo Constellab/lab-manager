@@ -44,9 +44,7 @@ export class ExternalSpaceApiService {
   }
 
   public getLabManagerRecommendedVersion(): Promise<LabManagerRecommendedVersion> {
-    return lastValueFrom(
-      this.apiService.get(this.constructRoute('recommended-version'))
-    ).catch((err) => {
+    return lastValueFrom(this.apiService.get(this.constructRoute('recommended-version'))).catch((err) => {
       this.logger.error('Error while getting the recommended version', err);
       throw new BadRequestException('Error while getting the recommended version of lab manager');
     });

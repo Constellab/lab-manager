@@ -1,12 +1,9 @@
-import {Injectable} from '@nestjs/common';
-import {CoreConfigService} from '../config/core-config.service';
-
+import { Injectable } from '@nestjs/common';
+import { CoreConfigService } from '../config/core-config.service';
 
 @Injectable()
 export class TraefikService {
-
-  constructor(private configService: CoreConfigService) {
-  }
+  constructor(private configService: CoreConfigService) {}
 
   /**
    * Methods to get the list of labels to enable https for traefik

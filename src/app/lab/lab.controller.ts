@@ -109,13 +109,13 @@ export class LabController {
   @Get('containers/:containerName/logs')
   async getLogs(@Param('containerName') containerName: string): Promise<DockerLogs> {
     const logs = await this.labService.getLogs(containerName);
-    return {logs};
+    return { logs };
   }
 
   @Get('containers/:containerName/logs/error')
   async getErrorLogs(@Param('containerName') containerName: string): Promise<DockerLogs> {
     const logs = await this.labService.getErrorLogs(containerName);
-    return {logs};
+    return { logs };
   }
 
   @Get('containers/:containerName/logs/export')

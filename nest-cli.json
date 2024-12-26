@@ -2,10 +2,7 @@
   "collection": "@nestjs/schematics",
   "sourceRoot": "src",
   "compilerOptions": {
-    "assets": [
-      "assets",
-      "environments"
-    ],
+    "assets": ["assets", "environments"],
     "watchAssets": true
   }
 }

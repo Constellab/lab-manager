@@ -1,12 +1,10 @@
-import { ChildProcess } from "child_process";
-import { BucketConfig } from "../core/models/bucket-config.class";
-import { StringHelper } from "../core/helpers/string.helper";
-import { RCloneFinalStatsDetail } from "../core/services/rclone/rclone.class";
-
+import { ChildProcess } from 'child_process';
+import { BucketConfig } from '../core/models/bucket-config.class';
+import { StringHelper } from '../core/helpers/string.helper';
+import { RCloneFinalStatsDetail } from '../core/services/rclone/rclone.class';
 
 export type BackupFrequency = 'DAILY' | 'WEEKLY';
 export type BackupTriggerMode = 'MANUAL' | 'AUTOMATIC';
-
 
 /**
  * Object sent by space that contains information about the backups location
@@ -35,12 +33,11 @@ export interface BackupRestoreDTO {
   options: BackupRestoreOptionsDTO;
 }
 
-
 export type BackupType = 'DATA' | 'DB';
 export type BackupStatus = 'IN_PROGRESS' | 'SUCCESS' | 'ERROR';
 
 export interface BackupStatusObject {
-  status: BackupStatus
+  status: BackupStatus;
   message: string;
 }
 
@@ -60,7 +57,6 @@ export interface BackupInfo {
   totalSize: number;
   transfer?: BackupTransferInfo;
 }
-
 
 export interface LabBackupStorageI {
   id: string;
@@ -82,7 +78,6 @@ export interface LabBackupStorageI {
   accountName: string; // for azure
 }
 
-
 export class LabBackupStorage {
   // store in the json
   id: string;
@@ -96,7 +91,7 @@ export class LabBackupStorage {
   frequency: BackupFrequency;
   triggerMode: BackupTriggerMode;
   s3Prefix: string;
-  
+
   // not stored in the json
   bucketConfig: BucketConfig;
   dbProcess: ChildProcess;
@@ -110,21 +105,21 @@ export class LabBackupStorage {
     this.startUploadAt = new Date();
     this.data = {
       totalSize: 0,
-      status:{
+      status: {
         message: 'Backup started',
         status: 'IN_PROGRESS',
-      }
+      },
     };
-    
+
     this.db = {
       totalSize: 0,
-      status:{ 
+      status: {
         message: 'Backup started',
         status: 'IN_PROGRESS',
-      }
+      },
     };
   }
-  
+
   public setBackupBucketDto(backupBucketDto: BackupBucketDTO): void {
     this.frequency = backupBucketDto.backupFrequency;
     this.bucketConfig = backupBucketDto.bucketConfig;
@@ -155,32 +150,32 @@ export class LabBackupStorage {
       nbChecks: transfer.checks,
       nbFile: transfer.transfers,
       nbDeleted: transfer.deletes,
-      nbRenamed: transfer.renames
-    }
-    if(backupType === "DATA"){      
+      nbRenamed: transfer.renames,
+    };
+    if (backupType === 'DATA') {
       this.data.transfer = transferInfo;
-    }else{
+    } else {
       this.db.transfer = transferInfo;
     }
   }
-
 
   public updateMessage(backupType: BackupType, status: BackupStatus, message: string): void {
     const backupStatus: BackupStatusObject = {
       message,
       status,
-    }
+    };
 
     if (backupType === 'DATA') {
-      this.data.status = backupStatus
+      this.data.status = backupStatus;
     } else {
-      this.db.status = backupStatus
+      this.db.status = backupStatus;
     }
 
     // if both are done, set the endUploadAt
     if (this.data.status.status !== 'IN_PROGRESS' && this.db.status.status !== 'IN_PROGRESS') {
       // if one of the two is in error, set the status to error
-      this.status = this.data.status.status === 'ERROR' || this.db.status.status === 'ERROR' ? 'ERROR' : 'SUCCESS';
+      this.status =
+        this.data.status.status === 'ERROR' || this.db.status.status === 'ERROR' ? 'ERROR' : 'SUCCESS';
       this.endUploadAt = new Date();
     }
 
@@ -199,7 +194,9 @@ export class LabBackupStorage {
   }
 
   public getBucketName(): string {
-    return this.bucketConfig.type === 's3' ? this.bucketConfig.config.bucket : this.bucketConfig.config.containerName;
+    return this.bucketConfig.type === 's3'
+      ? this.bucketConfig.config.bucket
+      : this.bucketConfig.config.containerName;
   }
 
   public isFinished(): boolean {
@@ -221,26 +218,26 @@ export class LabBackupStorage {
   public static fromJson(json: LabBackupStorageI): LabBackupStorage {
     const storage = new LabBackupStorage(json.triggerMode, json.s3Prefix);
     storage.id = json.id;
-    if(json.type === 's3' || !json.type) {
+    if (json.type === 's3' || !json.type) {
       storage.bucketConfig = {
         type: 's3',
         config: {
           bucket: json.bucket,
           endpoint: json.endpoint,
           region: json.region,
-          credentials: null
-        }
-      }
-    }else{
+          credentials: null,
+        },
+      };
+    } else {
       storage.bucketConfig = {
         type: 'azureBlob',
         config: {
           accountName: json.accountName,
           containerName: json.bucket,
           accountKey: '',
-          region: json.region
-        }
-      }
+          region: json.region,
+        },
+      };
     }
     storage.startUploadAt = new Date(json.startUploadAt);
     storage.endUploadAt = json.endUploadAt ? new Date(json.endUploadAt) : null;
@@ -265,7 +262,7 @@ export class LabBackupStorage {
       region: this.getRegion(),
       bucket: this.getBucketName(),
       endpoint: this.bucketConfig.type === 's3' ? this.bucketConfig.config.endpoint : null,
-      accountName: this.bucketConfig.type === 's3' ? null : this.bucketConfig.config.accountName
-    }
+      accountName: this.bucketConfig.type === 's3' ? null : this.bucketConfig.config.accountName,
+    };
   }
 }

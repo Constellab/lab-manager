@@ -1,11 +1,12 @@
-
-export type BucketConfig = {
-  type: 's3';
-  config: S3BucketConfig;
-} | {
-  type: 'azureBlob';
-  config: AzureContainerConfig;
-}
+export type BucketConfig =
+  | {
+      type: 's3';
+      config: S3BucketConfig;
+    }
+  | {
+      type: 'azureBlob';
+      config: AzureContainerConfig;
+    };
 
 export interface AzureContainerConfig {
   accountName: string;
@@ -13,7 +14,6 @@ export interface AzureContainerConfig {
   accountKey: string;
   region: string;
 }
-
 
 export interface S3BucketConfig {
   endpoint: string;

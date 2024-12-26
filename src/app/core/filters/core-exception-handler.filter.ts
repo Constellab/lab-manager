@@ -1,7 +1,7 @@
-import {ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger} from '@nestjs/common';
-import {CoreConfigService} from '../services/config/core-config.service';
-import {ErrorCode} from '../models/error-code.class';
-import {Response, Request} from 'express';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { CoreConfigService } from '../services/config/core-config.service';
+import { ErrorCode } from '../models/error-code.class';
+import { Response, Request } from 'express';
 
 /**
  * Format of the nest response error
@@ -25,11 +25,9 @@ export interface NestApiError {
  */
 @Catch()
 export class CoreExceptionHandlerFilter implements ExceptionFilter {
-
   private readonly logger = new Logger(CoreExceptionHandlerFilter.name);
 
-  constructor(protected coreConfigService: CoreConfigService) {
-  }
+  constructor(protected coreConfigService: CoreConfigService) {}
 
   async catch(exception: unknown, host: ArgumentsHost): Promise<void> {
     const response: Response = host.switchToHttp().getResponse();
@@ -46,16 +44,14 @@ export class CoreExceptionHandlerFilter implements ExceptionFilter {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         detail: ErrorCode.SERVER_ERROR,
         code: ErrorCode[ErrorCode.SERVER_ERROR],
-        instanceId: instanceId
+        instanceId: instanceId,
       };
       response.status(error.status).json(error);
     }
   }
 
-
   private async handleError(error: Error, request: Request): Promise<NestApiError> {
     if (error instanceof HttpException) {
-
       return this.convertToNestError(error.name, error.message, error.getStatus());
     }
 
@@ -64,26 +60,30 @@ export class CoreExceptionHandlerFilter implements ExceptionFilter {
     // log the error
     this.logError(error, request, instanceId);
 
-
     // in prod env, send a server error exception to hide detail for the user
     if (this.coreConfigService.isProduction()) {
-      return this.convertToNestError(ErrorCode[ErrorCode.SERVER_ERROR], ErrorCode.SERVER_ERROR, HttpStatus.BAD_REQUEST);
+      return this.convertToNestError(
+        ErrorCode[ErrorCode.SERVER_ERROR],
+        ErrorCode.SERVER_ERROR,
+        HttpStatus.BAD_REQUEST
+      );
     } else {
       return {
         status: HttpStatus.BAD_REQUEST,
         code: error.name,
         detail: error.message,
-        instanceId: instanceId
+        instanceId: instanceId,
       };
     }
   }
 
   // method to log the error in the console with context info
   private logError(error: Error, request: Request, instanceId: string): void {
-    this.logger.error(`Error during request ${request.url} | Method ${request.method} | InstanceId ${instanceId}`);
+    this.logger.error(
+      `Error during request ${request.url} | Method ${request.method} | InstanceId ${instanceId}`
+    );
     this.logger.error(error.stack);
   }
-
 
   /**
    * Translate the message and return an error observable with status
@@ -93,7 +93,7 @@ export class CoreExceptionHandlerFilter implements ExceptionFilter {
       status: status,
       code: errorCode,
       detail: errorMessage,
-      instanceId: CoreExceptionHandlerFilter.generateUUID()
+      instanceId: CoreExceptionHandlerFilter.generateUUID(),
     };
   }
 
@@ -102,9 +102,9 @@ export class CoreExceptionHandlerFilter implements ExceptionFilter {
    */
   public static generateUUID(): string {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      const r = (Math.random() * 16) | 0,
+        v = c == 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
   }
-
 }

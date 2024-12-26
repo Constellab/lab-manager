@@ -29,7 +29,10 @@ export class DockerFormatKeys {
   };
   public static readonly INSPECT_NAME: DockerFormatKey = { key: 'names', dockerKey: 'Name' };
   public static readonly INSPECT_IMAGE: DockerFormatKey = { key: 'image', dockerKey: 'Config.Image' };
-  public static readonly INSPECT_STARTED_AT: DockerFormatKey = { key: 'startedAt', dockerKey: 'State.StartedAt' };
+  public static readonly INSPECT_STARTED_AT: DockerFormatKey = {
+    key: 'startedAt',
+    dockerKey: 'State.StartedAt',
+  };
 
   public static keysToString(keys: DockerFormatKey[]): string {
     // generate code to generate a string like above
@@ -159,10 +162,14 @@ export class DockerCommandService implements DockerCommandServiceI {
 
     if (result === null) return new DockerInspect(containerName, null, 0, null, null);
     const JSONResult = JSON.parse(result);
-    return new DockerInspect(containerName, JSONResult.state, JSONResult.exitCode, JSONResult.image,
-      JSONResult.startedAt);
+    return new DockerInspect(
+      containerName,
+      JSONResult.state,
+      JSONResult.exitCode,
+      JSONResult.image,
+      JSONResult.startedAt
+    );
   }
-
 
   public async getLogs(containerName: string): Promise<string> {
     // --timestamps : add timestamps to logs

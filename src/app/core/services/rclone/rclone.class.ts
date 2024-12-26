@@ -1,5 +1,5 @@
-import { ChildProcess } from "child_process";
-import { Observable } from "rxjs";
+import { ChildProcess } from 'child_process';
+import { Observable } from 'rxjs';
 
 export interface RCloneFinalStatsDetail {
   bytes: number;
@@ -17,23 +17,24 @@ export interface RCloneFinalStatsDetail {
  * RClone final stats object
  */
 export interface RCloneFinalStats {
-    level: string;
-    message: string;
-    source: string;
-    stats: RCloneFinalStatsDetail;
-    time: string;
-  }
-  
-export type RCloneResult = {
-    type: 'progress' | 'error',
-    data: string,
-  } | {
-    type: 'finalStats',
-    data: RCloneFinalStats
-  };
-  
-  
+  level: string;
+  message: string;
+  source: string;
+  stats: RCloneFinalStatsDetail;
+  time: string;
+}
+
+export type RCloneResult =
+  | {
+      type: 'progress' | 'error';
+      data: string;
+    }
+  | {
+      type: 'finalStats';
+      data: RCloneFinalStats;
+    };
+
 export interface RCloneRespsonse {
-    childProcess: ChildProcess;
-    observable: Observable<RCloneResult>;
-  }
+  childProcess: ChildProcess;
+  observable: Observable<RCloneResult>;
+}

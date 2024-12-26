@@ -7,7 +7,6 @@ export interface SpawnResult {
   data: string;
 }
 
-
 export interface SpawnResponse {
   childProcess: ChildProcess;
   observable: Observable<SpawnResult>;
@@ -17,7 +16,7 @@ export enum ExecCommandMode {
   STDERR_AS_ERROR, // reject promis when stderr is not empty
   STDERR_AS_WARNING, // on stderr, log warning and return stdout
   STDERR_AS_SUCCESS, // consider STDERR as success and return stdout and stderr
-  NO_LOG // do not log anything
+  NO_LOG, // do not log anything
 }
 
 /**
@@ -25,7 +24,6 @@ export enum ExecCommandMode {
  */
 @Injectable()
 export class CommandService {
-
   private readonly logger = new Logger(CommandService.name);
 
   /**
@@ -33,65 +31,69 @@ export class CommandService {
    * @param command command to execute
    * @param mode mode to handle stderr
    */
-  public execCommand(command: string, mode: ExecCommandMode = ExecCommandMode.STDERR_AS_WARNING): Promise<string> {
+  public execCommand(
+    command: string,
+    mode: ExecCommandMode = ExecCommandMode.STDERR_AS_WARNING
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      exec(command, (error, stdout, stderr) => {
+        if (error && mode !== ExecCommandMode.NO_LOG) {
+          this.logger.error(`Error during the execution of the command '${command}'. Error : '${error}'`);
+          reject(error);
+          return;
+        }
 
-    return new Promise(((resolve, reject) => {
-      exec(command,
-        (error, stdout, stderr) => {
-          if (error && mode !== ExecCommandMode.NO_LOG) {
-            this.logger.error(`Error during the execution of the command '${command}'. Error : '${error}'`);
-            reject(error);
+        // TODO handle no log
+        switch (mode) {
+          case ExecCommandMode.STDERR_AS_SUCCESS:
+            resolve(stdout + stderr);
             return;
-          }
-
-          // TODO handle no log
-          switch (mode) {
-            case ExecCommandMode.STDERR_AS_SUCCESS:
-              resolve(stdout + stderr);
+          case ExecCommandMode.STDERR_AS_WARNING:
+            if (stderr) {
+              this.logger.warn(
+                `Warning during the execution of the command '${command}'. Error : '${stderr}'`
+              );
+            }
+            resolve(stdout);
+            return;
+          case ExecCommandMode.STDERR_AS_ERROR:
+            if (stderr) {
+              this.logger.error(
+                `Error during the execution of the command '${command}'. Error : '${stderr}'`
+              );
+              reject(stderr);
               return;
-            case ExecCommandMode.STDERR_AS_WARNING:
-              if (stderr) {
-                this.logger.warn(`Warning during the execution of the command '${command}'. Error : '${stderr}'`);
-              }
+            }
+            resolve(stdout);
+            return;
+          default:
+            if (stderr) {
+              reject(stderr);
+            } else {
               resolve(stdout);
-              return;
-            case ExecCommandMode.STDERR_AS_ERROR:
-              if (stderr) {
-                this.logger.error(`Error during the execution of the command '${command}'. Error : '${stderr}'`);
-                reject(stderr);
-                return;
-              }
-              resolve(stdout);
-              return;
-            default:
-              if (stderr) {
-                reject(stderr);
-              } else {
-                resolve(stdout);
-              }
-              return;
-          }
-        });
-    }));
+            }
+            return;
+        }
+      });
+    });
   }
 
   public spawn(command: string, args: string[] = []): SpawnResponse {
-
     const spawnCommand = spawn(command, args);
-    const obs: Observable<SpawnResult> = new Observable(subscriber => {
+    const obs: Observable<SpawnResult> = new Observable((subscriber) => {
       let lastError: string;
 
       spawnCommand.stdout.on('data', (data) => {
         subscriber.next({
           status: 'success',
-          data: data.toString()
+          data: data.toString(),
         });
       });
 
       spawnCommand.stderr.on('data', (data) => {
         subscriber.next({
           status: 'error',
-          data: data.toString()
+          data: data.toString(),
         });
         lastError = data.toString();
       });
@@ -104,7 +106,7 @@ export class CommandService {
         } else {
           subscriber.error({
             status: 'error',
-            data: `Code : ${code} - Signal : ${signal} - Error : ${lastError}`
+            data: `Code : ${code} - Signal : ${signal} - Error : ${lastError}`,
           });
         }
       });
@@ -112,30 +114,29 @@ export class CommandService {
 
     return {
       childProcess: spawnCommand,
-      observable: obs
+      observable: obs,
     };
   }
 
   public execFile(file: string, options: string[] = []): Promise<string> {
-    return new Promise(((resolve, reject) => {
-      execFile(file, options,
-        (error, stdout, stderr) => {
-          if (error) {
-            this.logger.error(`Error during the execution of the file '${file}'. Error : '${error}'`);
-            reject(error);
+    return new Promise((resolve, reject) => {
+      execFile(file, options, (error, stdout, stderr) => {
+        if (error) {
+          this.logger.error(`Error during the execution of the file '${file}'. Error : '${error}'`);
+          reject(error);
+          return;
+        }
+        if (stderr) {
+          if (stdout) {
+            this.logger.warn(`Warning during the execution of the file '${file}'. Error : '${stderr}'`);
+          } else {
+            this.logger.error(`Error during the execution of the file '${file}'. Error : '${stderr}'`);
+            reject(stderr);
             return;
           }
-          if (stderr) {
-            if (stdout) {
-              this.logger.warn(`Warning during the execution of the file '${file}'. Error : '${stderr}'`);
-            } else {
-              this.logger.error(`Error during the execution of the file '${file}'. Error : '${stderr}'`);
-              reject(stderr);
-              return;
-            }
-          }
-          return resolve(stdout);
-        });
-    }));
+        }
+        return resolve(stdout);
+      });
+    });
   }
 }

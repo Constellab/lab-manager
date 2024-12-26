@@ -1,5 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ComposeRestartOptions, ComposeUpOptions, DockerInspect, DockerProgress, DockerPsFull, ErrorLogs } from './docker.class';
+import {
+  ComposeRestartOptions,
+  ComposeUpOptions,
+  DockerInspect,
+  DockerProgress,
+  DockerPsFull,
+  ErrorLogs,
+} from './docker.class';
 import { FileService } from '../core/services/file/file.service';
 import { TaskService } from '../core/services/task/task.service';
 import { GPUService } from 'src/app/core/services/gpu/gpu.service';
@@ -161,9 +168,9 @@ export class DockerService {
   /**
    * Get start error logs from the glab container
    */
-  public async getGlabStartErrorLogs(mode: 'prod' | 'dev'): Promise<ErrorLogs> {    
+  public async getGlabStartErrorLogs(mode: 'prod' | 'dev'): Promise<ErrorLogs> {
     const logs = this.fileService.readLogStartFileIfExists(mode);
-    if(!logs) return null;
+    if (!logs) return null;
 
     return {
       logs: logs.errors.join('\n'),
@@ -173,7 +180,7 @@ export class DockerService {
 
   public async getGlabStartProgressLogs(mode: 'prod' | 'dev'): Promise<DockerProgress> {
     const logs = this.fileService.readLogStartFileIfExists(mode);
-    if(!logs) return null;
+    if (!logs) return null;
 
     return logs.progress;
   }

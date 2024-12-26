@@ -1,15 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { CommandService } from '../command/command.service';
 
-
 /**
  * Service to manage the GPU
  */
 @Injectable()
 export class GPUService {
-
-  constructor(private commandService: CommandService) {
-  }
+  constructor(private commandService: CommandService) {}
 
   public async isGpu(): Promise<boolean> {
     try {

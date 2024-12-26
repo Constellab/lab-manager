@@ -93,7 +93,7 @@ export class LabService {
       labFrontUrl: this.getLabFrontUrl(),
       labStatus: labStatus,
       glabStatus: {
-        status:  containers.getContainer(ContainerService.GLAB)?.status ?? 'none',
+        status: containers.getContainer(ContainerService.GLAB)?.status ?? 'none',
         startProgress: glabStartLog?.progress,
         hasStartError: glabStartLog?.errors?.length > 0,
       },
@@ -103,7 +103,6 @@ export class LabService {
   public async getStartingLabError(): Promise<ErrorLogs> {
     return await this.dockerService.getGlabStartErrorLogs('prod');
   }
-
 
   public getLabFrontUrl(): string {
     if (this.coreConfigService.isLocal()) {
@@ -323,7 +322,6 @@ export class LabService {
     }
 
     configFile.glab_tag = glabTag;
-  
 
     // if biota is in the bricks, we add the db url
     const biota = brickConfigs.brickVersions.find((brick) => brick.name === BrickGWS.GWS_BIOTA);
@@ -358,7 +356,7 @@ export class LabService {
   //////////////////////////// DESKTOP ////////////////////////////
 
   public async getDesktopUpdateLabManagerCommand(): Promise<UpdateLabManagerCommand> {
-    if(!this.coreConfigService.isLocal()) {
+    if (!this.coreConfigService.isLocal()) {
       throw new BadRequestException('This method is only available in local mode');
     }
 

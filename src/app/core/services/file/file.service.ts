@@ -83,7 +83,8 @@ export class FileService implements OnModuleInit {
   //////////////////////// LOG START FILE //////////////////////
 
   public readLogStartFileIfExists(mode: 'dev' | 'prod'): StartLog | null {
-    const logFilePath = mode === 'prod' ? this.configService.getProdStartLogFile() : this.configService.getDevStartLogFile();
+    const logFilePath =
+      mode === 'prod' ? this.configService.getProdStartLogFile() : this.configService.getDevStartLogFile();
 
     if (!this.exists(logFilePath)) {
       return null;

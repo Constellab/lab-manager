@@ -1,4 +1,3 @@
-
-export enum ErrorCode{
-  SERVER_ERROR = 'Server error'
+export enum ErrorCode {
+  SERVER_ERROR = 'Server error',
 }

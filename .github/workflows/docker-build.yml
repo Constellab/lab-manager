@@ -49,7 +49,7 @@ jobs:
           build-args: |
             LAB_MANAGER_VERSION=${{ github.ref_name }}
 
-      # step to set the docker image description from docker_hub_README.md 
+      # step to set the docker image description from docker_hub_README.md
       - name: Docker Hub Description
         uses: peter-evans/dockerhub-description@v4
         with:
@@ -57,7 +57,6 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: ${{ env.IMAGE_NAME}}
           readme-filepath: ./docker_hub_README.md
-
 
       # Enable this when constellab organization will use paid licence
       # - name: Generate artifact attestation

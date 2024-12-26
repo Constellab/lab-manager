@@ -1,4 +1,3 @@
-
 // type for container state
 export type DockerContainerState = 'running' | 'exited' | 'created' | 'paused' | 'restarting' | 'dead';
 
@@ -26,8 +25,13 @@ export class DockerInspect {
   image: string;
   startedAt: string;
 
-  constructor(names: string, state: DockerContainerState | null, exitCode: number, image: string,
-              startedAt: string)  {
+  constructor(
+    names: string,
+    state: DockerContainerState | null,
+    exitCode: number,
+    image: string,
+    startedAt: string
+  ) {
     this.names = names;
     this.exitCode = exitCode;
     this.image = image;

@@ -11,24 +11,22 @@ import { ContainerService } from 'src/app/docker/container/container.service';
 
 @Injectable()
 export class BiotaService {
-
-
   private readonly logger = new Logger(BiotaService.name);
 
   private readonly pullBiotaTaskName = 'Downloading biota db';
-  
 
-  constructor(private commandService: CommandService,
+  constructor(
+    private commandService: CommandService,
     private fileService: FileService,
     private configService: CoreConfigService,
     private configFileService: ConfigFileService,
     private taskService: TaskService,
     private httpService: HttpService,
-    private containerService: ContainerService) {
-  }
+    private containerService: ContainerService
+  ) {}
 
   public async pullBiota(forceUpdate: boolean = false, restartBiota: boolean = false): Promise<void> {
-    if(!this.configFileService.biotaIsActive()) {
+    if (!this.configFileService.biotaIsActive()) {
       this.logger.log('No biota db url found in the config file. Skipping pull biota');
       return;
     }
@@ -46,11 +44,14 @@ export class BiotaService {
       this.logger.log(`Biota db already downloaded in the right version : ${biotaDbUrl}. Skipping download`);
       return;
     }
-    
+
     // stop the biota container because the volume will be deleted
     await this.containerService.deleteBiotaService();
 
-    this.taskService.newTask(this.pullBiotaTaskName, `Pulling biota db from ${biotaDbUrl} into ${biotaDbFolder}`);
+    this.taskService.newTask(
+      this.pullBiotaTaskName,
+      `Pulling biota db from ${biotaDbUrl} into ${biotaDbFolder}`
+    );
 
     try {
       // delete existing zip if exists
@@ -64,7 +65,7 @@ export class BiotaService {
       await this.unzipBiotaDb(zipFilePath, biotaDbFolder);
 
       // update the private file to save the version of the biota db
-      this.fileService.updatePrivateFileData({biota_current_db_url_version: biotaDbUrl});
+      this.fileService.updatePrivateFileData({ biota_current_db_url_version: biotaDbUrl });
 
       this.fileService.deleteFileIfExist(zipFilePath);
       this.taskService.markTaskAsSuccess(this.pullBiotaTaskName, 'Biota db pulled successfully');
@@ -80,13 +81,8 @@ export class BiotaService {
     }
   }
 
-
-
   public downloadFile(url: string, destination: string): Promise<void> {
-
     return new Promise((resolve, reject) => {
-
-
       const file = createWriteStream(destination);
       const request = this.httpService.get(url, { responseType: 'stream' });
 
@@ -104,7 +100,10 @@ export class BiotaService {
             // log progress every 3%
             const progress = loaded / contentLength;
             if (progress - lastProgressLogged >= 0.03) {
-              this.taskService.updateTaskInfo(this.pullBiotaTaskName, `Biota downloaded ${loaded} of ${contentLength} bytes. ${Math.round(progress * 100)}%`);
+              this.taskService.updateTaskInfo(
+                this.pullBiotaTaskName,
+                `Biota downloaded ${loaded} of ${contentLength} bytes. ${Math.round(progress * 100)}%`
+              );
               lastProgressLogged = progress;
             }
           });
@@ -120,13 +119,15 @@ export class BiotaService {
         },
         error: (error) => reject(error),
       });
-
     });
   }
 
   private async unzipBiotaDb(zipPath: string, destination: string): Promise<any> {
     try {
-      this.taskService.updateTaskInfo(this.pullBiotaTaskName, `Unzipping biota db from ${zipPath} into ${destination}`);
+      this.taskService.updateTaskInfo(
+        this.pullBiotaTaskName,
+        `Unzipping biota db from ${zipPath} into ${destination}`
+      );
 
       await this.commandService.execCommand(`unzip -q ${zipPath} -d ${destination}`);
     } catch (e: any) {
@@ -152,13 +153,11 @@ export class BiotaService {
   }
 
   public getCurrentVersionUrl(): string {
-    if(!this.fileService.privateFileExists()) return null;
+    if (!this.fileService.privateFileExists()) return null;
     return this.fileService.readPrivateFile().data?.biota_current_db_url_version ?? null;
   }
 
   public biotaDbExists(): boolean {
     return this.fileService.exists(this.getMariaDbFolder());
   }
-
-
 }

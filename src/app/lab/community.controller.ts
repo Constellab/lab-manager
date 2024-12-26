@@ -10,9 +10,7 @@ export class CommunityController {
   constructor(private communityService: ExternalCommunityApiService) {}
 
   @Get('brick/:name/latest')
-  async getLatestVersion(
-    @Param('name') name: string
-  ): Promise<BrickVersionDTO> {
+  async getLatestVersion(@Param('name') name: string): Promise<BrickVersionDTO> {
     return this.communityService.getBrickLatestVersion(name);
   }
 
@@ -23,7 +21,6 @@ export class CommunityController {
   ): Promise<BrickVersionDTO> {
     return this.communityService.getBrickVersion(name, version);
   }
-
 
   @Post('brick')
   async getAllWithFilters(

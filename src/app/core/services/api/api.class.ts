@@ -1,9 +1,8 @@
-import {AxiosError, AxiosRequestConfig} from 'axios';
+import { AxiosError, AxiosRequestConfig } from 'axios';
 
 export type ApiHttpOptionObserve = 'data' | 'response';
 
 export interface ApiHttpOption extends AxiosRequestConfig {
-
   /**
    * If response, the whole AxiosResponse is return and no conversion is made
    * If data, it only returns the content of the response
@@ -17,7 +16,7 @@ export interface ApiHttpOption extends AxiosRequestConfig {
   logError?: boolean;
 }
 
-export interface ApiError{
+export interface ApiError {
   status: number;
   message: string;
   error: AxiosError;
