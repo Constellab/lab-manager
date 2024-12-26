@@ -80,8 +80,8 @@ export class LabDesktopService implements OnModuleInit {
     await this.dockerCommand.dockerRun(expectedImage, LabDesktopService.CONTAINER_NAME, {
       ports: [LabDesktopService.PORT],
       envs: {
-        COMMUNITY_API_URL: this.coreConfigService.getCommunityApiUrl(),
-        COMMUNITY_FRONT_URL: this.coreConfigService.getCommunityFrontUrl(),
+        COMMUNITY_API_URL: this.coreConfigService.getDesktopCommunityApiUrl(),
+        COMMUNITY_FRONT_URL: this.coreConfigService.getDesktopCommunityFrontUrl(),
         API_URL: `http://localhost:${this.coreConfigService.getPort()}`, // get current API URL
       },
     });

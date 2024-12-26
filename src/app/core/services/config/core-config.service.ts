@@ -73,12 +73,12 @@ export class CoreConfigService {
     return this.configService.get('LAB_ID');
   }
 
-  public getCommunityApiUrl(): string {
-    return this.configService.get('COMMUNITY_API_URL');
+  public getDesktopCommunityApiUrl(): string {
+    return this.configService.get('DESKTOP_COMMUNITY_API_URL');
   }
 
-  public getCommunityFrontUrl(): string {
-    return this.configService.get('COMMUNITY_FRONT_URL');
+  public getDesktopCommunityFrontUrl(): string {
+    return this.configService.get('DESKTOP_COMMUNITY_FRONT_URL');
   }
 
   public getAppFolder(): string {
