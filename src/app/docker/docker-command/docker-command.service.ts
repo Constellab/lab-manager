@@ -160,7 +160,7 @@ export class DockerCommandService implements DockerCommandServiceI {
       .execCommand(`docker inspect ${containerName} --format=${strFormat}`, ExecCommandMode.NO_LOG)
       .catch(() => null);
 
-    if (result === null) return new DockerInspect(containerName, null, 0, null, null);
+    if (result === null) return new DockerInspect(containerName, null, '0', null, null);
     const JSONResult = JSON.parse(result);
     return new DockerInspect(
       containerName,

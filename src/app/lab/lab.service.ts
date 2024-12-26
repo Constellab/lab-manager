@@ -56,7 +56,7 @@ export class LabService {
     }
 
     const containers = await this.dockerService.getComposeContainers();
-    const contianersStatus = containers.getContainersStatus();
+    const containersStatus = containers.getContainersStatus();
 
     const labIsRunning = await this.externalLabService.healthCheck();
 
@@ -64,14 +64,14 @@ export class LabService {
     if (labIsRunning) {
       labStatus = 'RUNNING';
       // if all the containers are up, but lab not accessible, we consider the lab is starting
-    } else if (contianersStatus.status === 'UP') {
+    } else if (containersStatus.status === 'UP') {
       labStatus = 'STARTING';
-    } else if (contianersStatus.status === 'ERROR') {
+    } else if (containersStatus.status === 'ERROR') {
       labStatus = 'ERROR';
     } else if (
-      contianersStatus.status === 'PARTIALLY_UP' ||
-      contianersStatus.status === 'DOWN' ||
-      contianersStatus.status === 'STOP'
+      containersStatus.status === 'PARTIALLY_UP' ||
+      containersStatus.status === 'DOWN' ||
+      containersStatus.status === 'STOP'
     ) {
       labStatus = 'STOPPED';
     }
@@ -79,7 +79,7 @@ export class LabService {
     const glabStartLog = this.fileService.readLogStartFileIfExists('prod');
 
     return {
-      containersStatus: contianersStatus,
+      containersStatus: containersStatus,
       currentTask: this.taskService.currentTask,
       adminerIsRunning: await this.containerService.adminerIsRunning(),
       version: this.coreConfigService.getLabManagerVersion(),

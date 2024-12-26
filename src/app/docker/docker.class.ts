@@ -28,16 +28,16 @@ export class DockerInspect {
   constructor(
     names: string,
     state: DockerContainerState | null,
-    exitCode: number,
+    exitCode: string,
     image: string,
     startedAt: string
   ) {
     this.names = names;
-    this.exitCode = exitCode;
+    this.exitCode = parseInt(exitCode);
     this.image = image;
     this.startedAt = startedAt;
 
-    this.status = this.convertStateToStatus(state, exitCode);
+    this.status = this.convertStateToStatus(state, this.exitCode);
   }
 
   private convertStateToStatus(state: DockerContainerState, exitCode: number): ContainerStatus {
