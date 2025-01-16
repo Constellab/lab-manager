@@ -66,7 +66,7 @@ export class InitService {
   }
 
   private async init(): Promise<void> {
-    this.dockerService.generateDockerCompose();
+    await this.dockerService.generateDockerCompose();
 
     await this.envVariableService.setAllEnvVariables(
       this.configFileService.readConfigFile(),
@@ -119,12 +119,6 @@ export class InitService {
       this.taskService.markTaskAsError(taskName, `Error while generating app volume : ${e.message}`);
       throw e;
     }
-  }
-
-  private generateFiles(labInitConfig: LabInitConfig): void {
-    this.generatePrivateFile(labInitConfig);
-
-    this.dockerService.generateDockerCompose();
   }
 
   private generatePrivateFile(labInitConfig: LabInitConfig): void {

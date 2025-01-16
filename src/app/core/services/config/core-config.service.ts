@@ -81,6 +81,14 @@ export class CoreConfigService {
     return this.configService.get('DESKTOP_COMMUNITY_FRONT_URL');
   }
 
+  public getNbStreamlitAdditionalHosts(): number {
+    return this.getConfigNumber('NB_STREAMLIT_ADDITIONAL_HOSTS');
+  }
+
+  public getStreamlitDefaultPort(): number {
+    return 8501;
+  }
+
   public getAppFolder(): string {
     return '/app';
   }

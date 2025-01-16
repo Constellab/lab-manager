@@ -7,16 +7,17 @@ import { DockerInspect, DockerRunOptionsPort } from '../docker.class';
 import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
 import { FileService } from 'src/app/core/services/file/file.service';
 import { AdminerInfo } from './container.class';
+import { ComposeServiceName } from '../compose-yaml';
 
 @Injectable()
 export class ContainerService {
-  public static readonly GLAB = 'glab';
-  public static readonly CODELAB = 'codelab';
-  private static readonly FRONT = 'front';
-  private static readonly DB_GWS_CORE_PROD = 'gws_core_prod_db';
-  private static readonly DB_GWS_BIOTA = 'gws_biota_db';
-  private static readonly DB_GWS_CORE_DEV = 'gws_core_dev_db';
-  private static readonly DB_GWS_CORE_DEV_TEST = 'test_gws_dev_db';
+  public static readonly GLAB: ComposeServiceName = 'glab';
+  public static readonly CODELAB: ComposeServiceName = 'codelab';
+  private static readonly FRONT: ComposeServiceName = 'front';
+  private static readonly DB_GWS_CORE_PROD: ComposeServiceName = 'gws_core_prod_db';
+  private static readonly DB_GWS_BIOTA: ComposeServiceName = 'gws_biota_db';
+  private static readonly DB_GWS_CORE_DEV: ComposeServiceName = 'gws_core_dev_db';
+  private static readonly DB_GWS_CORE_DEV_TEST: ComposeServiceName = 'test_gws_dev_db';
 
   public static readonly NETWORK_DEV = 'gencovery-network-dev';
   public static readonly NETWORK_PROD = 'gencovery-network-prod';
@@ -154,7 +155,7 @@ export class ContainerService {
         ContainerService.DB_GWS_CORE_DEV,
         ContainerService.DB_GWS_CORE_DEV_TEST,
         ContainerService.DB_GWS_BIOTA,
-      ].includes(containerName)
+      ].includes(containerName as any)
     ) {
       try {
         // check if the mysql socket is ready
@@ -301,7 +302,8 @@ export class ContainerService {
       if (this.coreConfigService.isLocal()) {
         ports.push({ host: ContainerService.ADMINER_DESKTOP_PORT, container: 8080 });
       } else {
-        labels = this.traefikService.getTraefikLabels(containerName, '8080');
+        const host = containerName + '.' + this.coreConfigService.getVirtualHost();
+        labels = this.traefikService.getTraefikLabels(host, '8080', containerName);
       }
 
       const networks = [ContainerService.NETWORK_DEV, ContainerService.NETWORK_PROD];

@@ -14,7 +14,8 @@ import { DockerCommandService } from './docker-command/docker-command.service';
 import { ContainerService } from './container/container.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
 import { Containers } from './compose.class';
-
+import { TraefikService } from '../core/services/traefik/traefik.service';
+import { ComposeYaml } from './compose-yaml';
 export interface BeforeDockerCommandOptions {
   generateComposeFile?: boolean;
 }
@@ -29,7 +30,8 @@ export class DockerService {
     private containerService: ContainerService,
     private taskService: TaskService,
     private gpuService: GPUService,
-    private configService: CoreConfigService
+    private configService: CoreConfigService,
+    private traefikService: TraefikService
   ) {}
 
   public async listContainers(): Promise<DockerInspect[]> {
@@ -222,48 +224,101 @@ export class DockerService {
     this.logger.log(`Generating ${dockerComposeFileName} file`);
     let dockerComposeContent = this.fileService.readDockerComposeTemplate();
 
-    // replace the GPU config in the docker-compose file
-    const gpuConfig = await this.gpuService.getDockerComposeGpuConfig();
-    dockerComposeContent = dockerComposeContent.replace(/#GPU_CONFIG#/g, gpuConfig);
+    const dashboardSubDomain = 'dashboard';
+    if (!this.configService.isLocal()) {
+      // replace the GPU config in the docker-compose file
+      const gpuConfig = await this.gpuService.getDockerComposeGpuConfig();
+      dockerComposeContent = dockerComposeContent.replace(/#GPU_CONFIG#/g, gpuConfig);
 
-    const frontProdDomains = ['front', 'lab'];
-    const frontDevDomains = ['dev-lab'];
+      const frontProdDomains = ['front', 'lab'];
+      const frontDevDomains = ['dev-lab'];
 
-    // list of variable in the docker-compose file that need to be replaced
-    const toReplaces = [
-      {
-        subDomains: ['glab'],
-        replacementText: '#GLAB_HOST#',
-      },
-      {
-        subDomains: ['dashboard'],
-        replacementText: '#GLAB_DASHBOARD_HOST#',
-      },
-      {
-        subDomains: [...frontProdDomains, ...frontDevDomains],
-        replacementText: '#FRONT_LAB_HOST#',
-      },
-    ];
+      // list of variable in the docker-compose file that need to be replaced
+      const toReplaces = [
+        {
+          subDomains: ['glab'],
+          replacementText: '#GLAB_HOST#',
+        },
+        {
+          subDomains: [dashboardSubDomain],
+          replacementText: '#GLAB_DASHBOARD_HOST#',
+        },
+        {
+          subDomains: [...frontProdDomains, ...frontDevDomains],
+          replacementText: '#FRONT_LAB_HOST#',
+        },
+      ];
 
-    for (const toReplace of toReplaces) {
-      const newContent = this.buildHostString(toReplace.subDomains);
+      for (const toReplace of toReplaces) {
+        const newContent = this.buildHostString(toReplace.subDomains);
 
-      // replace all the content in the docker-compose file
+        // replace all the content in the docker-compose file
+        dockerComposeContent = dockerComposeContent.replace(
+          new RegExp(toReplace.replacementText, 'g'),
+          newContent
+        );
+      }
+
+      // provide the PROD_FRONT_URLS and DEV_FRONT_URLS to the docker-compose file
+      const prodFrontUrls = this.buildFrontUrls(frontProdDomains);
       dockerComposeContent = dockerComposeContent.replace(
-        new RegExp(toReplace.replacementText, 'g'),
-        newContent
+        new RegExp('#FRONT_PROD_URLS#', 'g'),
+        prodFrontUrls
       );
+
+      const devFrontUrls = this.buildFrontUrls(frontDevDomains);
+      dockerComposeContent = dockerComposeContent.replace(new RegExp('#FRONT_DEV_URLS#', 'g'), devFrontUrls);
     }
-
-    // provide the PROD_FRONT_URLS and DEV_FRONT_URLS to the docker-compose file
-    const prodFrontUrls = this.buildFrontUrls(frontProdDomains);
-    dockerComposeContent = dockerComposeContent.replace(new RegExp('#FRONT_PROD_URLS#', 'g'), prodFrontUrls);
-
-    const devFrontUrls = this.buildFrontUrls(frontDevDomains);
-    dockerComposeContent = dockerComposeContent.replace(new RegExp('#FRONT_DEV_URLS#', 'g'), devFrontUrls);
+    // handle streamlit additional hosts
+    dockerComposeContent = this.handleStreamlitAdditionalHosts(dockerComposeContent, dashboardSubDomain);
 
     this.fileService.writeDockerCompose(dockerComposeContent);
     this.logger.log(`${dockerComposeFileName} file generated`);
+    throw new Error('Not implemented');
+  }
+
+  /**
+   *
+   * @param dockerComposeContent Method to add labels to the glab service in the docker-compose file
+   * to enable the additional streamlit hosts for the dashboard
+   * @param baseHost
+   * @returns
+   */
+  private handleStreamlitAdditionalHosts(dockerComposeContent: string, baseHost: string): string {
+    // handle streamlit additional hosts
+    const nbAdditionalHosts = this.configService.getNbStreamlitAdditionalHosts();
+    const labels = [];
+
+    const additionalPorts = [];
+    const additionalHosts = [];
+    for (let i = 1; i < nbAdditionalHosts + 1; i++) {
+      const subDomain = `${baseHost}${i}`;
+      const host = this.buildHostString([subDomain]);
+      const port = this.configService.getStreamlitDefaultPort() + i;
+      labels.push(
+        ...this.traefikService.getTraefikRouterLabels(host, port.toString(), `streamlit-${subDomain}`)
+      );
+      additionalPorts.push(port.toString());
+      additionalHosts.push(subDomain);
+    }
+
+    dockerComposeContent = dockerComposeContent.replace(
+      new RegExp('#STREAMLIT_APP_ADDITIONAL_PORTS#', 'g'),
+      additionalPorts.join(',')
+    );
+    dockerComposeContent = dockerComposeContent.replace(
+      new RegExp('#STREAMLIT_APP_ADDITIONAL_HOSTS#', 'g'),
+      additionalHosts.join(',')
+    );
+
+    const yml = new ComposeYaml(dockerComposeContent);
+
+    if (!this.configService.isLocal()) {
+      yml.addLabels(ContainerService.GLAB, labels);
+      yml.addLabels(ContainerService.CODELAB, labels);
+    }
+
+    return yml.toString();
   }
 
   private buildHostString(subDomains: string[]): string {
@@ -293,7 +348,7 @@ export class DockerService {
   private async beforeDockerCommand(options: BeforeDockerCommandOptions): Promise<void> {
     if (!options) return;
     if (options.generateComposeFile) {
-      this.generateDockerCompose();
+      await this.generateDockerCompose();
     }
   }
 }
