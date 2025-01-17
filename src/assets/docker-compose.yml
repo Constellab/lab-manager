@@ -44,8 +44,6 @@ services:
       # STREAMLIT
       - STREAMLIT_APP_SERVER_PORT=8501
       - STREAMLIT_APP_SERVER_HOST=https://dashboard.${VIRTUAL_HOST}
-      - STREAMLIT_APP_ADDITIONAL_PORTS=#STREAMLIT_APP_ADDITIONAL_PORTS#
-      - STREAMLIT_APP_ADDITIONAL_HOSTS=#STREAMLIT_APP_ADDITIONAL_HOSTS#
     depends_on:
       - gws_core_prod_db
     volumes:
@@ -55,22 +53,22 @@ services:
       - /app/conf/config.json:/conf/config.json:ro
       - /app/prod/data:/data
     labels:
-      - 'traefik.enable=true'
+      - traefik.enable=true
       # Config for the HTTPS glab domain to port 8080
       # The GLAB_HOST and GLAB_DASHBOARD_HOST are replaced during the generation of the docker-compose file
-      - 'traefik.http.routers.glab-router.rule=#GLAB_HOST#'
-      - 'traefik.http.routers.glab-router.service=glab-service'
-      - 'traefik.http.services.glab-service.loadbalancer.server.port=3000'
+      - traefik.http.routers.glab-router.rule=#GLAB_HOST#
+      - traefik.http.routers.glab-router.service=glab-service
+      - traefik.http.services.glab-service.loadbalancer.server.port=3000
       # Enable HTTPS
-      - 'traefik.http.routers.glab-router.entrypoints=websecure'
-      - 'traefik.http.routers.glab-router.tls.certresolver=myresolver'
+      - traefik.http.routers.glab-router.entrypoints=websecure
+      - traefik.http.routers.glab-router.tls.certresolver=myresolver
       # Config for https streamlit domain to port 8501
-      - 'traefik.http.routers.streamlit-router.rule=#GLAB_DASHBOARD_HOST#'
-      - 'traefik.http.routers.streamlit-router.service=streamlit-service'
-      - 'traefik.http.services.streamlit-service.loadbalancer.server.port=8501'
+      - traefik.http.routers.streamlit-router.rule=#GLAB_DASHBOARD_HOST#
+      - traefik.http.routers.streamlit-router.service=streamlit-service
+      - traefik.http.services.streamlit-service.loadbalancer.server.port=8501
       # Enable HTTPS
-      - 'traefik.http.routers.streamlit-router.entrypoints=websecure'
-      - 'traefik.http.routers.streamlit-router.tls.certresolver=myresolver'
+      - traefik.http.routers.streamlit-router.entrypoints=websecure
+      - traefik.http.routers.streamlit-router.tls.certresolver=myresolver
       #Streamlit additional host will be inserted here#
     networks:
       - gencovery-network-prod
@@ -126,8 +124,6 @@ services:
       # STREAMLIT
       - STREAMLIT_APP_SERVER_PORT=8501
       - STREAMLIT_APP_SERVER_HOST=https://dashboard-dev.${VIRTUAL_HOST}
-      - STREAMLIT_APP_ADDITIONAL_PORTS=#STREAMLIT_APP_ADDITIONAL_PORTS#
-      - STREAMLIT_APP_ADDITIONAL_HOSTS=#STREAMLIT_APP_ADDITIONAL_HOSTS#
     depends_on:
       - gws_core_dev_db
     volumes:
@@ -138,33 +134,33 @@ services:
       - /app/conf/config.json:/conf/config.json:ro
       - /app/dev/.ssh:/root/.ssh
     labels:
-      - 'traefik.enable=true'
+      - traefik.enable=true
       # Config for the HTTPS codelab domain to port 8080
-      - 'traefik.http.routers.codelab-router.rule=host(`codelab.${VIRTUAL_HOST}`)'
-      - 'traefik.http.routers.codelab-router.service=codelab-service'
-      - 'traefik.http.services.codelab-service.loadbalancer.server.port=8080'
+      - traefik.http.routers.codelab-router.rule=host(`codelab.${VIRTUAL_HOST}`)
+      - traefik.http.routers.codelab-router.service=codelab-service
+      - traefik.http.services.codelab-service.loadbalancer.server.port=8080
       # Enable HTTPS
-      - 'traefik.http.routers.codelab-router.entrypoints=websecure'
-      - 'traefik.http.routers.codelab-router.tls.certresolver=myresolver'
+      - traefik.http.routers.codelab-router.entrypoints=websecure
+      - traefik.http.routers.codelab-router.tls.certresolver=myresolver
       # secure the access with htpasswd
-      - 'traefik.http.routers.codelab-router.middlewares=basic-auth'
-      - 'traefik.http.middlewares.basic-auth.basicauth.users=${HT_PASSWD}'
+      - traefik.http.routers.codelab-router.middlewares=basic-auth
+      - traefik.http.middlewares.basic-auth.basicauth.users=${HT_PASSWD}
 
       # Config for the HTTPS gws run inside the CODELAB domain to port 3000
-      - 'traefik.http.routers.glab-dev-router.rule=host(`glab-dev.${VIRTUAL_HOST}`)'
-      - 'traefik.http.routers.glab-dev-router.service=glab-dev-service'
-      - 'traefik.http.services.glab-dev-service.loadbalancer.server.port=3000'
+      - traefik.http.routers.glab-dev-router.rule=host(`glab-dev.${VIRTUAL_HOST}`)
+      - traefik.http.routers.glab-dev-router.service=glab-dev-service
+      - traefik.http.services.glab-dev-service.loadbalancer.server.port=3000
       # Enable HTTPS
-      - 'traefik.http.routers.glab-dev-router.entrypoints=websecure'
-      - 'traefik.http.routers.glab-dev-router.tls.certresolver=myresolver'
+      - traefik.http.routers.glab-dev-router.entrypoints=websecure
+      - traefik.http.routers.glab-dev-router.tls.certresolver=myresolver
 
       # Config for https streamlit domain to port 8501
-      - 'traefik.http.routers.streamlit-dev-router.rule=host(`dashboard-dev.${VIRTUAL_HOST}`)'
-      - 'traefik.http.routers.streamlit-dev-router.service=streamlit-dev-service'
-      - 'traefik.http.services.streamlit-dev-service.loadbalancer.server.port=8501'
+      - traefik.http.routers.streamlit-dev-router.rule=#CODELAB_DASHBOARD_HOST#
+      - traefik.http.routers.streamlit-dev-router.service=streamlit-dev-service
+      - traefik.http.services.streamlit-dev-service.loadbalancer.server.port=8501
       # Enable HTTPS
-      - 'traefik.http.routers.streamlit-dev-router.entrypoints=websecure'
-      - 'traefik.http.routers.streamlit-dev-router.tls.certresolver=myresolver'
+      - traefik.http.routers.streamlit-dev-router.entrypoints=websecure
+      - traefik.http.routers.streamlit-dev-router.tls.certresolver=myresolver
     networks:
       - gencovery-network-dev
     container_name: codelab
@@ -191,18 +187,18 @@ services:
       - COMMUNITY_API_URL=${COMMUNITY_API_URL}
       - CAPTCHA_SITE_KEY=${CAPTCHA_SITE_KEY}
     labels:
-      - 'traefik.enable=true'
+      - traefik.enable=true
 
       # Configure lab to port 81
-      - 'traefik.http.routers.lab-router.rule=#FRONT_LAB_HOST#'
-      - 'traefik.http.routers.lab-router.service=lab-service'
-      - 'traefik.http.services.lab-service.loadbalancer.server.port=81'
+      - traefik.http.routers.lab-router.rule=#FRONT_LAB_HOST#
+      - traefik.http.routers.lab-router.service=lab-service
+      - traefik.http.services.lab-service.loadbalancer.server.port=81
       #Enable HTTPS
-      - 'traefik.http.routers.lab-router.entrypoints=websecure'
-      - 'traefik.http.routers.lab-router.tls.certresolver=myresolver'
+      - traefik.http.routers.lab-router.entrypoints=websecure
+      - traefik.http.routers.lab-router.tls.certresolver=myresolver
 
       # Redirect http to https
-      - 'traefik.frontend.redirect.entryPoint=https'
+      - traefik.frontend.redirect.entryPoint=https
     networks:
       - gencovery-network-prod
     container_name: front

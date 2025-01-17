@@ -15,7 +15,7 @@ import { ContainerService } from './container/container.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
 import { Containers } from './compose.class';
 import { TraefikService } from '../core/services/traefik/traefik.service';
-import { ComposeYaml } from './compose-yaml';
+import { ComposeServiceName, ComposeYaml } from './compose-yaml';
 export interface BeforeDockerCommandOptions {
   generateComposeFile?: boolean;
 }
@@ -225,6 +225,7 @@ export class DockerService {
     let dockerComposeContent = this.fileService.readDockerComposeTemplate();
 
     const dashboardSubDomain = 'dashboard';
+    const dashboardSubDomainDev = 'dashboard-dev';
     if (!this.configService.isLocal()) {
       // replace the GPU config in the docker-compose file
       const gpuConfig = await this.gpuService.getDockerComposeGpuConfig();
@@ -242,6 +243,10 @@ export class DockerService {
         {
           subDomains: [dashboardSubDomain],
           replacementText: '#GLAB_DASHBOARD_HOST#',
+        },
+        {
+          subDomains: [dashboardSubDomainDev],
+          replacementText: '#CODELAB_DASHBOARD_HOST#',
         },
         {
           subDomains: [...frontProdDomains, ...frontDevDomains],
@@ -269,8 +274,18 @@ export class DockerService {
       const devFrontUrls = this.buildFrontUrls(frontDevDomains);
       dockerComposeContent = dockerComposeContent.replace(new RegExp('#FRONT_DEV_URLS#', 'g'), devFrontUrls);
     }
+
     // handle streamlit additional hosts
-    dockerComposeContent = this.handleStreamlitAdditionalHosts(dockerComposeContent, dashboardSubDomain);
+    dockerComposeContent = this.handleStreamlitAdditionalHosts(
+      dockerComposeContent,
+      ContainerService.GLAB,
+      dashboardSubDomain
+    );
+    dockerComposeContent = this.handleStreamlitAdditionalHosts(
+      dockerComposeContent,
+      ContainerService.CODELAB,
+      dashboardSubDomainDev
+    );
 
     this.fileService.writeDockerCompose(dockerComposeContent);
     this.logger.log(`${dockerComposeFileName} file generated`);
@@ -279,11 +294,15 @@ export class DockerService {
   /**
    *
    * @param dockerComposeContent Method to add labels to the glab service in the docker-compose file
-   * to enable the additional streamlit hosts for the dashboard
+   * to enable the additional streamlit hosts for the dashboard. For Glab and CodeLab services.
    * @param baseHost
    * @returns
    */
-  private handleStreamlitAdditionalHosts(dockerComposeContent: string, baseHost: string): string {
+  private handleStreamlitAdditionalHosts(
+    dockerComposeContent: string,
+    serviceName: ComposeServiceName,
+    baseHost: string
+  ): string {
     // handle streamlit additional hosts
     const nbAdditionalHosts = this.configService.getNbStreamlitAdditionalHosts();
     const labels = [];
@@ -301,20 +320,14 @@ export class DockerService {
       additionalHosts.push(subDomain);
     }
 
-    dockerComposeContent = dockerComposeContent.replace(
-      new RegExp('#STREAMLIT_APP_ADDITIONAL_PORTS#', 'g'),
-      additionalPorts.join(',')
-    );
-    dockerComposeContent = dockerComposeContent.replace(
-      new RegExp('#STREAMLIT_APP_ADDITIONAL_HOSTS#', 'g'),
-      additionalHosts.join(',')
-    );
-
     const yml = new ComposeYaml(dockerComposeContent);
 
+    // Add the env variable to the service to know the additional ports and hosts
+    yml.addEnvironmentVariable(serviceName, 'STREAMLIT_APP_ADDITIONAL_PORTS', additionalPorts.join(','));
+    yml.addEnvironmentVariable(serviceName, 'STREAMLIT_APP_ADDITIONAL_HOSTS', additionalHosts.join(','));
+
     if (!this.configService.isLocal()) {
-      yml.addLabels(ContainerService.GLAB, labels);
-      yml.addLabels(ContainerService.CODELAB, labels);
+      yml.addLabels(serviceName, labels);
     }
 
     return yml.toString();

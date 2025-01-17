@@ -39,6 +39,14 @@ export class ComposeYaml {
     this.content.services[serviceName].labels.push(...labels);
   }
 
+  addEnvironmentVariable(serviceName: ComposeServiceName, envKey: string, envValue: string): void {
+    if (!this.content.services[serviceName].environment) {
+      this.content.services[serviceName].environment = [];
+    }
+
+    this.content.services[serviceName].environment.push(`${envKey}=${envValue}`);
+  }
+
   toString(): string {
     return dump(this.content, { lineWidth: -1, quotingType: "'" });
   }
