@@ -274,7 +274,6 @@ export class DockerService {
 
     this.fileService.writeDockerCompose(dockerComposeContent);
     this.logger.log(`${dockerComposeFileName} file generated`);
-    throw new Error('Not implemented');
   }
 
   /**

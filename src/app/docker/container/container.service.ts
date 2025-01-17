@@ -19,6 +19,9 @@ export class ContainerService {
   private static readonly DB_GWS_CORE_DEV: ComposeServiceName = 'gws_core_dev_db';
   private static readonly DB_GWS_CORE_DEV_TEST: ComposeServiceName = 'test_gws_dev_db';
 
+  private static readonly LAB_MANAGER = 'lab_manager';
+  private static readonly REVERSE_PROXY = 'reverse_proxy';
+
   public static readonly NETWORK_DEV = 'gencovery-network-dev';
   public static readonly NETWORK_PROD = 'gencovery-network-prod';
 
@@ -124,6 +127,11 @@ export class ContainerService {
 
     if (await this.adminerIsRunning()) {
       services.push(ContainerService.ADMINER_NAME);
+    }
+
+    services.push(ContainerService.LAB_MANAGER);
+    if (!this.coreConfigService.isLocal()) {
+      services.push(ContainerService.REVERSE_PROXY);
     }
 
     return services.sort();
