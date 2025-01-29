@@ -26,12 +26,12 @@ export class TraefikService {
     const service = `${serviceName}-service`;
     return [
       // Config for the HTTPS glab domain to port 8080
-      `traefik.http.routers.${router}.rule=${hostRule}`,
-      `traefik.http.routers.${router}.service=${service}`,
-      `traefik.http.services.${service}.loadbalancer.server.port=${servicePort}`,
+      `'traefik.http.routers.${router}.rule=${hostRule}'`,
+      `'traefik.http.routers.${router}.service=${service}'`,
+      `'traefik.http.services.${service}.loadbalancer.server.port=${servicePort}'`,
       // Enable HTTPS
-      `traefik.http.routers.${router}.entrypoints=websecure`,
-      `traefik.http.routers.${router}.tls.certresolver=myresolver`,
+      `'traefik.http.routers.${router}.entrypoints=websecure'`,
+      `'traefik.http.routers.${router}.tls.certresolver=myresolver'`,
     ];
   }
 }
