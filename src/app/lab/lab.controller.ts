@@ -4,7 +4,6 @@ import {
   ComposeUpOptions,
   DockerInspect,
   DockerLogs,
-  DockerProgress,
   DockerPsFull,
   ErrorLogs,
   PullBiotaDbOptions,

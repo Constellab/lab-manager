@@ -52,6 +52,8 @@ export class DockerInspect {
         return 'error';
       }
     }
+
+    return 'none';
   }
 
   public isRunning(): boolean {

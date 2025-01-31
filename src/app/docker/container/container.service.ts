@@ -337,7 +337,7 @@ export class ContainerService {
     if (this.coreConfigService.isLocal()) {
       url = `http://localhost:${ContainerService.ADMINER_DESKTOP_PORT}`;
     } else {
-      url = `${ContainerService.ADMINER_NAME}.${this.coreConfigService.getVirtualHost()}`;
+      url = `https://${ContainerService.ADMINER_NAME}.${this.coreConfigService.getVirtualHost()}`;
     }
 
     const privateFile = this.fileService.readPrivateFile();
