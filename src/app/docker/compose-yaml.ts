@@ -1,13 +1,14 @@
 import { load, dump } from 'js-yaml';
 
-export type ComposeServiceName =
-  | 'glab'
-  | 'codelab'
-  | 'front'
-  | 'gws_core_prod_db'
-  | 'gws_biota_db'
-  | 'gws_core_dev_db'
-  | 'test_gws_dev_db';
+export enum ComposeServiceName {
+  GLAB = 'glab',
+  CODELAB = 'codelab',
+  FRONT = 'front',
+  GWS_CORE_PROD_DB = 'gws_core_prod_db',
+  GWS_CORE_DEV_DB = 'gws_core_dev_db',
+  TEST_GWS_DEV_DB = 'test_gws_dev_db',
+  GWS_BIOTA_DB = 'gws_biota_db',
+}
 
 export interface ComposeService {
   image: string;

@@ -1,3 +1,5 @@
+import { ComposeServiceName } from "./compose-yaml";
+
 // type for container state
 export type DockerContainerState = 'running' | 'exited' | 'created' | 'paused' | 'restarting' | 'dead';
 
@@ -37,15 +39,18 @@ export class DockerInspect {
     this.image = image;
     this.startedAt = startedAt;
 
-    this.status = this.convertStateToStatus(state, this.exitCode);
+    this.status = this.convertStateToStatus(state, this.exitCode, this.names);
   }
 
-  private convertStateToStatus(state: DockerContainerState, exitCode: number): ContainerStatus {
+  private convertStateToStatus(state: DockerContainerState, exitCode: number, names: string): ContainerStatus {
     if (state == null) return 'none';
     if (state === 'running' || state == 'restarting') return 'running';
     if (state === 'created' || state === 'paused') return 'stopped';
 
     if (state === 'exited' || state === 'dead') {
+      // specific case for codelab container, when its stop, it has the ExitCode 137
+      // so we consider it as a normal stop
+      if(names === ComposeServiceName.CODELAB && exitCode === 137) exitCode = 0;
       if (exitCode === 0) {
         return 'stopped';
       } else {

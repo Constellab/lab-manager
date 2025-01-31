@@ -278,12 +278,12 @@ export class DockerService {
     // handle streamlit additional hosts
     dockerComposeContent = this.handleStreamlitAdditionalHosts(
       dockerComposeContent,
-      ContainerService.GLAB,
+      ComposeServiceName.GLAB,
       dashboardSubDomain
     );
     dockerComposeContent = this.handleStreamlitAdditionalHosts(
       dockerComposeContent,
-      ContainerService.CODELAB,
+      ComposeServiceName.CODELAB,
       dashboardSubDomainDev
     );
 

@@ -11,14 +11,6 @@ import { ComposeServiceName } from '../compose-yaml';
 
 @Injectable()
 export class ContainerService {
-  public static readonly GLAB: ComposeServiceName = 'glab';
-  public static readonly CODELAB: ComposeServiceName = 'codelab';
-  private static readonly FRONT: ComposeServiceName = 'front';
-  private static readonly DB_GWS_CORE_PROD: ComposeServiceName = 'gws_core_prod_db';
-  private static readonly DB_GWS_BIOTA: ComposeServiceName = 'gws_biota_db';
-  private static readonly DB_GWS_CORE_DEV: ComposeServiceName = 'gws_core_dev_db';
-  private static readonly DB_GWS_CORE_DEV_TEST: ComposeServiceName = 'test_gws_dev_db';
-
   private static readonly LAB_MANAGER = 'lab_manager';
   private static readonly REVERSE_PROXY = 'reverse_proxy';
 
@@ -44,13 +36,13 @@ export class ContainerService {
 
   public getComposeServiceNames(): string[] {
     const containers = [
-      ContainerService.GLAB,
-      ContainerService.CODELAB,
-      ContainerService.FRONT,
-      ContainerService.DB_GWS_CORE_PROD,
-      ContainerService.DB_GWS_CORE_DEV,
-      ContainerService.DB_GWS_CORE_DEV_TEST,
-      ContainerService.DB_GWS_BIOTA, // the container is always active (even if there is no biota db)
+      ComposeServiceName.GLAB,
+      ComposeServiceName.CODELAB,
+      ComposeServiceName.FRONT,
+      ComposeServiceName.GWS_CORE_PROD_DB,
+      ComposeServiceName.GWS_CORE_DEV_DB,
+      ComposeServiceName.TEST_GWS_DEV_DB,
+      ComposeServiceName.GWS_BIOTA_DB, // the container is always active (even if there is no biota db)
     ];
 
     return containers;
@@ -159,10 +151,10 @@ export class ContainerService {
     // if the container is a mysql container, check if the mysql is ready
     if (
       [
-        ContainerService.DB_GWS_CORE_PROD,
-        ContainerService.DB_GWS_CORE_DEV,
-        ContainerService.DB_GWS_CORE_DEV_TEST,
-        ContainerService.DB_GWS_BIOTA,
+        ComposeServiceName.GWS_CORE_PROD_DB,
+        ComposeServiceName.GWS_CORE_DEV_DB,
+        ComposeServiceName.TEST_GWS_DEV_DB,
+        ComposeServiceName.GWS_BIOTA_DB,
       ].includes(containerName as any)
     ) {
       try {
@@ -256,7 +248,7 @@ export class ContainerService {
   /////////////////////////////// BIOTA ///////////////////////////////
 
   public deleteBiotaService(): Promise<boolean> {
-    return this.deleteContainer(ContainerService.DB_GWS_BIOTA);
+    return this.deleteContainer(ComposeServiceName.GWS_BIOTA_DB);
   }
 
   public async startBiotaService(): Promise<void> {
@@ -265,7 +257,7 @@ export class ContainerService {
 
     try {
       // start biota service from docker-compose
-      const result = await this.dockerCommand.composeUp([], [ContainerService.DB_GWS_BIOTA]);
+      const result = await this.dockerCommand.composeUp([], [ComposeServiceName.GWS_BIOTA_DB]);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -374,7 +366,7 @@ export class ContainerService {
 
   public async dumpProdDb(dumpLocation: string): Promise<string> {
     return await this.execCommandInComposeContainer(
-      ContainerService.DB_GWS_CORE_PROD,
+      ComposeServiceName.GWS_CORE_PROD_DB,
       `sh -c "mysqldump --user='root' --password=\\$MYSQL_ROOT_PASSWORD` +
         ` --max_allowed_packet=256M \\$MYSQL_DATABASE > ${dumpLocation}"`
     );
@@ -382,13 +374,13 @@ export class ContainerService {
 
   public async restoreProdDb(dumpLocation: string): Promise<string> {
     return await this.execCommandInComposeContainer(
-      ContainerService.DB_GWS_CORE_PROD,
+      ComposeServiceName.GWS_CORE_PROD_DB,
       `sh -c "mysql --user='root' --password=\\$MYSQL_ROOT_PASSWORD` +
         ` --max_allowed_packet=256M \\$MYSQL_DATABASE < ${dumpLocation}"`
     );
   }
 
   public async prodDbIsRunning(): Promise<boolean> {
-    return this.containerIsRunning(ContainerService.DB_GWS_CORE_PROD);
+    return this.containerIsRunning(ComposeServiceName.GWS_CORE_PROD_DB);
   }
 }

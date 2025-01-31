@@ -56,8 +56,9 @@ services:
     #GPU_CONFIG#
 
   # Codelab
+  # TODO FIX
   codelab:
-    image: constellab/codelab:${TAG_PREFIX}${GLAB_TAG}
+    image: codelab
     environment:
       - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}

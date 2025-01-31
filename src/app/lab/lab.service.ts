@@ -25,6 +25,7 @@ import { AdminerInfo } from '../docker/container/container.class';
 import { ExternalLabApiService } from '../core/services/external/external-lab-api.service';
 import { ExternalSpaceApiService } from '../core/services/external/external-space-api.service';
 import { UpdateLabManagerCommand } from '../core/services/external/external-space.class';
+import { ComposeServiceName } from '../docker/compose-yaml';
 
 const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
   generateComposeFile: true,
@@ -93,7 +94,7 @@ export class LabService {
       labFrontUrl: this.getLabFrontUrl(),
       labStatus: labStatus,
       glabStatus: {
-        status: containers.getContainer(ContainerService.GLAB)?.status ?? 'none',
+        status: containers.getContainer(ComposeServiceName.GLAB)?.status ?? 'none',
         startProgress: glabStartLog?.progress,
         hasStartError: glabStartLog?.errors?.length > 0,
       },
