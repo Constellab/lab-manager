@@ -224,7 +224,8 @@ export class DockerCommandService implements DockerCommandServiceI {
     // Labels
     if (options.labels) {
       for (const network of options.labels) {
-        command += ` --label ${network}`;
+        // add label to the container wrapped in quotes
+        command += ` --label '${network}'`;
       }
     }
 
