@@ -93,7 +93,7 @@ services:
       - CENTRAL_API_URL=${SPACE_API_URL}
       # end remove
       - SPACE_FRONT_URL=${SPACE_FRONT_URL}
-      - FRONT_URL=https://front.${VIRTUAL_HOST}
+      - FRONT_URL=https://dev-lab.${VIRTUAL_HOST}
       - FRONT_VERSION=${FRONT_VERSION}
       - GPU=${GPU}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
