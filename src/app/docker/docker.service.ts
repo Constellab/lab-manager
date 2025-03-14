@@ -231,7 +231,7 @@ export class DockerService {
       const gpuConfig = await this.gpuService.getDockerComposeGpuConfig();
       dockerComposeContent = dockerComposeContent.replace(/#GPU_CONFIG#/g, gpuConfig);
 
-      const frontProdDomains = ['front', 'lab'];
+      const frontProdDomains = ['lab', 'front'];
       const frontDevDomains = ['dev-lab'];
 
       // list of variable in the docker-compose file that need to be replaced
