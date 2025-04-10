@@ -56,10 +56,13 @@ services:
     #GPU_CONFIG#
 
   # Codelab
-  # TODO FIX
   codelab:
-    image: codelab
+    image: constellab/codelab:${TAG_PREFIX}${GLAB_TAG}
     environment:
+      # The environment variables are also define in gpm repository
+      # in codelab-init-ssh.sh file. 
+      # When a new variable is added or a variable is deleted,
+      # the file codelab-init-ssh.sh should be updated too.
       - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}
       - LAB_MODE=dev
@@ -111,6 +114,8 @@ services:
     container_name: codelab
     ports:
       - 8083:8080
+      # enable ssh server on this port
+      - 2222:2222
     #GPU_CONFIG#
 
   # Front
