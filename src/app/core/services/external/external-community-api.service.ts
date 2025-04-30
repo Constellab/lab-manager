@@ -28,7 +28,7 @@ export class ExternalCommunityApiService {
     return lastValueFrom(
       this.apiService.get(
         this.constructRoute(
-          `${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/central/name/${brickName}/${brickVersion}`
+          `${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/space/name/${brickName}/${brickVersion}`
         ),
         this.getRequestOptions()
       )

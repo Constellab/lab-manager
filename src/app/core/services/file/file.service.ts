@@ -18,7 +18,7 @@ import { CoreConfigService } from '../config/core-config.service';
 import { StartLog } from 'src/app/docker/docker.class';
 
 @Injectable()
-export class FileService implements OnModuleInit {
+export class FileService {
   private readonly assets = 'assets';
 
   private readonly privateFileName = 'private.json';
@@ -29,19 +29,6 @@ export class FileService implements OnModuleInit {
     @Inject(CORE_MODULE_PROVIDER) private config: CoreModuleConfig,
     private configService: CoreConfigService
   ) {}
-
-  onModuleInit(): void {
-    // TODO TO DELETE, migration on new private file format
-    if (this.privateFileExists()) {
-      const privateFile: any = this.readPrivateFile();
-
-      if (privateFile.central) {
-        privateFile.space = privateFile.central;
-        delete privateFile.central;
-        this.createPrivateFile(privateFile);
-      }
-    }
-  }
 
   //////////////////////// PRIVATE FILE ///////////////////////////////////
 
