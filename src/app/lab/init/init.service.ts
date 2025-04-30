@@ -32,8 +32,7 @@ export class InitService {
     try {
       this.logger.log('[FULL INIT] Full init started');
 
-      // CONFIGURE LAB MANAGER
-      await this.configureLabManager(labInitConfig);
+      this.configureLabManager(labInitConfig);
 
       await this.init();
 
@@ -66,12 +65,7 @@ export class InitService {
   }
 
   private async init(): Promise<void> {
-    await this.dockerService.generateDockerCompose();
-
-    await this.envVariableService.setAllEnvVariables(
-      this.configFileService.readConfigFile(),
-      this.fileService.readPrivateFile()
-    );
+    await this.configureDockerCompose();
 
     // PULL BIOTA DB
     await this.biotaService.pullBiota();
@@ -94,11 +88,25 @@ export class InitService {
   /**
    * Configure the lab manager to be ready to start the docker containers (but not start them)
    */
-  public async configureLabManager(labInitConfig: LabInitConfig): Promise<void> {
+  public configureLabManager(labInitConfig: LabInitConfig): void {
     this.initAppVolume();
 
     this.generatePrivateFile(labInitConfig);
   }
+
+  /**
+   * Method to configure the docker compose file
+   * It generates the docker compose file and the env variables file
+   */
+  public async configureDockerCompose(): Promise<void> {
+    await this.dockerService.generateDockerCompose();
+
+    await this.envVariableService.setAllEnvVariables(
+      this.configFileService.readConfigFile(),
+      this.fileService.readPrivateFile()
+    );
+  }
+
 
   private initAppVolume(): void {
     const taskName = 'Generate volumes';

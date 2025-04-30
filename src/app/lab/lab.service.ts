@@ -126,9 +126,10 @@ export class LabService {
     });
   }
 
-  public configureLabManager(labInitConfig: LabInitConfig): Promise<void> {
+  public async configureLabManager(labInitConfig: LabInitConfig): Promise<void> {
     this.checkInitConfig(labInitConfig);
-    return this.initService.configureLabManager(labInitConfig);
+    this.initService.configureLabManager(labInitConfig);
+    await this.initService.configureDockerCompose();
   }
 
   private checkInitConfig(labInitConfig: LabInitConfig): void {

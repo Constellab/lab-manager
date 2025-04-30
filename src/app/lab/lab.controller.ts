@@ -51,6 +51,8 @@ export class LabController {
 
   /**
    * Route to initialize the lab manager
+   * This is called by the lab manager standalone app 
+   * because it might not have the config file
    * @param labInitConfig
    */
   @Post('init')
@@ -58,6 +60,10 @@ export class LabController {
     this.labService.initLab();
   }
 
+  /**
+   * Route to fully configure the lab manager
+   * Main configuration and docker configuration
+   */
   @Post('configure-lab-manager')
   configureLabManager(@Body() labInitConfig: LabInitConfig): Promise<void> {
     return this.labService.configureLabManager(labInitConfig);
