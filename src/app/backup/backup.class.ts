@@ -218,7 +218,7 @@ export class LabBackupStorage {
   public static fromJson(json: LabBackupStorageI): LabBackupStorage {
     const storage = new LabBackupStorage(json.triggerMode, json.s3Prefix);
     storage.id = json.id;
-    if (json.type === BucketType.AZURE ) {
+    if (json.type === BucketType.AZURE) {
       storage.bucketConfig = {
         type: json.type,
         config: {
@@ -261,8 +261,8 @@ export class LabBackupStorage {
       s3Prefix: this.s3Prefix,
       region: this.getRegion(),
       bucket: this.getBucketName(),
-      endpoint: this.bucketConfig.type === BucketType.AZURE ? null: this.bucketConfig.config.endpoint,
-      accountName: this.bucketConfig.type === BucketType.AZURE ? this.bucketConfig.config.accountName: null,
+      endpoint: this.bucketConfig.type === BucketType.AZURE ? null : this.bucketConfig.config.endpoint,
+      accountName: this.bucketConfig.type === BucketType.AZURE ? this.bucketConfig.config.accountName : null,
     };
   }
 }

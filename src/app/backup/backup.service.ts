@@ -186,7 +186,8 @@ export class BackupService implements OnModuleInit {
           const now = new Date();
           if (now.getTime() - lastActivityDate.getTime() < BackupService.BACKUP_IDLE_ACTIVITY) {
             this.logger.log(
-              `[Backup][${triggerMode}] The last activity was detected at '${lastActivityDate.toISOString()}', skipping`
+              `[Backup][${triggerMode}] The last activity was detected at ` +
+                `'${lastActivityDate.toISOString()}', skipping`
             );
             return;
           }

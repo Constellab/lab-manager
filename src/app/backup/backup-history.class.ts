@@ -69,8 +69,8 @@ export class LabBackupHistory {
 
   /**
    * Migration to convert bucket type 's3' and 'azureBlob' to BucketType enum
-   * @param json 
-   * @returns 
+   * @param json
+   * @returns
    */
   public static migrateFrom3To4(json: any): any {
     for (const backup of json.backups) {

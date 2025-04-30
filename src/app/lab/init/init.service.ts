@@ -107,7 +107,6 @@ export class InitService {
     );
   }
 
-
   private initAppVolume(): void {
     const taskName = 'Generate volumes';
 

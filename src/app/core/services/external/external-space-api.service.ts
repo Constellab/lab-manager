@@ -29,7 +29,7 @@ export class ExternalSpaceApiService {
 
   public getBackupInfo(): Promise<BackupInfoDTO> {
     return lastValueFrom(
-      this.apiService.get(this.constructRoute('lab/backup-info'), this.getRequestOptions())
+      this.apiService.get(this.constructRoute('lab/backup-info-v2'), this.getRequestOptions())
     );
   }
 

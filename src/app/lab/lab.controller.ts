@@ -51,7 +51,7 @@ export class LabController {
 
   /**
    * Route to initialize the lab manager
-   * This is called by the lab manager standalone app 
+   * This is called by the lab manager standalone app
    * because it might not have the config file
    * @param labInitConfig
    */
