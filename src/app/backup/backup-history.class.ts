@@ -1,3 +1,4 @@
+import { BucketType } from '../core/models/bucket-config.class';
 import {
   BackupBucketDTO,
   BackupFrequency,
@@ -12,7 +13,7 @@ export interface LabBackupHistoryI {
 }
 
 export class LabBackupHistory {
-  private static readonly CURRENT_VERSION = 3;
+  private static readonly CURRENT_VERSION = 4;
   version: number;
   backups: LabBackupStorage[];
 
@@ -28,6 +29,9 @@ export class LabBackupHistory {
   public static fromJson(json: any): LabBackupHistory {
     if (json.version === 2) {
       json = this.migrateFrom2To3(json);
+    }
+    if (json.version === 3) {
+      json = this.migrateFrom3To4(json);
     }
 
     const history = new LabBackupHistory(
@@ -57,6 +61,23 @@ export class LabBackupHistory {
         } as BackupInfo;
         delete backup.dbSize;
         delete backup.dbStatus;
+      }
+    }
+    json.version = LabBackupHistory.CURRENT_VERSION;
+    return json;
+  }
+
+  /**
+   * Migration to convert bucket type 's3' and 'azureBlob' to BucketType enum
+   * @param json 
+   * @returns 
+   */
+  public static migrateFrom3To4(json: any): any {
+    for (const backup of json.backups) {
+      if (backup.type === 'azureBlob') {
+        backup.type = BucketType.AZURE;
+      } else {
+        backup.type = BucketType.NORMAL;
       }
     }
     json.version = LabBackupHistory.CURRENT_VERSION;

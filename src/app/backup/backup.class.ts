@@ -1,5 +1,5 @@
 import { ChildProcess } from 'child_process';
-import { BucketConfig } from '../core/models/bucket-config.class';
+import { BucketConfig, BucketType } from '../core/models/bucket-config.class';
 import { StringHelper } from '../core/helpers/string.helper';
 import { RCloneFinalStatsDetail } from '../core/services/rclone/rclone.class';
 
@@ -60,7 +60,7 @@ export interface BackupInfo {
 
 export interface LabBackupStorageI {
   id: string;
-  type: 's3' | 'azureBlob';
+  type: BucketType;
   region: string;
   bucket: string;
   startUploadAt: Date;
@@ -194,9 +194,9 @@ export class LabBackupStorage {
   }
 
   public getBucketName(): string {
-    return this.bucketConfig.type === 's3'
-      ? this.bucketConfig.config.bucket
-      : this.bucketConfig.config.containerName;
+    return this.bucketConfig.type === BucketType.AZURE
+      ? this.bucketConfig.config.containerName
+      : this.bucketConfig.config.bucket;
   }
 
   public isFinished(): boolean {
@@ -218,24 +218,24 @@ export class LabBackupStorage {
   public static fromJson(json: LabBackupStorageI): LabBackupStorage {
     const storage = new LabBackupStorage(json.triggerMode, json.s3Prefix);
     storage.id = json.id;
-    if (json.type === 's3' || !json.type) {
+    if (json.type === BucketType.AZURE ) {
       storage.bucketConfig = {
-        type: 's3',
-        config: {
-          bucket: json.bucket,
-          endpoint: json.endpoint,
-          region: json.region,
-          credentials: null,
-        },
-      };
-    } else {
-      storage.bucketConfig = {
-        type: 'azureBlob',
+        type: json.type,
         config: {
           accountName: json.accountName,
           containerName: json.bucket,
           accountKey: '',
           region: json.region,
+        },
+      };
+    } else {
+      storage.bucketConfig = {
+        type: json.type,
+        config: {
+          bucket: json.bucket,
+          endpoint: json.endpoint,
+          region: json.region,
+          credentials: null,
         },
       };
     }
@@ -261,8 +261,8 @@ export class LabBackupStorage {
       s3Prefix: this.s3Prefix,
       region: this.getRegion(),
       bucket: this.getBucketName(),
-      endpoint: this.bucketConfig.type === 's3' ? this.bucketConfig.config.endpoint : null,
-      accountName: this.bucketConfig.type === 's3' ? null : this.bucketConfig.config.accountName,
+      endpoint: this.bucketConfig.type === BucketType.AZURE ? null: this.bucketConfig.config.endpoint,
+      accountName: this.bucketConfig.type === BucketType.AZURE ? this.bucketConfig.config.accountName: null,
     };
   }
 }

@@ -1,10 +1,16 @@
+export enum BucketType {
+  NORMAL = 'NORMAL',
+  AZURE = 'AZURE', // azure blob storage
+  GCP = 'GCP', // gcp bucket
+}
+
 export type BucketConfig =
   | {
-      type: 's3';
+      type: BucketType.NORMAL | BucketType.GCP;
       config: S3BucketConfig;
     }
   | {
-      type: 'azureBlob';
+      type: BucketType.AZURE;
       config: AzureContainerConfig;
     };
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BucketConfig } from '../../models/bucket-config.class';
+import { BucketConfig, BucketType } from '../../models/bucket-config.class';
 import { CommandService, SpawnResult } from '../command/command.service';
 import { map } from 'rxjs';
 import { RCloneRespsonse, RCloneResult } from './rclone.class';
@@ -37,7 +37,9 @@ export class RcloneService {
   }
 
   private getOptions(config: BucketConfig): string[] {
-    if (config.type === 's3') {
+    if (config.type === BucketType.AZURE) {
+      return ['--azureblob-account', config.config.accountName, '--azureblob-key', config.config.accountKey];
+    } else {
       return [
         '--s3-endpoint',
         config.config.endpoint,
@@ -48,24 +50,22 @@ export class RcloneService {
         '--s3-secret-access-key',
         config.config.credentials.secretAccessKey,
       ];
-    } else {
-      return ['--azureblob-account', config.config.accountName, '--azureblob-key', config.config.accountKey];
     }
   }
 
   private getBucketName(config: BucketConfig): string {
-    if (config.type === 's3') {
-      return config.config.bucket;
-    } else {
+    if (config.type === BucketType.AZURE) {
       return config.config.containerName;
+    } else {
+      return config.config.bucket;
     }
   }
 
   public getBucketType(config: BucketConfig): string {
-    if (config.type === 's3') {
-      return ':s3:';
-    } else {
+    if (config.type === BucketType.AZURE) {
       return ':azureblob:';
+    } else {
+      return ':s3:';
     }
   }
 
