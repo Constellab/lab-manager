@@ -9,7 +9,7 @@ import { DockerRunOptionsPort } from '../docker/docker.class';
 @Injectable()
 export class LabDesktopService implements OnModuleInit {
   private static readonly IMAGE_NAME = 'constellab/lab-manager-standalone';
-  private static readonly CONTAINER_NAME = 'lab-manager-standalone';
+  private static readonly CONTAINER_NAME = 'lab_manager_standalone';
   private static readonly PORT: DockerRunOptionsPort = {
     host: 82,
     container: 80, // nginx port
@@ -23,7 +23,7 @@ export class LabDesktopService implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    if (this.coreConfigService.isDekstop()) {
+    if (this.coreConfigService.isDesktop()) {
       this.startLabManagerStandaloneFront().catch((e) => {
         this.logger.error('Error while starting the lab manager standalone container', e);
       });

@@ -21,6 +21,7 @@ export class ContainerService {
   public static readonly ADMINER_IMAGE: string = 'adminer:4.8.1';
 
   private static readonly ADMINER_DESKTOP_PORT = 8081;
+  public static readonly GLAB_INTERNAL_PORT = 3000;
 
   private readonly logger = new Logger(ContainerService.name);
 

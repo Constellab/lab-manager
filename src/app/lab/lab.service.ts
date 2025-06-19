@@ -129,7 +129,10 @@ export class LabService {
   public async configureLabManager(labInitConfig: LabInitConfig): Promise<void> {
     this.checkInitConfig(labInitConfig);
     this.initService.configureLabManager(labInitConfig);
-    await this.initService.configureDockerCompose();
+
+    if (this.configFileService.configFileExists()) {
+      await this.initService.configureDockerCompose();
+    }
   }
 
   private checkInitConfig(labInitConfig: LabInitConfig): void {

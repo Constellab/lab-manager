@@ -5,6 +5,8 @@ import { LabGlobalActivity } from './external-lab.class';
 import { ApiHttpOption } from 'src/app/core/services/api/api.class';
 import { FileService } from 'src/app/core/services/file/file.service';
 import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
+import { ComposeServiceName } from 'src/app/docker/compose-yaml';
+import { ContainerService } from 'src/app/docker/container/container.service';
 
 /**
  * Class to call route of the lab using space api
@@ -15,7 +17,6 @@ export class ExternalLabApiService {
   private static readonly API_KEY_SCHEMA = 'api-key';
 
   private static readonly BASE_API_ROUTE = 'space-api';
-  private static readonly API_PREFIX = 'glab';
 
   constructor(
     private apiService: ApiService,
@@ -38,12 +39,14 @@ export class ExternalLabApiService {
   ////////////////// METHODS TO BUILD THE REQUEST //////////////////
 
   private constructRoute(route: string): string {
-    const isLocal = this.configService.isLocal();
     let url: string;
-    if (isLocal) {
+    if (this.configService.isDesktop()) {
+      // use local network in desktop mode
+      url = `http://${ComposeServiceName.GLAB}:${ContainerService.GLAB_INTERNAL_PORT}`;
+    } else if (this.configService.isLocal()) {
       url = 'http://host.docker.internal:3100';
     } else {
-      url = `https://${ExternalLabApiService.API_PREFIX}.${this.configService.getVirtualHost()}`;
+      url = `https://${ComposeServiceName.GLAB}.${this.configService.getVirtualHost()}`;
     }
 
     return `${url}/${ExternalLabApiService.BASE_API_ROUTE}/${route}`;
