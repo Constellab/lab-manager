@@ -50,6 +50,22 @@ export class LabService {
     private spaceService: ExternalSpaceApiService
   ) {}
 
+  async onModuleInit(): Promise<void> {
+    try {
+      if (this.coreConfigService.isDesktop()) {
+        const status = await this.getStatus();
+        const statuses: LabStatus[] = ['ERROR', 'STOPPED'];
+        this.logger.log('Checking if we auto start the lab manager in DESKTOP mode');
+        if (status.isInitialized && status.isConfigured && statuses.includes(status.labStatus)) {
+          this.logger.log('Auto starting the lab in DESKTOP mode');
+          this.initLab();
+        }
+      }
+    } catch (e) {
+      this.logger.error('Error while initializing the lab service', e);
+    }
+  }
+
   public async getStatus(): Promise<LabManagerStatus> {
     let lastInitManagerVersion: string = null;
     if (this.fileService.privateFileExists()) {
