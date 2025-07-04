@@ -122,6 +122,10 @@ services:
       - /app/dev/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
       - /app/dev/.ssh:/root/.ssh
+      # Create a volume for the SSH server configuration
+      # to keep the keys and prevent error : remote host identification has changed
+      # when logging in with SSH
+      - /app/dev/etc-ssh:/etc/ssh
     labels:
       - traefik.enable=true
       # Config for the HTTPS codelab domain to port 8080
