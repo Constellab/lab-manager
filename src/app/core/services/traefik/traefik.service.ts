@@ -31,7 +31,7 @@ export class TraefikService {
       `traefik.http.services.${service}.loadbalancer.server.port=${servicePort}`,
       // Enable HTTPS
       `traefik.http.routers.${router}.entrypoints=websecure`,
-      `traefik.http.routers.${router}.tls.certresolver=myresolver`,
+      `traefik.http.routers.${router}.tls=true`,
     ];
   }
 }

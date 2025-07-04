@@ -57,7 +57,7 @@ services:
       - traefik.http.services.glab-service.loadbalancer.server.port=3000
       # Enable HTTPS
       - traefik.http.routers.glab-router.entrypoints=websecure
-      - traefik.http.routers.glab-router.tls.certresolver=myresolver
+      - traefik.http.routers.glab-router.tls=true
       #App additional host will be inserted here#
     networks:
       - gencovery-network-prod
@@ -134,7 +134,7 @@ services:
       - traefik.http.services.codelab-service.loadbalancer.server.port=8080
       # Enable HTTPS
       - traefik.http.routers.codelab-router.entrypoints=websecure
-      - traefik.http.routers.codelab-router.tls.certresolver=myresolver
+      - traefik.http.routers.codelab-router.tls=true
       # secure the access with htpasswd
       - traefik.http.routers.codelab-router.middlewares=basic-auth
       - traefik.http.middlewares.basic-auth.basicauth.users=${HT_PASSWD}
@@ -145,7 +145,7 @@ services:
       - traefik.http.services.glab-dev-service.loadbalancer.server.port=3000
       # Enable HTTPS
       - traefik.http.routers.glab-dev-router.entrypoints=websecure
-      - traefik.http.routers.glab-dev-router.tls.certresolver=myresolver
+      - traefik.http.routers.glab-dev-router.tls=true
       #App additional host will be inserted here#
     networks:
       - gencovery-network-dev
@@ -180,7 +180,7 @@ services:
       - traefik.http.services.lab-service.loadbalancer.server.port=81
       #Enable HTTPS
       - traefik.http.routers.lab-router.entrypoints=websecure
-      - traefik.http.routers.lab-router.tls.certresolver=myresolver
+      - traefik.http.routers.lab-router.tls=true
 
       # Redirect http to https
       - traefik.frontend.redirect.entryPoint=https
