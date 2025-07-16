@@ -40,6 +40,9 @@ services:
       # TODO to remove once labs are on v 0.15.0
       - STREAMLIT_APP_SERVER_PORT=8501
       - STREAMLIT_APP_SERVER_HOST=https://dashboard.${VIRTUAL_HOST}
+      # End of TODO
+      - APP_EXTERNAL_PORT=8501
+      - APP_SUB_DOMAIN=app
     depends_on:
       - gws_core_prod_db
     volumes:
@@ -113,6 +116,9 @@ services:
       # TODO to remove once labs are on v 0.15.0
       - STREAMLIT_APP_SERVER_PORT=8501
       - STREAMLIT_APP_SERVER_HOST=https://dashboard-dev.${VIRTUAL_HOST}
+      # End of TODO
+      - APP_EXTERNAL_PORT=8501
+      - APP_SUB_DOMAIN=app-dev
     depends_on:
       - gws_core_dev_db
     volumes:

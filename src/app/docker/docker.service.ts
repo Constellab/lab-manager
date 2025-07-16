@@ -290,6 +290,7 @@ export class DockerService {
    * @param baseHost
    * @returns
    */
+  // TODO : deprecated @1.23.0. Remove once all labs are on v0.16.0
   private handleAppHosts(
     dockerComposeContent: string,
     serviceName: ComposeServiceName,
