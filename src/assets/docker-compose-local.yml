@@ -36,9 +36,8 @@ services:
       - GWS_BIOTA_DB_PASSWORD=gencovery
       - GWS_BIOTA_DB_NAME=gws_biota
       - GWS_BIOTA_DB_PORT=3306
-      # TODO to remove once labs are on v 0.15.0
-      - STREAMLIT_APP_SERVER_PORT=8501
-      - STREAMLIT_APP_SERVER_HOST=http://localhost.8501
+      - APP_EXTERNAL_PORT=8510
+      - APP_SUB_DOMAIN=app
     depends_on:
       - gws_core_prod_db
       - gws_biota_db
@@ -100,9 +99,8 @@ services:
       - GWS_BIOTA_DB_PASSWORD=gencovery
       - GWS_BIOTA_DB_NAME=gws_biota
       - GWS_BIOTA_DB_PORT=3306
-      # TODO to remove once labs are on v 0.15.0
-      - STREAMLIT_APP_SERVER_PORT=8501
-      - STREAMLIT_APP_SERVER_HOST=http://localhost.8501
+      - APP_EXTERNAL_PORT=8510
+      - APP_SUB_DOMAIN=app-dev
     volumes:
       - lab-manager-config:/conf
       - lab-manager-dev-lab:/lab
