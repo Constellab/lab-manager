@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { LabInitConfig, LabManagerStatus, LabStatus } from './lab.class';
 import { BeforeDockerCommandOptions, DockerService } from '../docker/docker.service';
 import { TaskService } from '../core/services/task/task.service';
@@ -32,7 +32,7 @@ const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
 };
 
 @Injectable()
-export class LabService {
+export class LabService implements OnModuleInit {
   private readonly logger = new Logger(LabService.name);
 
   constructor(
@@ -51,16 +51,15 @@ export class LabService {
   ) {}
 
   async onModuleInit(): Promise<void> {
+    if(!this.coreConfigService.getAutoStartLab()) return;
     try {
-      if (this.coreConfigService.isDesktop()) {
         const status = await this.getStatus();
         const statuses: LabStatus[] = ['ERROR', 'STOPPED'];
-        this.logger.log('Checking if we auto start the lab manager in DESKTOP mode');
+        this.logger.log('Checking if we auto start the lab');
         if (status.isInitialized && status.isConfigured && statuses.includes(status.labStatus)) {
-          this.logger.log('Auto starting the lab in DESKTOP mode');
+          this.logger.log('Auto starting the lab');
           this.initLab();
         }
-      }
     } catch (e) {
       this.logger.error('Error while initializing the lab service', e);
     }

@@ -46,6 +46,10 @@ export class CoreConfigService {
     return this.configService.get('VIRTUAL_HOST');
   }
 
+  public getAutoStartLab(): boolean {
+    return this.getConfigBoolean('AUTO_START_LAB', true);
+  }
+
   /**
    * Provided for on premise installations. Can be used to add additional hosts to the lab manager
    * to enable access to apps from other domains.
@@ -168,7 +172,7 @@ export class CoreConfigService {
     }
   }
 
-  protected getConfigBoolean(configName: string): boolean {
+  protected getConfigBoolean(configName: string, defaultValue?: boolean): boolean {
     const stringBool: string = this.configService.get(configName);
 
     if (stringBool === 'false') {
@@ -176,7 +180,11 @@ export class CoreConfigService {
     } else if (stringBool === 'true') {
       return true;
     } else {
-      throw Error('Error while parsing config ' + configName + ' to boolean');
+      if(defaultValue !== undefined) {
+        return defaultValue;
+      }else{
+        throw Error('Error while parsing config ' + configName + ' to boolean');
+      }
     }
   }
 }
