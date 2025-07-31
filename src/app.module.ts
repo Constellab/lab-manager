@@ -18,6 +18,7 @@ function configureWinstonLogger(configService: CoreConfigService): WinstonModule
   const logConfig: LoggerConfig = {
     logLevel: configService.getLogLevel(),
     logFilePath: configService.isLocal() ? null : configService.getLogPath(),
+    colorize: configService.isDevelopment()
   };
   return configureLogger(logConfig);
 }

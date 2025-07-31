@@ -17,6 +17,10 @@ export class CoreConfigService {
     return this.getEnvironmentProfile() === 'prod';
   }
 
+  public isDevelopment(): boolean {
+    return this.getEnvironmentProfile() === 'dev';
+  }
+
   public isDesktop(): boolean {
     return this.getEnvironmentProfile() === 'desktop';
   }

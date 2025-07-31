@@ -7,6 +7,7 @@ import { LogLevel } from '@nestjs/common/services/logger.service';
 export interface LoggerConfig {
   logLevel: LogLevel;
   logFilePath: string; // if provided, a daily log file is created
+  colorize: boolean; // whether to colorize the logs in console
 }
 
 /**
@@ -22,15 +23,21 @@ export function configureLogger(config: LoggerConfig): WinstonModuleOptions {
   const logFormat = (info: TransformableInfo): string =>
     `${info.timestamp} ${info.level} [${info.context}]: ${info.message}`;
 
+  const formats = [
+    format.timestamp({ format: dataFormat }),
+  ];
+
+  // if colorize is true, add the colorize format
+  if (config.colorize) {
+    formats.push(format.colorize());
+  }
+
+  formats.push(format.printf(logFormat));
   // Add the console transport to log into the console
   transportsList.push(
     new transports.Console({
       level: config.logLevel,
-      format: format.combine(
-        format.timestamp({ format: dataFormat }),
-        format.colorize(),
-        format.printf(logFormat)
-      ),
+      format: format.combine(...formats),
     })
   );
 
