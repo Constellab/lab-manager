@@ -51,14 +51,19 @@ export class LabService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if(!this.coreConfigService.getAutoStartLab()) return;
+    this.logger.log('Checking if we auto start the lab');
+    if(!this.coreConfigService.getAutoStartLab()) {
+      this.logger.log('Auto start lab is disabled');
+      return;
+    };
     try {
         const status = await this.getStatus();
         const statuses: LabStatus[] = ['ERROR', 'STOPPED'];
-        this.logger.log('Checking if we auto start the lab');
         if (status.isInitialized && status.isConfigured && statuses.includes(status.labStatus)) {
           this.logger.log('Auto starting the lab');
           this.initLab();
+        }else{
+          this.logger.log('Lab is already running or not configured, skipping auto start');
         }
     } catch (e) {
       this.logger.error('Error while initializing the lab service', e);
