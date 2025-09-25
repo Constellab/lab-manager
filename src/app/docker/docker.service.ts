@@ -14,8 +14,7 @@ import { DockerCommandService } from './docker-command/docker-command.service';
 import { ContainerService } from './container/container.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
 import { Containers } from './compose.class';
-import { TraefikService } from '../core/services/traefik/traefik.service';
-import { ComposeServiceName, ComposeYaml } from './compose-yaml';
+
 export interface BeforeDockerCommandOptions {
   generateComposeFile?: boolean;
 }
@@ -30,8 +29,7 @@ export class DockerService {
     private containerService: ContainerService,
     private taskService: TaskService,
     private gpuService: GPUService,
-    private configService: CoreConfigService,
-    private traefikService: TraefikService
+    private configService: CoreConfigService
   ) {}
 
   public async listContainers(): Promise<DockerInspect[]> {
@@ -224,8 +222,6 @@ export class DockerService {
     this.logger.log(`Generating ${dockerComposeFileName} file`);
     let dockerComposeContent = this.fileService.readDockerComposeTemplate();
 
-    const dashboardSubDomain = 'app';
-    const dashboardSubDomainDev = 'app-dev';
     if (!this.configService.isLocal()) {
       // replace the GPU config in the docker-compose file
       const gpuConfig = await this.gpuService.getDockerComposeGpuConfig();
@@ -267,61 +263,8 @@ export class DockerService {
       dockerComposeContent = dockerComposeContent.replace(new RegExp('#FRONT_DEV_URLS#', 'g'), devFrontUrls);
     }
 
-    // handle app hosts
-    dockerComposeContent = this.handleAppHosts(
-      dockerComposeContent,
-      ComposeServiceName.GLAB,
-      dashboardSubDomain
-    );
-    dockerComposeContent = this.handleAppHosts(
-      dockerComposeContent,
-      ComposeServiceName.CODELAB,
-      dashboardSubDomainDev
-    );
-
     this.fileService.writeDockerCompose(dockerComposeContent);
     this.logger.log(`${dockerComposeFileName} file generated`);
-  }
-
-  /**
-   *
-   * @param dockerComposeContent Method to add labels to the glab service in the docker-compose file
-   * to enable the additional app hosts for the dashboard. For Glab and CodeLab services.
-   * @param baseHost
-   * @returns
-   */
-  // TODO : deprecated @1.23.0. Remove once all labs are on v0.16.0
-  private handleAppHosts(
-    dockerComposeContent: string,
-    serviceName: ComposeServiceName,
-    baseHost: string
-  ): string {
-    // handle app hosts
-    const appNbHost = this.configService.getAppHostsCount();
-    const labels = [];
-
-    const additionalPorts = [];
-    const additionalHosts = [];
-    for (let i = 0; i < appNbHost + 1; i++) {
-      const subDomain = `${baseHost}${i}`;
-      const host = this.buildHostString([subDomain]);
-      const port = this.configService.getAppDefaultPort() + i;
-      labels.push(...this.traefikService.getTraefikRouterLabels(host, port.toString(), `app-${subDomain}`));
-      additionalPorts.push(port.toString());
-      additionalHosts.push(subDomain);
-    }
-
-    const yml = new ComposeYaml(dockerComposeContent);
-
-    // Add the env variable to the service to know the additional ports and hosts
-    yml.addEnvironmentVariable(serviceName, 'APP_PORTS', additionalPorts.join(','));
-    yml.addEnvironmentVariable(serviceName, 'APP_HOSTS', additionalHosts.join(','));
-
-    if (!this.configService.isLocal()) {
-      yml.addLabels(serviceName, labels);
-    }
-
-    return yml.toString();
   }
 
   private buildHostString(subDomains: string[]): string {
