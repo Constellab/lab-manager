@@ -1,13 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { CommandService } from '../../core/services/command/command.service';
-import { FileService } from '../../core/services/file/file.service';
-import { CoreConfigService } from '../../core/services/config/core-config.service';
-import { TaskService } from '../../core/services/task/task.service';
-import { ConfigFileService } from '../../core/services/config-file/config-file.service';
 import { HttpService } from '@nestjs/axios';
+import { Injectable, Logger } from '@nestjs/common';
 import { createWriteStream } from 'fs';
 import { join } from 'path';
 import { ContainerService } from 'src/app/docker/container/container.service';
+import { ConfigFileService } from '../../core/services/config-file/config-file.service';
+import { CoreConfigService } from '../../core/services/config/core-config.service';
+import { FileService } from '../../core/services/file/file.service';
+import { TaskService } from '../../core/services/task/task.service';
+import { Command } from '../../core/utils/command';
+import { DockerComposeFactory } from '../../docker/docker-compose.factory';
 
 @Injectable()
 export class BiotaService {
@@ -16,13 +17,13 @@ export class BiotaService {
   private readonly pullBiotaTaskName = 'Downloading biota db';
 
   constructor(
-    private commandService: CommandService,
     private fileService: FileService,
     private configService: CoreConfigService,
     private configFileService: ConfigFileService,
     private taskService: TaskService,
     private httpService: HttpService,
-    private containerService: ContainerService
+    private containerService: ContainerService,
+    private dockerComposeFactory: DockerComposeFactory
   ) {}
 
   public async pullBiota(forceUpdate: boolean = false, restartBiota: boolean = false): Promise<void> {
@@ -46,7 +47,8 @@ export class BiotaService {
     }
 
     // stop the biota container because the volume will be deleted
-    await this.containerService.deleteBiotaService();
+    const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+    await mainCompose.deleteBiotaService();
 
     this.taskService.newTask(
       this.pullBiotaTaskName,
@@ -69,14 +71,25 @@ export class BiotaService {
 
       this.fileService.deleteFileIfExist(zipFilePath);
       this.taskService.markTaskAsSuccess(this.pullBiotaTaskName, 'Biota db pulled successfully');
-
-      if (restartBiota) {
-        await this.containerService.startBiotaService();
-      }
     } catch (e: any) {
       this.taskService.markTaskAsError(this.pullBiotaTaskName, 'Error during the biota pull. Error : ' + e);
       if (e.stack) {
         this.logger.error(e.stack);
+      }
+    }
+
+    if (restartBiota) {
+      const taskName = 'Start biota service';
+      this.taskService.newTask(taskName);
+
+      try {
+        const dockerCompose = this.dockerComposeFactory.createMainComposeObject();
+        // start biota service from docker-compose
+        await dockerCompose.startBiotaService();
+        this.taskService.markTaskAsSuccess(taskName);
+      } catch (e) {
+        this.taskService.markTaskAsError(taskName, e.toString());
+        throw e;
       }
     }
   }
@@ -129,7 +142,7 @@ export class BiotaService {
         `Unzipping biota db from ${zipPath} into ${destination}`
       );
 
-      await this.commandService.execCommand(`unzip -q ${zipPath} -d ${destination}`);
+      await new Command().execCommand(`unzip -q ${zipPath} -d ${destination}`);
     } catch (e: any) {
       this.taskService.markTaskAsError(this.pullBiotaTaskName, 'Error during the biota unzip. Error : ' + e);
       if (e.stack) {

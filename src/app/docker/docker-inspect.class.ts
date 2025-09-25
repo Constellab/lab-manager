@@ -13,7 +13,7 @@ export interface ContainersStatusInfo {
 /**
  * Class to manage the containers of docker-compose
  */
-export class Containers {
+export class ContainersInspect {
   private containers: DockerInspect[] = [];
 
   public addContainer(container: DockerInspect): void {
@@ -62,5 +62,9 @@ export class Containers {
 
   public getContainer(name: string): DockerInspect | undefined {
     return this.containers.find((container) => container.names === name);
+  }
+
+  public getContainers(): DockerInspect[] {
+    return this.containers;
   }
 }

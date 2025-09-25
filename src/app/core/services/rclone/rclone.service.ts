@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { BucketConfig, BucketType } from '../../models/bucket-config.class';
-import { CommandService, SpawnResult } from '../command/command.service';
 import { map } from 'rxjs';
+import { BucketConfig, BucketType } from '../../models/bucket-config.class';
+import { Command, SpawnResult } from '../../utils/command';
 import { RCloneRespsonse, RCloneResult } from './rclone.class';
 
 @Injectable()
 export class RcloneService {
-  constructor(private commandService: CommandService) {}
+  constructor() {}
 
   public syncFolderToS3(
     config: BucketConfig,
@@ -70,7 +70,7 @@ export class RcloneService {
   }
 
   private runSyncRCloneCommand(options: string[], source: string, destination: string): RCloneRespsonse {
-    const spanwResult = this.commandService.spawn('rclone', [
+    const spanwResult = new Command().spawn('rclone', [
       '-P',
       '--stats',
       '5s', // update log every 5 seconds

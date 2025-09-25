@@ -1,8 +1,18 @@
 import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { SpawnResult } from '../core/services/command/command.service';
+import { Cron } from '@nestjs/schedule';
+import { join } from 'path';
+import { Observable, lastValueFrom, tap } from 'rxjs';
 import { CoreConfigService } from '../core/services/config/core-config.service';
+import { ExternalLabApiService } from '../core/services/external/external-lab-api.service';
+import { ExternalSpaceApiService } from '../core/services/external/external-space-api.service';
 import { FileService } from '../core/services/file/file.service';
+import { RCloneResult } from '../core/services/rclone/rclone.class';
 import { RcloneService } from '../core/services/rclone/rclone.service';
+import { TaskService } from '../core/services/task/task.service';
+import { SpawnResult } from '../core/utils/command';
+import { rxjsDebug } from '../core/utils/rxjs-debug';
+import { DockerComposeFactory } from '../docker/docker-compose.factory';
+import { LabBackupHistory } from './backup-history.class';
 import {
   BackupBucketDTO,
   BackupInfoDTO,
@@ -10,16 +20,6 @@ import {
   BackupTriggerMode,
   LabBackupStorage,
 } from './backup.class';
-import { ExternalLabApiService } from '../core/services/external/external-lab-api.service';
-import { Cron } from '@nestjs/schedule';
-import { ExternalSpaceApiService } from '../core/services/external/external-space-api.service';
-import { LabBackupHistory } from './backup-history.class';
-import { ContainerService } from '../docker/container/container.service';
-import { join } from 'path';
-import { TaskService } from '../core/services/task/task.service';
-import { Observable, lastValueFrom, tap } from 'rxjs';
-import { RCloneResult } from '../core/services/rclone/rclone.class';
-import { rxjsDebug } from '../core/utils/rxjs-debug';
 
 type BackupType = 'DATA' | 'DB';
 
@@ -55,8 +55,8 @@ export class BackupService implements OnModuleInit {
     private fileService: FileService,
     private externalLabService: ExternalLabApiService,
     private externalSpaceService: ExternalSpaceApiService,
-    private containerService: ContainerService,
-    private taskService: TaskService
+    private taskService: TaskService,
+    private composeFactory: DockerComposeFactory
   ) {}
 
   /**
@@ -159,7 +159,8 @@ export class BackupService implements OnModuleInit {
     this.checkRansomware();
 
     // check if the prod db is running
-    if (!(await this.containerService.prodDbIsRunning())) {
+    const mainCompose = this.composeFactory.createMainComposeObject();
+    if (!(await mainCompose.prodDbIsRunning())) {
       throw new BadRequestException('The prod DB is not running, please start the lab before doing a backup');
     }
 
@@ -271,7 +272,8 @@ export class BackupService implements OnModuleInit {
     if (!this.fileService.exists(dumpPathInCurrentContainer)) {
       // dump the db
       this.fileService.createDirIfNotExists(this.getDbDumpFolderInCurrentContainer());
-      const result = await this.containerService.dumpProdDb(this.getDumpMariaDbPathInMariaDbContainer());
+      const mainCompose = this.composeFactory.createMainComposeObject();
+      const result = await mainCompose.dumpProdDb(this.getDumpMariaDbPathInMariaDbContainer());
       if (result !== '') {
         this.updateCurrentStatusStorageErrorMessage(
           `Error while dumping the DB. Error : ${result}`,
@@ -572,7 +574,8 @@ export class BackupService implements OnModuleInit {
 
     // restore the DB
     const dbPathInMariaDb = this.getDumpMariaDbPathInMariaDbContainer();
-    await this.containerService.restoreProdDb(dbPathInMariaDb);
+    const mainCompose = this.composeFactory.createMainComposeObject();
+    await mainCompose.restoreProdDb(dbPathInMariaDb);
 
     this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'DB Restored');
   }

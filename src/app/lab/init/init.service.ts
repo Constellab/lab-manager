@@ -1,15 +1,15 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { hashSync } from 'bcrypt';
+import { join } from 'path';
+import { TaskService } from 'src/app/core/services/task/task.service';
+import { PrivateFile } from '../../core/models/private-file.class';
+import { ConfigFileService } from '../../core/services/config-file/config-file.service';
 import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { FileService } from '../../core/services/file/file.service';
-import { PrivateFile } from '../../core/models/private-file.class';
-import { DockerService } from '../../docker/docker.service';
+import { MainComposeService } from '../../docker/main-compose.service';
 import { BiotaService } from '../biota/biota.service';
-import { join } from 'path';
 import { EnvVariableService } from '../env-variable/env-variable.service';
 import { LabInitConfig } from '../lab.class';
-import { ConfigFileService } from '../../core/services/config-file/config-file.service';
-import { TaskService } from 'src/app/core/services/task/task.service';
-import { hashSync } from 'bcrypt';
 
 @Injectable()
 export class InitService {
@@ -19,7 +19,7 @@ export class InitService {
     private configService: CoreConfigService,
     private configFileService: ConfigFileService,
     private fileService: FileService,
-    private dockerService: DockerService,
+    private mainComposeService: MainComposeService,
     private biotaService: BiotaService,
     private envVariableService: EnvVariableService,
     private taskService: TaskService
@@ -71,10 +71,10 @@ export class InitService {
     await this.biotaService.pullBiota();
 
     // PULL IMAGES
-    await this.dockerService.pullContainers();
+    await this.mainComposeService.pullContainers();
 
     // UP CONTAINERS
-    await this.dockerService.restartContainers({});
+    await this.mainComposeService.restartContainers({});
 
     // save the init version
     this.fileService.updatePrivateFileData({
@@ -82,7 +82,7 @@ export class InitService {
     });
 
     // clean unused docker images
-    await this.dockerService.systemPrune();
+    await this.mainComposeService.systemPrune();
   }
 
   /**
@@ -99,7 +99,7 @@ export class InitService {
    * It generates the docker compose file and the env variables file
    */
   public async configureDockerCompose(): Promise<void> {
-    await this.dockerService.generateDockerCompose();
+    await this.mainComposeService.generateDockerCompose();
 
     await this.envVariableService.setAllEnvVariables(
       this.configFileService.readConfigFile(),

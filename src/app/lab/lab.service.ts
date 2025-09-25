@@ -1,13 +1,19 @@
 import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { LabInitConfig, LabManagerStatus, LabStatus } from './lab.class';
-import { BeforeDockerCommandOptions, DockerService } from '../docker/docker.service';
-import { TaskService } from '../core/services/task/task.service';
-import { CoreConfigService } from '../core/services/config/core-config.service';
-import { FileService } from '../core/services/file/file.service';
-import { ConfigFileService } from '../core/services/config-file/config-file.service';
-import { BiotaService } from './biota/biota.service';
-import { InitService } from './init/init.service';
+import { AdminerService } from 'src/app/docker/container/adminer.service';
 import { BrickConfigsDTO, ConfigFile } from '../core/models/config-file.class';
+import { TaskStatusInfo } from '../core/models/task.class';
+import { ConfigFileService } from '../core/services/config-file/config-file.service';
+import { CoreConfigService } from '../core/services/config/core-config.service';
+import { ExternalCommunityApiService } from '../core/services/external/external-community-api.service';
+import { BrickGWS, BrickGWSTechnicalInfo } from '../core/services/external/external-community.class';
+import { ExternalLabApiService } from '../core/services/external/external-lab-api.service';
+import { ExternalSpaceApiService } from '../core/services/external/external-space-api.service';
+import { UpdateLabManagerCommand } from '../core/services/external/external-space.class';
+import { FileService } from '../core/services/file/file.service';
+import { TaskService } from '../core/services/task/task.service';
+import { ComposeServiceName } from '../docker/compose-yaml';
+import { AdminerInfo } from '../docker/container/container.class';
+import { ContainerService } from '../docker/container/container.service';
 import {
   ComposeRestartOptions,
   ComposeUpOptions,
@@ -16,16 +22,11 @@ import {
   ErrorLogs,
   PullBiotaDbOptions,
 } from '../docker/docker.class';
+import { BeforeDockerCommandOptions, MainComposeService } from '../docker/main-compose.service';
+import { BiotaService } from './biota/biota.service';
 import { EnvVariableService } from './env-variable/env-variable.service';
-import { ContainerService } from '../docker/container/container.service';
-import { TaskStatusInfo } from '../core/models/task.class';
-import { BrickGWS, BrickGWSTechnicalInfo } from '../core/services/external/external-community.class';
-import { ExternalCommunityApiService } from '../core/services/external/external-community-api.service';
-import { AdminerInfo } from '../docker/container/container.class';
-import { ExternalLabApiService } from '../core/services/external/external-lab-api.service';
-import { ExternalSpaceApiService } from '../core/services/external/external-space-api.service';
-import { UpdateLabManagerCommand } from '../core/services/external/external-space.class';
-import { ComposeServiceName } from '../docker/compose-yaml';
+import { InitService } from './init/init.service';
+import { LabInitConfig, LabManagerStatus, LabStatus } from './lab.class';
 
 const initAllBeforeDockerCommand: BeforeDockerCommandOptions = {
   generateComposeFile: true,
@@ -36,7 +37,7 @@ export class LabService implements OnModuleInit {
   private readonly logger = new Logger(LabService.name);
 
   constructor(
-    private dockerService: DockerService,
+    private mainComposeService: MainComposeService,
     private taskService: TaskService,
     private coreConfigService: CoreConfigService,
     private containerService: ContainerService,
@@ -47,24 +48,25 @@ export class LabService implements OnModuleInit {
     private envVariableService: EnvVariableService,
     private communityService: ExternalCommunityApiService,
     private externalLabService: ExternalLabApiService,
-    private spaceService: ExternalSpaceApiService
+    private spaceService: ExternalSpaceApiService,
+    private adminerService: AdminerService
   ) {}
 
   async onModuleInit(): Promise<void> {
     this.logger.log('Checking if we auto start the lab');
-    if(!this.coreConfigService.getAutoStartLab()) {
+    if (!this.coreConfigService.getAutoStartLab()) {
       this.logger.log('Auto start lab is disabled');
       return;
-    };
+    }
     try {
-        const status = await this.getStatus();
-        const statuses: LabStatus[] = ['ERROR', 'STOPPED'];
-        if (status.isInitialized && status.isConfigured && statuses.includes(status.labStatus)) {
-          this.logger.log('Auto starting the lab');
-          this.initLab();
-        }else{
-          this.logger.log('Lab is already running or not configured, skipping auto start');
-        }
+      const status = await this.getStatus();
+      const statuses: LabStatus[] = ['ERROR', 'STOPPED'];
+      if (status.isInitialized && status.isConfigured && statuses.includes(status.labStatus)) {
+        this.logger.log('Auto starting the lab');
+        this.initLab();
+      } else {
+        this.logger.log('Lab is already running or not configured, skipping auto start');
+      }
     } catch (e) {
       this.logger.error('Error while initializing the lab service', e);
     }
@@ -76,7 +78,7 @@ export class LabService implements OnModuleInit {
       lastInitManagerVersion = this.fileService.readPrivateFile().data?.last_init_manager_version ?? null;
     }
 
-    const containers = await this.dockerService.getComposeContainers();
+    const containers = await this.mainComposeService.inspectContainers();
     const containersStatus = containers.getContainersStatus();
 
     const labIsRunning = await this.externalLabService.healthCheck();
@@ -102,7 +104,7 @@ export class LabService implements OnModuleInit {
     return {
       containersStatus: containersStatus,
       currentTask: this.taskService.currentTask,
-      adminerIsRunning: await this.containerService.adminerIsRunning(),
+      adminerIsRunning: await this.adminerService.adminerIsRunning(),
       version: this.coreConfigService.getLabManagerVersion(),
       biota: {
         exists: this.biotaService.biotaDbExists(),
@@ -122,7 +124,7 @@ export class LabService implements OnModuleInit {
   }
 
   public async getStartingLabError(): Promise<ErrorLogs> {
-    return await this.dockerService.getGlabStartErrorLogs('prod');
+    return await this.mainComposeService.getGlabStartErrorLogs('prod');
   }
 
   public getLabFrontUrl(): string {
@@ -204,20 +206,21 @@ export class LabService implements OnModuleInit {
   //////////////////////////// CONTAINERS ////////////////////////////
 
   public async listContainers(): Promise<DockerInspect[]> {
-    return this.dockerService.listContainers();
+    const containers = await this.mainComposeService.inspectContainers();
+    return containers.getContainers();
   }
 
   public async getContainerDetail(containerName: string): Promise<DockerPsFull> {
-    return this.dockerService.getContainersDetail(containerName);
+    return this.mainComposeService.getContainersDetail(containerName);
   }
 
   public async getContainerSize(containerName: string): Promise<string> {
-    return this.dockerService.getContainerSize(containerName);
+    return this.mainComposeService.getContainerSize(containerName);
   }
 
   public async startComposeContainer(serviceName: string): Promise<void> {
     await this.checkLabIsConfigured();
-    return this.dockerService.upContainerCommand([serviceName]);
+    return this.mainComposeService.upContainerCommand([serviceName]);
   }
 
   public async stopContainer(containerName: string): Promise<boolean> {
@@ -232,43 +235,43 @@ export class LabService implements OnModuleInit {
 
   public async upContainers(options: ComposeUpOptions): Promise<void> {
     await this.checkLabIsConfigured();
-    return this.dockerService.upContainers(options, initAllBeforeDockerCommand);
+    return this.mainComposeService.upContainers(options, initAllBeforeDockerCommand);
   }
 
   public async restartContainers(options: ComposeRestartOptions): Promise<void> {
     await this.checkLabIsConfigured();
-    return this.dockerService.restartContainers(options, initAllBeforeDockerCommand);
+    return this.mainComposeService.restartContainers(options, initAllBeforeDockerCommand);
   }
 
   public async stopContainers(): Promise<void> {
     await this.checkLabIsConfigured();
-    return this.dockerService.stopContainers();
+    return this.mainComposeService.stopContainers();
   }
 
   public async deleteContainers(): Promise<void> {
     await this.checkLabIsConfigured();
-    return this.dockerService.deleteContainers();
+    return this.mainComposeService.deleteContainers();
   }
 
   public async pullContainers(): Promise<void> {
     await this.checkLabIsConfigured();
-    return this.dockerService.pullContainers(initAllBeforeDockerCommand);
+    return this.mainComposeService.pullContainers(initAllBeforeDockerCommand);
   }
 
   public async getLogs(containerName: string): Promise<string> {
-    return this.dockerService.getLogs(containerName);
+    return this.containerService.getLogs(containerName);
   }
 
   public async getErrorLogs(containerName: string): Promise<string> {
-    return this.dockerService.getErrorLogs(containerName);
+    return this.containerService.getErrorLogs(containerName);
   }
 
   public exportLogsToFile(containerName: string): Promise<string> {
-    return this.dockerService.exportLogsToFile(containerName, '/tmp/logs_export.txt');
+    return this.containerService.exportLogsToFile(containerName, '/tmp/logs_export.txt');
   }
 
   public async systemPrune(): Promise<void> {
-    return this.dockerService.systemPrune();
+    return this.mainComposeService.systemPrune();
   }
 
   //////////////////////////// BIOTA ////////////////////////////
@@ -367,15 +370,15 @@ export class LabService implements OnModuleInit {
 
   //////////////////////////// ADMINER ////////////////////////////
   public async startAdminer(): Promise<boolean> {
-    return this.containerService.startAdminerContainer();
+    return this.adminerService.startAdminerContainer();
   }
 
   public async stopAdminer(): Promise<boolean> {
-    return this.containerService.deleteAdminerContainer();
+    return this.adminerService.deleteAdminerContainer();
   }
 
   public async getAdminerInfo(): Promise<AdminerInfo> {
-    return this.containerService.getAdminerInfo();
+    return this.adminerService.getAdminerInfo();
   }
 
   //////////////////////////// DESKTOP ////////////////////////////

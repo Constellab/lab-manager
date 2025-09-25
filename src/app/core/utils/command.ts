@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ChildProcess, exec, execFile, spawn } from 'child_process';
 import { Observable } from 'rxjs';
 
@@ -22,9 +22,8 @@ export enum ExecCommandMode {
 /**
  * Service to execute shell commands and scripts
  */
-@Injectable()
-export class CommandService {
-  private readonly logger = new Logger(CommandService.name);
+export class Command {
+  private readonly logger = new Logger(Command.name);
 
   /**
    * Execute a command and return the result once the command is finished

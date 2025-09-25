@@ -3,7 +3,6 @@ import { FileService } from './services/file/file.service';
 import { CoreConfigService } from './services/config/core-config.service';
 import { CORE_MODULE_PROVIDER, CoreModuleConfig } from './models/core-module-config.class';
 import { KeyGeneratorService } from './services/key-generator/key-generator.service';
-import { CommandService } from './services/command/command.service';
 import { TaskService } from './services/task/task.service';
 import { TraefikService } from './services/traefik/traefik.service';
 import { RcloneService } from './services/rclone/rclone.service';
@@ -32,7 +31,6 @@ export class CoreModule {
         FileService,
         CoreConfigService,
         KeyGeneratorService,
-        CommandService,
         TaskService,
         TraefikService,
         RcloneService,
@@ -47,7 +45,6 @@ export class CoreModule {
         FileService,
         CoreConfigService,
         KeyGeneratorService,
-        CommandService,
         TaskService,
         TraefikService,
         RcloneService,

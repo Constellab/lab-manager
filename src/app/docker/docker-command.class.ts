@@ -1,8 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { DockerCommandServiceI } from './docker-command.class';
-import { CommandService, ExecCommandMode } from 'src/app/core/services/command/command.service';
-import { FileService } from 'src/app/core/services/file/file.service';
-import { DockerInspect, DockerPsFull, DockerRunOptions } from '../docker.class';
+import { BadRequestException } from '@nestjs/common';
+import { Command, ExecCommandMode } from 'src/app/core/utils/command';
+import { ContainersInspect } from './docker-inspect.class';
+import { DockerInspect, DockerPsFull, DockerRunOptions } from './docker.class';
 
 export interface DockerFormatKey {
   key: string; // key in the json
@@ -53,48 +52,7 @@ export class DockerFormatKeys {
 /**
  * Service to execute docker command and get result
  */
-@Injectable()
-export class DockerCommandService implements DockerCommandServiceI {
-  constructor(
-    private commandService: CommandService,
-    private fileService: FileService
-  ) {}
-
-  //////////////////////////////// DOCKER COMPOSE ////////////////////////////////
-
-  /**
-   * Call a docker compose up command
-   * @param options
-   * @param containers if provided, only up the containers
-   */
-  public composeUp(options: string[] = [], containers: string[] = []): Promise<string> {
-    return this.execDockerComposeCommand(`up -d ${options.join(' ')} ${containers.join(' ')}`);
-  }
-
-  public composePull(): Promise<string> {
-    return this.execDockerComposeCommand(`pull`);
-  }
-
-  public composeRestart(): Promise<string> {
-    return this.execDockerComposeCommand('restart');
-  }
-
-  public composeStop(containers: string[] = []): Promise<string> {
-    return this.execDockerComposeCommand(`stop ${containers.join(' ')}`);
-  }
-
-  public composeDown(containers: string[] = []): Promise<string> {
-    return this.execDockerComposeCommand(`down ${containers.join(' ')}`);
-  }
-
-  private execDockerComposeCommand(options: string): Promise<string> {
-    const composePath = this.fileService.dockerComposePath;
-    const envPath = this.fileService.envFilePath;
-    const command: string = `docker compose -f ${composePath} --env-file ${envPath} ${options}`;
-    return this.commandService.execCommand(command);
-  }
-  //////////////////////////////// DOCKER ////////////////////////////////
-
+export class DockerCommand {
   public async getContainerFullInfo(containerName: string): Promise<DockerPsFull> {
     // le size peut rendre la réponse trop longue
     const result = await this.runDockerPs(
@@ -123,7 +81,7 @@ export class DockerCommandService implements DockerCommandServiceI {
   // specific method to get size of container
   // not included in detail because it can take a while
   public async getContainerSize(containerName: string): Promise<string> {
-    const result = await this.commandService.execCommand(
+    const result = await this.getCommand().execCommand(
       `docker ps -s -f name=${containerName} --format "{{.Size}}"`
     );
     return result;
@@ -139,7 +97,7 @@ export class DockerCommandService implements DockerCommandServiceI {
       command += ` ${filters}`;
     }
     // return a json like with each line separated with \n
-    const result = await this.commandService.execCommand(command);
+    const result = await this.getCommand().execCommand(command);
 
     return result
       .split('\n')
@@ -156,7 +114,7 @@ export class DockerCommandService implements DockerCommandServiceI {
       DockerFormatKeys.INSPECT_STARTED_AT,
     ]);
 
-    const result = await this.commandService
+    const result = await this.getCommand()
       .execCommand(`docker inspect ${containerName} --format=${strFormat}`, ExecCommandMode.NO_LOG)
       .catch(() => null);
 
@@ -171,11 +129,25 @@ export class DockerCommandService implements DockerCommandServiceI {
     );
   }
 
+  public async dockerInspectMultiple(containerNames: string[]): Promise<ContainersInspect> {
+    const containers = new ContainersInspect();
+    for (const containerName of containerNames) {
+      const inspect = await this.dockerInspect(containerName);
+      containers.addContainer(inspect);
+    }
+    return containers;
+  }
+
+  public async containerIsRunning(containerName: string): Promise<boolean> {
+    const inspect = await this.dockerInspect(containerName);
+    return inspect.isRunning();
+  }
+
   public async getLogs(containerName: string): Promise<string> {
     // --timestamps : add timestamps to logs
     // --tail 2000 : only get the last 2000 lines
     // 2>&1 : redirect stderr to stdout to get it in the result in the order it was written
-    return this.commandService.execCommand(
+    return this.getCommand().execCommand(
       `docker logs --timestamps --tail 2000 ${containerName} 2>&1`,
       ExecCommandMode.STDERR_AS_SUCCESS
     );
@@ -188,7 +160,7 @@ export class DockerCommandService implements DockerCommandServiceI {
     // --since : only get logs since the container started (to avoid getting old logs)
     // 2>&1 : redirect stderr to stdout to get it in the result in the order it was written
     // 1>/dev/null : redirect stdout to /dev/null to only get stderr
-    return this.commandService.execCommand(
+    return this.getCommand().execCommand(
       `docker logs --timestamps --tail 2000 ${containerName} --since ${inspect.startedAt} 2>&1 1>/dev/null`,
       ExecCommandMode.STDERR_AS_SUCCESS
     );
@@ -197,16 +169,16 @@ export class DockerCommandService implements DockerCommandServiceI {
   public async exportLogsToFile(containerName: string, filePath: string): Promise<string> {
     // --timestamps : add timestamps to logs
     // 2>&1 : redirect stderr to stdout to get it in the result in the order it was written
-    await this.commandService.execCommand(`docker logs --timestamps ${containerName} > ${filePath} 2>&1`);
+    await this.getCommand().execCommand(`docker logs --timestamps ${containerName} > ${filePath} 2>&1`);
     return filePath;
   }
 
   public login(username: string, password: string, registryUrl: string): Promise<string> {
-    return this.commandService.execCommand(`docker login -u ${username} -p ${password} ${registryUrl}`);
+    return this.getCommand().execCommand(`docker login -u ${username} -p ${password} ${registryUrl}`);
   }
 
   public systemPrune(): Promise<string> {
-    return this.commandService.execCommand(`docker system prune -f -a`);
+    return this.getCommand().execCommand(`docker system prune -f -a`);
   }
 
   public async dockerRun(
@@ -244,7 +216,7 @@ export class DockerCommandService implements DockerCommandServiceI {
     }
 
     command += ` ${image}`;
-    const result = await this.commandService.execCommand(command);
+    const result = await this.getCommand().execCommand(command);
 
     // there is an error if the returned string is not only one work (the container id)
     if (result === '' || result.includes(' ')) {
@@ -264,9 +236,7 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
 
   public async addNetworkToContainer(containerName: string, network: string): Promise<void> {
-    const result = await this.commandService.execCommand(
-      `docker network connect ${network} ${containerName}`
-    );
+    const result = await this.getCommand().execCommand(`docker network connect ${network} ${containerName}`);
     // if there was an error
     if (result !== '') {
       throw new BadRequestException(
@@ -276,7 +246,7 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
 
   public async dockerRmContainer(containerName: string): Promise<void> {
-    const result = await this.commandService.execCommand(`docker rm -f ${containerName}`);
+    const result = await this.getCommand().execCommand(`docker rm -f ${containerName}`);
 
     // if success the response is containerName\n
     if (result !== containerName + '\n') {
@@ -285,7 +255,7 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
 
   public async startContainer(containerName: string): Promise<void> {
-    const result = await this.commandService.execCommand(`docker start ${containerName}`);
+    const result = await this.getCommand().execCommand(`docker start ${containerName}`);
 
     // if success the response is containerName\n
     if (result !== containerName + '\n') {
@@ -294,7 +264,7 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
 
   public async stopContainer(containerName: string): Promise<void> {
-    const result = await this.commandService.execCommand(`docker stop ${containerName}`);
+    const result = await this.getCommand().execCommand(`docker stop ${containerName}`);
 
     // if success the response is containerName\n
     if (result !== containerName + '\n') {
@@ -303,6 +273,10 @@ export class DockerCommandService implements DockerCommandServiceI {
   }
 
   public async dockerExec(containerName: string, command: string, mode?: ExecCommandMode): Promise<string> {
-    return this.commandService.execCommand(`docker exec ${containerName} ${command}`, mode);
+    return this.getCommand().execCommand(`docker exec ${containerName} ${command}`, mode);
+  }
+
+  private getCommand(): Command {
+    return new Command();
   }
 }

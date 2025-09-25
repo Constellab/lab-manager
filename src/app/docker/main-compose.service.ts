@@ -1,47 +1,51 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { GPUService } from 'src/app/core/services/gpu/gpu.service';
+import { CoreConfigService } from '../core/services/config/core-config.service';
+import { FileService } from '../core/services/file/file.service';
+import { TaskService } from '../core/services/task/task.service';
+import { DockerCommand } from './docker-command.class';
+import { DockerComposeFactory } from './docker-compose.factory';
+import { ContainersInspect } from './docker-inspect.class';
 import {
   ComposeRestartOptions,
   ComposeUpOptions,
-  DockerInspect,
   DockerProgress,
   DockerPsFull,
   ErrorLogs,
 } from './docker.class';
-import { FileService } from '../core/services/file/file.service';
-import { TaskService } from '../core/services/task/task.service';
-import { GPUService } from 'src/app/core/services/gpu/gpu.service';
-import { DockerCommandService } from './docker-command/docker-command.service';
-import { ContainerService } from './container/container.service';
-import { CoreConfigService } from '../core/services/config/core-config.service';
-import { Containers } from './compose.class';
 
 export interface BeforeDockerCommandOptions {
   generateComposeFile?: boolean;
 }
 
+/**
+ * Service to manage the main docker-compose file and its services
+ */
 @Injectable()
-export class DockerService {
-  private readonly logger = new Logger(DockerService.name);
+export class MainComposeService {
+  private readonly logger = new Logger(MainComposeService.name);
 
   constructor(
-    private dockerCommand: DockerCommandService,
     private fileService: FileService,
-    private containerService: ContainerService,
     private taskService: TaskService,
     private gpuService: GPUService,
-    private configService: CoreConfigService
+    private configService: CoreConfigService,
+    private dockerComposeFactory: DockerComposeFactory
   ) {}
 
-  public async listContainers(): Promise<DockerInspect[]> {
-    return await this.containerService.getAllContainerInspect();
+  public async inspectContainers(): Promise<ContainersInspect> {
+    const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+    return await mainCompose.composeInspect();
   }
 
   public async getContainersDetail(containerName: string): Promise<DockerPsFull> {
-    return await this.dockerCommand.getContainerFullInfo(containerName);
+    const dockerCommand = new DockerCommand();
+    return await dockerCommand.getContainerFullInfo(containerName);
   }
 
   public getContainerSize(containerName: string): Promise<string> {
-    return this.dockerCommand.getContainerSize(containerName);
+    const dockerCommand = new DockerCommand();
+    return dockerCommand.getContainerSize(containerName);
   }
 
   public async pullContainers(beforeOptions: BeforeDockerCommandOptions = {}): Promise<void> {
@@ -51,7 +55,8 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.composePull();
+      const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+      const result = await mainCompose.composePull();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -81,10 +86,8 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      if (!services || services.length === 0) {
-        services = this.containerService.getComposeServiceNames();
-      }
-      const result = await this.dockerCommand.composeUp([], services);
+      const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+      const result = await mainCompose.composeUp([], services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -97,7 +100,8 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.composeStop(services);
+      const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+      const result = await mainCompose.composeStop(services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -110,7 +114,8 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.composeDown(services);
+      const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+      const result = await mainCompose.composeDown(services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -123,7 +128,8 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.composeStop();
+      const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+      const result = await mainCompose.composeStop();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -157,14 +163,6 @@ export class DockerService {
     }
   }
 
-  public async getLogs(containerName: string): Promise<string> {
-    return await this.dockerCommand.getLogs(containerName);
-  }
-
-  public async getErrorLogs(containerName: string): Promise<string> {
-    return await this.dockerCommand.getErrorLogs(containerName);
-  }
-
   /**
    * Get start error logs from the glab container
    */
@@ -185,10 +183,6 @@ export class DockerService {
     return logs.progress;
   }
 
-  public exportLogsToFile(containerName: string, filePath: string): Promise<string> {
-    return this.dockerCommand.exportLogsToFile(containerName, filePath);
-  }
-
   public async systemPrune(): Promise<void> {
     // in local mode, don't prune because it breaks the local docker environment
     if (this.configService.isLocal()) return;
@@ -197,24 +191,13 @@ export class DockerService {
     this.taskService.newTask(taskName);
 
     try {
-      const result = await this.dockerCommand.systemPrune();
+      const dockerCommand = new DockerCommand();
+      const result = await dockerCommand.systemPrune();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
       throw e;
     }
-  }
-
-  public async getComposeContainers(): Promise<Containers> {
-    const containerNames: string[] = this.containerService.getComposeServiceNames();
-
-    const containers = new Containers();
-    for (const containerName of containerNames) {
-      const inspect = await this.dockerCommand.dockerInspect(containerName);
-      containers.addContainer(inspect);
-    }
-
-    return containers;
   }
 
   public async generateDockerCompose(): Promise<void> {

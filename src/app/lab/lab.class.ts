@@ -1,5 +1,5 @@
 import { TaskStatusInfo } from '../core/models/task.class';
-import { ContainersStatusInfo } from '../docker/compose.class';
+import { ContainersStatusInfo } from '../docker/docker-inspect.class';
 import { ContainerStatus, DockerProgress } from '../docker/docker.class';
 
 export type LabStatus = 'STOPPED' | 'RUNNING' | 'STARTING' | 'ERROR';

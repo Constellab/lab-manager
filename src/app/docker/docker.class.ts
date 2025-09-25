@@ -76,6 +76,10 @@ export class DockerInspect {
   public exists(): boolean {
     return this.status !== 'none';
   }
+
+  public isMariaDbOrMySql(): boolean {
+    return this.image.toLowerCase().includes('mariadb') || this.image.toLowerCase().includes('mysql');
+  }
 }
 
 export interface ComposeUpOptions {

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { CoreConfigService } from '../core/services/config/core-config.service';
-import { DockerCommandService } from '../docker/docker-command/docker-command.service';
+import { DockerCommand } from '../docker/docker-command.class';
 import { DockerRunOptionsPort } from '../docker/docker.class';
 
 /**
@@ -17,10 +17,7 @@ export class LabDesktopService implements OnModuleInit {
 
   private readonly logger = new Logger(LabDesktopService.name);
 
-  constructor(
-    private coreConfigService: CoreConfigService,
-    private dockerCommand: DockerCommandService
-  ) {}
+  constructor(private coreConfigService: CoreConfigService) {}
 
   onModuleInit(): void {
     if (this.coreConfigService.isDesktop()) {
@@ -36,7 +33,8 @@ export class LabDesktopService implements OnModuleInit {
   private async startLabManagerStandaloneFront(): Promise<void> {
     this.logger.log(`Starting container '${LabDesktopService.CONTAINER_NAME}'`);
     // check if the container exists
-    const container = await this.dockerCommand.dockerInspect(LabDesktopService.CONTAINER_NAME);
+    const dockerCommand = new DockerCommand();
+    const container = await dockerCommand.dockerInspect(LabDesktopService.CONTAINER_NAME);
 
     const expectedVersion = this.coreConfigService.getLabManagerStandaloneFrontVersion();
     const expectedImage = LabDesktopService.IMAGE_NAME + ':' + expectedVersion;
@@ -50,7 +48,7 @@ export class LabDesktopService implements OnModuleInit {
           `The image of the container '${LabDesktopService.CONTAINER_NAME}' is not the correct one.` +
             ` Current image '${container.image}', expected image '${expectedImage}'. Deleting the container.`
         );
-        await this.dockerCommand.dockerRmContainer(LabDesktopService.CONTAINER_NAME);
+        await dockerCommand.dockerRmContainer(LabDesktopService.CONTAINER_NAME);
         this.logger.log(`Container '${LabDesktopService.CONTAINER_NAME}' deleted.`);
 
         // if the container is in error, we delete it
@@ -58,13 +56,13 @@ export class LabDesktopService implements OnModuleInit {
         this.logger.log(
           `The container '${LabDesktopService.CONTAINER_NAME}' is in error. Deleting the container.`
         );
-        await this.dockerCommand.dockerRmContainer(LabDesktopService.CONTAINER_NAME);
+        await dockerCommand.dockerRmContainer(LabDesktopService.CONTAINER_NAME);
         this.logger.log(`Container '${LabDesktopService.CONTAINER_NAME}' deleted.`);
         // if the container is not running, we start it
       } else if (!container.isRunning()) {
         // start the container and return
         this.logger.log(`Starting the container '${LabDesktopService.CONTAINER_NAME}'`);
-        await this.dockerCommand.startContainer(LabDesktopService.CONTAINER_NAME);
+        await dockerCommand.startContainer(LabDesktopService.CONTAINER_NAME);
         this.logger.log(`Container '${LabDesktopService.CONTAINER_NAME}' started.`);
         return;
 
@@ -77,7 +75,7 @@ export class LabDesktopService implements OnModuleInit {
 
     // if the container does not exist, we create it
     this.logger.log(`Creating the container '${LabDesktopService.CONTAINER_NAME}'`);
-    await this.dockerCommand.dockerRun(expectedImage, LabDesktopService.CONTAINER_NAME, {
+    await dockerCommand.dockerRun(expectedImage, LabDesktopService.CONTAINER_NAME, {
       ports: [LabDesktopService.PORT],
       envs: {
         COMMUNITY_API_URL: this.coreConfigService.getDesktopCommunityApiUrl(),

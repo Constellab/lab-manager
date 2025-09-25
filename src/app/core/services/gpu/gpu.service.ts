@@ -1,17 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { CommandService } from '../command/command.service';
+import { Command } from '../../utils/command';
 
 /**
  * Service to manage the GPU
  */
 @Injectable()
 export class GPUService {
-  constructor(private commandService: CommandService) {}
+  constructor() {}
 
   public async isGpu(): Promise<boolean> {
     try {
       // to check if this is a GPU server, check if nvidia is installed
-      const nvidia = await this.commandService.execCommand('lspci | grep -i nvidia');
+      const command = new Command();
+      const nvidia = await command.execCommand('lspci | grep -i nvidia');
       return nvidia != '';
     } catch (_) {
       return false;
