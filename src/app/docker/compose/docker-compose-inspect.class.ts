@@ -1,26 +1,26 @@
-import { DockerInspect } from './docker.class';
+import { DockerInspect } from '../docker.class';
 
 /**
  * global status for multiple containers
  */
-export type ContainersStatus = 'STOP' | 'DOWN' | 'UP' | 'PARTIALLY_UP' | 'ERROR';
+export type DockerComposeStatus = 'STOP' | 'DOWN' | 'UP' | 'PARTIALLY_UP' | 'ERROR';
 
-export interface ContainersStatusInfo {
-  status: ContainersStatus;
+export interface DockerComposeStatusInfo {
+  status: DockerComposeStatus;
   info?: string;
 }
 
 /**
  * Class to manage the containers of docker-compose
  */
-export class ContainersInspect {
+export class DockerComposeInspect {
   private containers: DockerInspect[] = [];
 
   public addContainer(container: DockerInspect): void {
     this.containers.push(container);
   }
 
-  public getContainersStatus(): ContainersStatusInfo {
+  public getStatus(): DockerComposeStatusInfo {
     // if one containers is error return error
     if (this.containers.some((container) => container.status === 'error')) {
       return {
@@ -61,17 +61,17 @@ export class ContainersInspect {
   }
 
   public async allContainersAreRunning(): Promise<boolean> {
-    const status = this.getContainersStatus();
+    const status = this.getStatus();
     return status.status === 'UP';
   }
 
   public async allContainersAreStopped(): Promise<boolean> {
-    const status = this.getContainersStatus();
+    const status = this.getStatus();
     return status.status === 'STOP' || status.status === 'DOWN';
   }
 
   public async oneContainerIsRunning(): Promise<boolean> {
-    const status = this.getContainersStatus();
+    const status = this.getStatus();
     return status.status === 'UP' || status.status === 'PARTIALLY_UP';
   }
 

@@ -46,7 +46,11 @@ export class AdminerComposeService {
 
     try {
       const templatePath = this.coreConfigService.getAssetPath(AdminerComposeService.ADMINER_TEMPLATE_FILE);
-      const dockerYaml = DockerComposeYaml.fromFile(templatePath);
+      const dockerYaml = DockerComposeYaml.fromFile(
+        templatePath,
+        AdminerComposeService.ADMINER_BRICK_NAME,
+        AdminerComposeService.ADMINER_UNIQUE_NAME
+      );
 
       // in local we add a port mapping, in prod we add traefik labels
       if (this.coreConfigService.isLocal()) {
@@ -65,11 +69,7 @@ export class AdminerComposeService {
         );
       }
 
-      const dockerCompose = await this.dockerComposeService.registerSubCompose(
-        dockerYaml,
-        AdminerComposeService.ADMINER_BRICK_NAME,
-        AdminerComposeService.ADMINER_UNIQUE_NAME
-      );
+      const dockerCompose = await this.dockerComposeService.registerSubCompose(dockerYaml);
       const wasStarted = await dockerCompose.composeUp();
 
       this.taskService.markTaskAsSuccess(taskName, 'Ok');

@@ -1,5 +1,5 @@
 import { TaskStatusInfo } from '../core/models/task.class';
-import { ContainersStatusInfo } from '../docker/docker-inspect.class';
+import { DockerComposeStatusInfo } from '../docker/compose/docker-compose-inspect.class';
 import { ContainerStatus, DockerProgress } from '../docker/docker.class';
 
 export type LabStatus = 'STOPPED' | 'RUNNING' | 'STARTING' | 'ERROR';
@@ -11,7 +11,7 @@ export class GlabStatus {
 }
 
 export interface LabManagerStatus {
-  containersStatus: ContainersStatusInfo;
+  containersStatus: DockerComposeStatusInfo;
   currentTask?: TaskStatusInfo;
   adminerIsRunning: boolean;
   version: string;

@@ -15,6 +15,8 @@ export interface DockerComposeService {
 }
 
 export interface DockerComposeContent {
+  'x-brick-name': string;
+  'x-unique-name': string;
   services: Record<string, DockerComposeService>;
   networks: Record<string, unknown>;
   volumes: Record<string, unknown>;
@@ -32,23 +34,47 @@ export class DockerComposeYaml {
   public static readonly NETWORK_DEV_VAR_NAME = 'DEV';
   public static readonly NETWORK_PROD_VAR_NAME = 'PROD';
 
-  constructor(strYaml: string) {
+  constructor(strYaml: string, brickName?: string, uniqueName?: string) {
     if (!strYaml || strYaml.trim().length === 0) {
       throw new Error('The docker-compose.yml content is empty');
     }
     const yamlJson = load(strYaml);
-    const content = yamlJson as DockerComposeContent;
-    this.checkYaml(content);
+    const content = this.checkYaml(yamlJson as DockerComposeContent, brickName, uniqueName);
     this.content = this.parseYaml(content);
   }
 
-  private checkYaml(content: DockerComposeContent): void {
+  private checkYaml(
+    content: DockerComposeContent,
+    brickName?: string,
+    uniqueName?: string
+  ): DockerComposeContent {
+    // check that the brickName and uniqueName match the ones in the file if provided
+    if (brickName) {
+      content['x-brick-name'] = brickName;
+    }
+
+    if (uniqueName) {
+      content['x-unique-name'] = uniqueName;
+    }
+
+    if (!content['x-brick-name'] || content['x-brick-name'].trim().length === 0) {
+      throw new Error('The docker-compose file is missing the x-brick-name property');
+    }
+    if (!content['x-unique-name'] || content['x-unique-name'].trim().length === 0) {
+      throw new Error('The docker-compose file is missing the x-unique-name property');
+    }
+
+    if (!content.services || Object.keys(content.services).length === 0) {
+      throw new Error('The docker-compose file does not contain any services');
+    }
     // check that all services have a container_name
     for (const serviceName of Object.keys(content.services)) {
       if (!content.services[serviceName].container_name) {
         throw new Error(`The service ${serviceName} is missing the container_name property`);
       }
     }
+
+    return content;
   }
 
   /**
@@ -57,7 +83,6 @@ export class DockerComposeYaml {
    */
   private parseYaml(content: DockerComposeContent): DockerComposeContent {
     // replace the networks variable names with actual network names
-
     let hasDevNetwork = false;
     let hasProdNetwork = false;
     for (const serviceName of Object.keys(content.services)) {
@@ -147,7 +172,15 @@ export class DockerComposeYaml {
     return this.toString() === other.toString();
   }
 
-  public static fromFile(filePath: string): DockerComposeYaml {
+  getBrickName(): string {
+    return this.content['x-brick-name'];
+  }
+
+  getUniqueName(): string {
+    return this.content['x-unique-name'];
+  }
+
+  public static fromFile(filePath: string, brickName?: string, uniqueName?: string): DockerComposeYaml {
     if (!filePath || filePath.trim().length === 0) {
       throw new Error('The file path is empty');
     }
@@ -155,6 +188,6 @@ export class DockerComposeYaml {
       throw new Error(`The file '${filePath}' does not exist`);
     }
     const fileContent = readFileSync(filePath, 'utf-8');
-    return new DockerComposeYaml(fileContent);
+    return new DockerComposeYaml(fileContent, brickName, uniqueName);
   }
 }

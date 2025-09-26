@@ -54,7 +54,11 @@ export class LabDesktopComposeService implements OnModuleInit {
       const templatePath = this.coreConfigService.getAssetPath(
         LabDesktopComposeService.LAB_DESKTOP_TEMPLATE_FILE
       );
-      const dockerYaml = DockerComposeYaml.fromFile(templatePath);
+      const dockerYaml = DockerComposeYaml.fromFile(
+        templatePath,
+        LabDesktopComposeService.LAB_DESKTOP_BRICK_NAME,
+        LabDesktopComposeService.LAB_DESKTOP_UNIQUE_NAME
+      );
 
       const expectedVersion = this.coreConfigService.getLabManagerStandaloneFrontVersion();
       const expectedImage = LabDesktopComposeService.LAB_DESKTOP_IMAGE_NAME + ':' + expectedVersion;
@@ -77,11 +81,7 @@ export class LabDesktopComposeService implements OnModuleInit {
         `http://localhost:${this.coreConfigService.getPort()}`
       );
 
-      const dockerCompose = await this.dockerComposeService.registerSubCompose(
-        dockerYaml,
-        LabDesktopComposeService.LAB_DESKTOP_BRICK_NAME,
-        LabDesktopComposeService.LAB_DESKTOP_UNIQUE_NAME
-      );
+      const dockerCompose = await this.dockerComposeService.registerSubCompose(dockerYaml);
 
       // We force recreate to ensure the latest image is used
       const wasStarted = await dockerCompose.composeUp(['--pull always']);

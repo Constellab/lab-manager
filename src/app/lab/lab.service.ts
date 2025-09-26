@@ -79,7 +79,7 @@ export class LabService implements OnModuleInit {
     }
 
     const containers = await this.mainComposeService.inspectContainers();
-    const containersStatus = containers.getContainersStatus();
+    const containersStatus = containers.getStatus();
 
     const labIsRunning = await this.externalLabService.healthCheck();
 

@@ -1,8 +1,8 @@
 import { Logger } from '@nestjs/common';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { Command, ExecCommandMode } from '../../core/utils/command';
 import { DockerCommand } from '../docker-command.class';
-import { ContainersInspect } from '../docker-inspect.class';
+import { DockerComposeInspect, DockerComposeStatusInfo } from './docker-compose-inspect.class';
 import { DockerComposeYaml } from './docker-compose-yaml';
 
 export class DockerCompose {
@@ -28,7 +28,7 @@ export class DockerCompose {
 
   private loadComposeYaml(): void {
     const strYaml = this.getComposeFileContent();
-    this.composeYaml = new DockerComposeYaml(strYaml);
+    this.composeYaml = new DockerComposeYaml(strYaml, this.brickName, this.uniqueName);
   }
 
   public getComposeYaml(): DockerComposeYaml {
@@ -39,9 +39,14 @@ export class DockerCompose {
     return this.composeYaml.getContainerNames();
   }
 
-  public composeInspect(): Promise<ContainersInspect> {
+  public composeInspect(): Promise<DockerComposeInspect> {
     const dockerCommand = new DockerCommand();
     return dockerCommand.dockerInspectMultiple(this.getContainerNames());
+  }
+
+  public async getStatus(): Promise<DockerComposeStatusInfo> {
+    const inspect = await this.composeInspect();
+    return inspect.getStatus();
   }
 
   public async allServicesAreRunning(): Promise<boolean> {
@@ -235,5 +240,14 @@ export class DockerCompose {
 
   public isEqualToComposeYaml(other: DockerComposeYaml): boolean {
     return this.composeYaml.equalTo(other);
+  }
+
+  public deleteFiles(): void {
+    if (existsSync(this.composeFilePath)) {
+      unlinkSync(this.composeFilePath);
+    }
+    if (existsSync(this.envFilePath)) {
+      unlinkSync(this.envFilePath);
+    }
   }
 }

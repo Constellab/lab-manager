@@ -4,7 +4,6 @@ import { CoreConfigService } from '../../core/services/config/core-config.servic
 import { FileService } from '../../core/services/file/file.service';
 import { TaskService } from '../../core/services/task/task.service';
 import { DockerCommand } from '../docker-command.class';
-import { ContainersInspect } from '../docker-inspect.class';
 import {
   ComposeRestartOptions,
   ComposeUpOptions,
@@ -12,6 +11,7 @@ import {
   DockerPsFull,
   ErrorLogs,
 } from '../docker.class';
+import { DockerComposeInspect } from './docker-compose-inspect.class';
 import { DockerComposeService } from './docker-compose.service';
 
 export interface BeforeDockerCommandOptions {
@@ -33,7 +33,7 @@ export class MainComposeService {
     private dockerComposeService: DockerComposeService
   ) {}
 
-  public async inspectContainers(): Promise<ContainersInspect> {
+  public async inspectContainers(): Promise<DockerComposeInspect> {
     const mainCompose = this.dockerComposeService.createMainComposeObject();
     return await mainCompose.composeInspect();
   }

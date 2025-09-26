@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { Command, ExecCommandMode } from 'src/app/core/utils/command';
-import { ContainersInspect } from './docker-inspect.class';
+import { DockerComposeInspect } from './compose/docker-compose-inspect.class';
 import { DockerInspect, DockerPsFull, DockerRunOptions } from './docker.class';
 
 export interface DockerFormatKey {
@@ -129,8 +129,8 @@ export class DockerCommand {
     );
   }
 
-  public async dockerInspectMultiple(containerNames: string[]): Promise<ContainersInspect> {
-    const containers = new ContainersInspect();
+  public async dockerInspectMultiple(containerNames: string[]): Promise<DockerComposeInspect> {
+    const containers = new DockerComposeInspect();
     for (const containerName of containerNames) {
       const inspect = await this.dockerInspect(containerName);
       containers.addContainer(inspect);

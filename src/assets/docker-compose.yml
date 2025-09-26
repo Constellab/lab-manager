@@ -12,6 +12,7 @@ services:
       - LAB_ENVIRONMENT=ON_CLOUD
       - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
+      - LAB_MANAGER_API_URL=https://lab-manager.${VIRTUAL_HOST}
       - SPACE_API_KEY=${SPACE_PROD_API_KEY}
       - SPACE_API_URL=${SPACE_API_URL}
       - SPACE_FRONT_URL=${SPACE_FRONT_URL}
@@ -85,6 +86,7 @@ services:
       - LAB_ENVIRONMENT=ON_CLOUD
       - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
+      - LAB_MANAGER_API_URL=https://lab-manager.${VIRTUAL_HOST}
       - SPACE_API_KEY=${SPACE_DEV_API_KEY}
       - SPACE_API_URL=${SPACE_API_URL}
       - SPACE_FRONT_URL=${SPACE_FRONT_URL}
