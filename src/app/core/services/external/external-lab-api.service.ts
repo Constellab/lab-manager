@@ -39,11 +39,9 @@ export class ExternalLabApiService {
 
   private constructRoute(route: string): string {
     let url: string;
-    if (this.configService.isDesktop()) {
+    if (this.configService.isLocal()) {
       // use local network in desktop mode
       url = `http://${MainComposeServiceName.GLAB}:${MainDockerCompose.GLAB_INTERNAL_PORT}`;
-    } else if (this.configService.isLocal()) {
-      url = 'http://host.docker.internal:3100';
     } else {
       url = `https://${MainComposeServiceName.GLAB}.${this.configService.getVirtualHost()}`;
     }

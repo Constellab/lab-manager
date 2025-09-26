@@ -58,7 +58,9 @@ export class DockerComposeService {
 
     // Check if file exists and content differs
     if (existingCompose && !existingCompose.isEqualToComposeYaml(composeYaml)) {
-      await this.deleteDockerCompose(brickName, uniqueName);
+      if (await existingCompose.oneServiceIsRunning()) {
+        await this.deleteDockerCompose(brickName, uniqueName);
+      }
     }
 
     const subComposeFolder = this.getSubComposeFolderPath();

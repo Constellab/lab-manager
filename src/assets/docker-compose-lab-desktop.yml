@@ -4,6 +4,4 @@ services:
     container_name: lab_desktop
     ports:
       - '82:80'
-    networks:
-      - DEV
-      - PROD
+    
