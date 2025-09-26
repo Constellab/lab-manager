@@ -63,12 +63,19 @@ export class DockerComposeService {
 
     const subComposeFolder = this.getSubComposeFolderPath();
 
+    // Create subfolder with brick_name-unique_name pattern
+    const subFolderName = `${brickName}-${uniqueName}`;
+    const subFolderPath = join(subComposeFolder, subFolderName);
+
     // Ensure sub compose folder exists
     this.fileService.createDirIfNotExists(subComposeFolder, true);
+    // Ensure the specific subfolder exists
+    this.fileService.createDirIfNotExists(subFolderPath, true);
+
     // Write the compose file
     // Create compose file name and path
     const composeFileName = `docker-compose-${brickName}-${uniqueName}.yml`;
-    const composeFilePath = join(subComposeFolder, composeFileName);
+    const composeFilePath = join(subFolderPath, composeFileName);
     this.fileService.writeFile(composeFilePath, composeYaml.toString());
 
     // Update config

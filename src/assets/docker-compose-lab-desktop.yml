@@ -1,0 +1,9 @@
+services:
+  lab_desktop:
+    image: constellab/lab-manager-standalone:${LAB_MANAGER_STANDALONE_FRONT_VERSION}
+    container_name: lab_desktop
+    ports:
+      - '82:80'
+    networks:
+      - DEV
+      - PROD
