@@ -6,7 +6,7 @@ import { PrivateFile } from '../../core/models/private-file.class';
 import { ConfigFileService } from '../../core/services/config-file/config-file.service';
 import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { FileService } from '../../core/services/file/file.service';
-import { MainComposeService } from '../../docker/main-compose.service';
+import { MainComposeService } from '../../docker/compose/main-compose.service';
 import { BiotaService } from '../biota/biota.service';
 import { EnvVariableService } from '../env-variable/env-variable.service';
 import { LabInitConfig } from '../lab.class';

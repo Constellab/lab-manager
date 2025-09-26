@@ -1,24 +1,24 @@
 import { Module } from '@nestjs/common';
-import { CoreModule } from './app/core/core.module';
-import { join } from 'path';
 import { ConfigModule } from '@nestjs/config';
-import { CoreConfigService } from './app/core/services/config/core-config.service';
-import { WinstonModule, WinstonModuleOptions } from 'nest-winston';
-import { configureLogger, LoggerConfig } from './app/core/models/logger.class';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { ApiKeyGuard } from './app/core/guards/api-key.guard';
-import { AppController } from './app.controller';
-import { LabModule } from './app/lab/lab.module';
-import { CoreExceptionHandlerFilter } from './app/core/filters/core-exception-handler.filter';
-import { LabManagerModule } from './app/lab-manager/lab-manager.module';
-import { BackupModule } from './app/backup/backup.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { WinstonModule, WinstonModuleOptions } from 'nest-winston';
+import { join } from 'path';
+import { AppController } from './app.controller';
+import { BackupModule } from './app/backup/backup.module';
+import { CoreModule } from './app/core/core.module';
+import { CoreExceptionHandlerFilter } from './app/core/filters/core-exception-handler.filter';
+import { ApiKeyGuard } from './app/core/guards/api-key.guard';
+import { configureLogger, LoggerConfig } from './app/core/models/logger.class';
+import { CoreConfigService } from './app/core/services/config/core-config.service';
+import { LabManagerModule } from './app/lab-manager/lab-manager.module';
+import { LabModule } from './app/lab/lab.module';
 
 function configureWinstonLogger(configService: CoreConfigService): WinstonModuleOptions {
   const logConfig: LoggerConfig = {
     logLevel: configService.getLogLevel(),
     logFilePath: configService.isLocal() ? null : configService.getLogPath(),
-    colorize: configService.isDevelopment()
+    colorize: configService.isDevelopment(),
   };
   return configureLogger(logConfig);
 }
@@ -31,7 +31,7 @@ function configureWinstonLogger(configService: CoreConfigService): WinstonModule
       envFilePath: join(__dirname, 'environments', 'dev.env'),
     }),
 
-    CoreModule.forRoot({ distFolder: __dirname }),
+    CoreModule.forRoot({ distFolder: __dirname, assetsFolderName: 'assets' }),
 
     // set up the logging module
     WinstonModule.forRootAsync({

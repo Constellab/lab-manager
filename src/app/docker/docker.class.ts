@@ -1,4 +1,4 @@
-import { ComposeServiceName } from './compose-yaml';
+import { MainComposeServiceName } from './compose/main-docker-compose.class';
 
 // type for container state
 export type DockerContainerState = 'running' | 'exited' | 'created' | 'paused' | 'restarting' | 'dead';
@@ -54,7 +54,7 @@ export class DockerInspect {
     if (state === 'exited' || state === 'dead') {
       // specific case for codelab container, when its stop, it has the ExitCode 137
       // so we consider it as a normal stop
-      if (names === ComposeServiceName.CODELAB && exitCode === 137) exitCode = 0;
+      if (names === MainComposeServiceName.CODELAB && exitCode === 137) exitCode = 0;
       if (exitCode === 0) {
         return 'stopped';
       } else {

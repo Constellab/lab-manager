@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { lastValueFrom } from 'rxjs';
-import { ApiService } from 'src/app/core/services/api/api.service';
-import { LabGlobalActivity } from './external-lab.class';
 import { ApiHttpOption } from 'src/app/core/services/api/api.class';
-import { FileService } from 'src/app/core/services/file/file.service';
+import { ApiService } from 'src/app/core/services/api/api.service';
 import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
-import { ComposeServiceName } from 'src/app/docker/compose-yaml';
-import { ContainerService } from 'src/app/docker/container/container.service';
+import { FileService } from 'src/app/core/services/file/file.service';
+import { MainComposeServiceName, MainDockerCompose } from '../../../docker/compose/main-docker-compose.class';
+import { LabGlobalActivity } from './external-lab.class';
 
 /**
  * Class to call route of the lab using space api
@@ -42,11 +41,11 @@ export class ExternalLabApiService {
     let url: string;
     if (this.configService.isDesktop()) {
       // use local network in desktop mode
-      url = `http://${ComposeServiceName.GLAB}:${ContainerService.GLAB_INTERNAL_PORT}`;
+      url = `http://${MainComposeServiceName.GLAB}:${MainDockerCompose.GLAB_INTERNAL_PORT}`;
     } else if (this.configService.isLocal()) {
       url = 'http://host.docker.internal:3100';
     } else {
-      url = `https://${ComposeServiceName.GLAB}.${this.configService.getVirtualHost()}`;
+      url = `https://${MainComposeServiceName.GLAB}.${this.configService.getVirtualHost()}`;
     }
 
     return `${url}/${ExternalLabApiService.BASE_API_ROUTE}/${route}`;

@@ -1,21 +1,20 @@
-import { BadRequestException, Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { getPrivateFileTemplate, PrivateFile, PrivateFileData } from '../../models/private-file.class';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   copyFileSync,
   existsSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
   rmSync,
   unlinkSync,
   writeFileSync,
 } from 'fs';
 import { readdir, stat } from 'fs/promises';
+import { getPrivateFileTemplate, PrivateFile, PrivateFileData } from '../../models/private-file.class';
 
 import { dirname, join } from 'path';
-import { CORE_MODULE_PROVIDER, CoreModuleConfig } from '../../models/core-module-config.class';
-import { CoreConfigService } from '../config/core-config.service';
 import { StartLog } from 'src/app/docker/docker.class';
+import { CoreConfigService } from '../config/core-config.service';
 
 @Injectable()
 export class FileService {
@@ -25,10 +24,7 @@ export class FileService {
 
   private readonly envFileName = 'lab-manager.env';
 
-  constructor(
-    @Inject(CORE_MODULE_PROVIDER) private config: CoreModuleConfig,
-    private configService: CoreConfigService
-  ) {}
+  constructor(private configService: CoreConfigService) {}
 
   //////////////////////// PRIVATE FILE ///////////////////////////////////
 
@@ -84,12 +80,12 @@ export class FileService {
   //////////////////////// DOCKER COMPOSE //////////////////////
 
   public copyDockerCompose(): void {
-    const templatePath = this.getAssetPath(this.dockerComposeFileName);
+    const templatePath = this.configService.getAssetPath(this.dockerComposeFileName);
     this.copyFile(templatePath, this.dockerComposePath);
   }
 
   public readDockerComposeTemplate(): string {
-    const templatePath = this.getAssetPath(this.dockerComposeFileName);
+    const templatePath = this.configService.getAssetPath(this.dockerComposeFileName);
     return this.readFile(templatePath);
   }
 
@@ -150,18 +146,6 @@ export class FileService {
     const dir = dirname(path);
     mkdirSync(dir, { recursive: true });
     writeFileSync(path, content);
-  }
-
-  /**
-   * Check if a file exists in dist folder
-   * @param path
-   */
-  public getDistPath(...path: string[]): string {
-    return join(this.config.distFolder, ...path);
-  }
-
-  public getAssetPath(...path: string[]): string {
-    return this.getDistPath(this.assets, ...path);
   }
 
   /**

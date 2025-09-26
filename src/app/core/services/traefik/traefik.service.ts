@@ -1,13 +1,10 @@
-import { Injectable } from '@nestjs/common';
-
-@Injectable()
 export class TraefikService {
   /**
    * Methods to get the list of labels to enable https for traefik
    * @param serviceName
    * @param servicePort
    */
-  public getTraefikLabels(host: string, servicePort: string, serviceName: string): string[] {
+  public getTraefikLabels(host: string, servicePort: number, serviceName: string): string[] {
     return [
       `traefik.enable=true`,
       ...this.getTraefikRouterLabels(`host(\`${host}\`)`, servicePort, serviceName),
@@ -21,7 +18,7 @@ export class TraefikService {
    * @param serviceName
    * @returns
    */
-  public getTraefikRouterLabels(hostRule: string, servicePort: string, serviceName: string): string[] {
+  public getTraefikRouterLabels(hostRule: string, servicePort: number, serviceName: string): string[] {
     const router = `${serviceName}-router`;
     const service = `${serviceName}-service`;
     return [

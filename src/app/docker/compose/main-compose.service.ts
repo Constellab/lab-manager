@@ -1,18 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { GPUService } from 'src/app/core/services/gpu/gpu.service';
-import { CoreConfigService } from '../core/services/config/core-config.service';
-import { FileService } from '../core/services/file/file.service';
-import { TaskService } from '../core/services/task/task.service';
-import { DockerCommand } from './docker-command.class';
-import { DockerComposeFactory } from './docker-compose.factory';
-import { ContainersInspect } from './docker-inspect.class';
+import { CoreConfigService } from '../../core/services/config/core-config.service';
+import { FileService } from '../../core/services/file/file.service';
+import { TaskService } from '../../core/services/task/task.service';
+import { DockerCommand } from '../docker-command.class';
+import { ContainersInspect } from '../docker-inspect.class';
 import {
   ComposeRestartOptions,
   ComposeUpOptions,
   DockerProgress,
   DockerPsFull,
   ErrorLogs,
-} from './docker.class';
+} from '../docker.class';
+import { DockerComposeService } from './docker-compose.service';
 
 export interface BeforeDockerCommandOptions {
   generateComposeFile?: boolean;
@@ -30,11 +30,11 @@ export class MainComposeService {
     private taskService: TaskService,
     private gpuService: GPUService,
     private configService: CoreConfigService,
-    private dockerComposeFactory: DockerComposeFactory
+    private dockerComposeService: DockerComposeService
   ) {}
 
   public async inspectContainers(): Promise<ContainersInspect> {
-    const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+    const mainCompose = this.dockerComposeService.createMainComposeObject();
     return await mainCompose.composeInspect();
   }
 
@@ -55,7 +55,7 @@ export class MainComposeService {
     this.taskService.newTask(taskName);
 
     try {
-      const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+      const mainCompose = this.dockerComposeService.createMainComposeObject();
       const result = await mainCompose.composePull();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
@@ -86,7 +86,7 @@ export class MainComposeService {
     this.taskService.newTask(taskName);
 
     try {
-      const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+      const mainCompose = this.dockerComposeService.createMainComposeObject();
       const result = await mainCompose.composeUp([], services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
@@ -100,7 +100,7 @@ export class MainComposeService {
     this.taskService.newTask(taskName);
 
     try {
-      const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+      const mainCompose = this.dockerComposeService.createMainComposeObject();
       const result = await mainCompose.composeStop(services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
@@ -114,7 +114,7 @@ export class MainComposeService {
     this.taskService.newTask(taskName);
 
     try {
-      const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+      const mainCompose = this.dockerComposeService.createMainComposeObject();
       const result = await mainCompose.composeDown(services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
@@ -128,7 +128,7 @@ export class MainComposeService {
     this.taskService.newTask(taskName);
 
     try {
-      const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+      const mainCompose = this.dockerComposeService.createMainComposeObject();
       const result = await mainCompose.composeStop();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {

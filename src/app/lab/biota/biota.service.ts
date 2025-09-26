@@ -2,13 +2,12 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { createWriteStream } from 'fs';
 import { join } from 'path';
-import { ContainerService } from 'src/app/docker/container/container.service';
 import { ConfigFileService } from '../../core/services/config-file/config-file.service';
 import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { FileService } from '../../core/services/file/file.service';
 import { TaskService } from '../../core/services/task/task.service';
 import { Command } from '../../core/utils/command';
-import { DockerComposeFactory } from '../../docker/docker-compose.factory';
+import { DockerComposeService } from '../../docker/compose/docker-compose.service';
 
 @Injectable()
 export class BiotaService {
@@ -22,8 +21,7 @@ export class BiotaService {
     private configFileService: ConfigFileService,
     private taskService: TaskService,
     private httpService: HttpService,
-    private containerService: ContainerService,
-    private dockerComposeFactory: DockerComposeFactory
+    private dockerComposeService: DockerComposeService
   ) {}
 
   public async pullBiota(forceUpdate: boolean = false, restartBiota: boolean = false): Promise<void> {
@@ -47,7 +45,7 @@ export class BiotaService {
     }
 
     // stop the biota container because the volume will be deleted
-    const mainCompose = this.dockerComposeFactory.createMainComposeObject();
+    const mainCompose = this.dockerComposeService.createMainComposeObject();
     await mainCompose.deleteBiotaService();
 
     this.taskService.newTask(
@@ -83,7 +81,7 @@ export class BiotaService {
       this.taskService.newTask(taskName);
 
       try {
-        const dockerCompose = this.dockerComposeFactory.createMainComposeObject();
+        const dockerCompose = this.dockerComposeService.createMainComposeObject();
         // start biota service from docker-compose
         await dockerCompose.startBiotaService();
         this.taskService.markTaskAsSuccess(taskName);

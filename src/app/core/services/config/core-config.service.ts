@@ -1,13 +1,17 @@
-import { Injectable, LogLevel } from '@nestjs/common';
+import { Inject, Injectable, LogLevel } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { EnvironmentProfile } from '../../models/config.class';
 import { join } from 'path';
+import { EnvironmentProfile } from '../../models/config.class';
+import { CORE_MODULE_PROVIDER, CoreModuleConfig } from '../../models/core-module-config.class';
 
 export const ENVIRONMENT_PROFILE_KEY = 'ENVIRONMENT_PROFILE';
 
 @Injectable()
 export class CoreConfigService {
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    @Inject(CORE_MODULE_PROVIDER) private config: CoreModuleConfig
+  ) {}
 
   public getEnvironmentProfile(): EnvironmentProfile {
     return this.configService.get(ENVIRONMENT_PROFILE_KEY);
@@ -146,6 +150,18 @@ export class CoreConfigService {
   }
 
   /**
+   * Check if a file exists in dist folder
+   * @param path
+   */
+  public getDistPath(...path: string[]): string {
+    return join(this.config.distFolder, ...path);
+  }
+
+  public getAssetPath(...path: string[]): string {
+    return this.getDistPath(this.config.assetsFolderName, ...path);
+  }
+
+  /**
    * Get the path of the volume.
    * @param path if path provided, there are join to the volume path
    */
@@ -184,9 +200,9 @@ export class CoreConfigService {
     } else if (stringBool === 'true') {
       return true;
     } else {
-      if(defaultValue !== undefined) {
+      if (defaultValue !== undefined) {
         return defaultValue;
-      }else{
+      } else {
         throw Error('Error while parsing config ' + configName + ' to boolean');
       }
     }

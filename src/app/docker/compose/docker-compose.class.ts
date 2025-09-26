@@ -1,34 +1,37 @@
 import { Logger } from '@nestjs/common';
 import { existsSync, readFileSync } from 'fs';
-import { Command, ExecCommandMode } from '../core/utils/command';
-import { ComposeYaml } from './compose-yaml';
-import { DockerCommand } from './docker-command.class';
-import { ContainersInspect } from './docker-inspect.class';
+import { Command, ExecCommandMode } from '../../core/utils/command';
+import { DockerCommand } from '../docker-command.class';
+import { ContainersInspect } from '../docker-inspect.class';
+import { DockerComposeYaml } from './docker-compose-yaml';
 
 export class DockerCompose {
   private readonly logger = new Logger(DockerCompose.name);
 
-  private composeYaml: ComposeYaml;
+  private composeYaml: DockerComposeYaml;
 
   constructor(
     private composeFilePath: string,
-    private envFilePath: string,
     private brickName: string,
-    private uniqueName: string
+    private uniqueName: string,
+    private envFilePath: string | null = null
   ) {
-    this.loadComposeYaml(composeFilePath);
+    this.loadComposeYaml();
   }
 
-  private loadComposeYaml(composeFilePath: string): void {
-    if (!existsSync(composeFilePath)) {
-      throw new Error(`The docker-compose file ${composeFilePath} does not exist`);
+  public getComposeFileContent(): string {
+    if (!existsSync(this.composeFilePath)) {
+      throw new Error(`The docker-compose file ${this.composeFilePath} does not exist`);
     }
-
-    const strYaml = readFileSync(this.composeFilePath, { encoding: 'utf-8' });
-    this.composeYaml = new ComposeYaml(strYaml);
+    return readFileSync(this.composeFilePath, { encoding: 'utf-8' });
   }
 
-  public getComposeYaml(): ComposeYaml {
+  private loadComposeYaml(): void {
+    const strYaml = this.getComposeFileContent();
+    this.composeYaml = new DockerComposeYaml(strYaml);
+  }
+
+  public getComposeYaml(): DockerComposeYaml {
     return this.composeYaml;
   }
 
@@ -39,6 +42,21 @@ export class DockerCompose {
   public composeInspect(): Promise<ContainersInspect> {
     const dockerCommand = new DockerCommand();
     return dockerCommand.dockerInspectMultiple(this.getContainerNames());
+  }
+
+  public async allServicesAreRunning(): Promise<boolean> {
+    const inspect = await this.composeInspect();
+    return inspect.allContainersAreRunning();
+  }
+
+  public async allServicesAreStopped(): Promise<boolean> {
+    const inspect = await this.composeInspect();
+    return inspect.allContainersAreStopped();
+  }
+
+  public async oneServiceIsRunning(): Promise<boolean> {
+    const inspect = await this.composeInspect();
+    return inspect.oneContainerIsRunning();
   }
 
   /**
@@ -67,8 +85,11 @@ export class DockerCompose {
   }
 
   private execDockerComposeCommand(options: string): Promise<string> {
-    const command: string =
-      `docker compose -f ${this.composeFilePath} ` + `--env-file ${this.envFilePath} ${options}`;
+    let command: string = `docker compose -f ${this.composeFilePath}`;
+    if (this.envFilePath) {
+      command += ` --env-file ${this.envFilePath}`;
+    }
+    command += ` ${options}`;
     return new Command().execCommand(command);
   }
 
@@ -206,5 +227,13 @@ export class DockerCompose {
       }
 
     return true;
+  }
+
+  public getComposeYamlObject(): DockerComposeYaml {
+    return this.composeYaml;
+  }
+
+  public isEqualToComposeYaml(other: DockerComposeYaml): boolean {
+    return this.composeYaml.equalTo(other);
   }
 }

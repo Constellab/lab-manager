@@ -60,6 +60,21 @@ export class ContainersInspect {
     };
   }
 
+  public async allContainersAreRunning(): Promise<boolean> {
+    const status = this.getContainersStatus();
+    return status.status === 'UP';
+  }
+
+  public async allContainersAreStopped(): Promise<boolean> {
+    const status = this.getContainersStatus();
+    return status.status === 'STOP' || status.status === 'DOWN';
+  }
+
+  public async oneContainerIsRunning(): Promise<boolean> {
+    const status = this.getContainersStatus();
+    return status.status === 'UP' || status.status === 'PARTIALLY_UP';
+  }
+
   public getContainer(name: string): DockerInspect | undefined {
     return this.containers.find((container) => container.names === name);
   }

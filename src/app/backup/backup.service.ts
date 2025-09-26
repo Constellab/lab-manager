@@ -11,7 +11,7 @@ import { RcloneService } from '../core/services/rclone/rclone.service';
 import { TaskService } from '../core/services/task/task.service';
 import { SpawnResult } from '../core/utils/command';
 import { rxjsDebug } from '../core/utils/rxjs-debug';
-import { DockerComposeFactory } from '../docker/docker-compose.factory';
+import { DockerComposeService } from '../docker/compose/docker-compose.service';
 import { LabBackupHistory } from './backup-history.class';
 import {
   BackupBucketDTO,
@@ -56,7 +56,7 @@ export class BackupService implements OnModuleInit {
     private externalLabService: ExternalLabApiService,
     private externalSpaceService: ExternalSpaceApiService,
     private taskService: TaskService,
-    private composeFactory: DockerComposeFactory
+    private dockerComposeService: DockerComposeService
   ) {}
 
   /**
@@ -159,7 +159,7 @@ export class BackupService implements OnModuleInit {
     this.checkRansomware();
 
     // check if the prod db is running
-    const mainCompose = this.composeFactory.createMainComposeObject();
+    const mainCompose = this.dockerComposeService.createMainComposeObject();
     if (!(await mainCompose.prodDbIsRunning())) {
       throw new BadRequestException('The prod DB is not running, please start the lab before doing a backup');
     }
@@ -272,7 +272,7 @@ export class BackupService implements OnModuleInit {
     if (!this.fileService.exists(dumpPathInCurrentContainer)) {
       // dump the db
       this.fileService.createDirIfNotExists(this.getDbDumpFolderInCurrentContainer());
-      const mainCompose = this.composeFactory.createMainComposeObject();
+      const mainCompose = this.dockerComposeService.createMainComposeObject();
       const result = await mainCompose.dumpProdDb(this.getDumpMariaDbPathInMariaDbContainer());
       if (result !== '') {
         this.updateCurrentStatusStorageErrorMessage(
@@ -574,7 +574,7 @@ export class BackupService implements OnModuleInit {
 
     // restore the DB
     const dbPathInMariaDb = this.getDumpMariaDbPathInMariaDbContainer();
-    const mainCompose = this.composeFactory.createMainComposeObject();
+    const mainCompose = this.dockerComposeService.createMainComposeObject();
     await mainCompose.restoreProdDb(dbPathInMariaDb);
 
     this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'DB Restored');

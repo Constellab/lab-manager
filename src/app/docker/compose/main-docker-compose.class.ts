@@ -11,6 +11,8 @@ export enum MainComposeServiceName {
 }
 
 export class MainDockerCompose extends DockerCompose {
+  public static readonly GLAB_INTERNAL_PORT = 3000;
+
   /////////////////////////////// BIOTA ///////////////////////////////
 
   public deleteBiotaService(): Promise<boolean> {

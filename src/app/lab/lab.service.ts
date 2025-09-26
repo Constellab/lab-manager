@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { AdminerService } from 'src/app/docker/container/adminer.service';
 import { BrickConfigsDTO, ConfigFile } from '../core/models/config-file.class';
 import { TaskStatusInfo } from '../core/models/task.class';
 import { ConfigFileService } from '../core/services/config-file/config-file.service';
@@ -11,9 +10,11 @@ import { ExternalSpaceApiService } from '../core/services/external/external-spac
 import { UpdateLabManagerCommand } from '../core/services/external/external-space.class';
 import { FileService } from '../core/services/file/file.service';
 import { TaskService } from '../core/services/task/task.service';
-import { ComposeServiceName } from '../docker/compose-yaml';
-import { AdminerInfo } from '../docker/container/container.class';
-import { ContainerService } from '../docker/container/container.service';
+import { AdminerComposeService } from '../docker/adminer/adminer-compose.service';
+import { AdminerInfo } from '../docker/adminer/adminer.class';
+import { BeforeDockerCommandOptions, MainComposeService } from '../docker/compose/main-compose.service';
+import { MainComposeServiceName } from '../docker/compose/main-docker-compose.class';
+import { DockerContainerService } from '../docker/container/docker-container.service';
 import {
   ComposeRestartOptions,
   ComposeUpOptions,
@@ -22,7 +23,6 @@ import {
   ErrorLogs,
   PullBiotaDbOptions,
 } from '../docker/docker.class';
-import { BeforeDockerCommandOptions, MainComposeService } from '../docker/main-compose.service';
 import { BiotaService } from './biota/biota.service';
 import { EnvVariableService } from './env-variable/env-variable.service';
 import { InitService } from './init/init.service';
@@ -40,7 +40,7 @@ export class LabService implements OnModuleInit {
     private mainComposeService: MainComposeService,
     private taskService: TaskService,
     private coreConfigService: CoreConfigService,
-    private containerService: ContainerService,
+    private dockerContainerService: DockerContainerService,
     private fileService: FileService,
     private configFileService: ConfigFileService,
     private biotaService: BiotaService,
@@ -49,7 +49,7 @@ export class LabService implements OnModuleInit {
     private communityService: ExternalCommunityApiService,
     private externalLabService: ExternalLabApiService,
     private spaceService: ExternalSpaceApiService,
-    private adminerService: AdminerService
+    private adminerService: AdminerComposeService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -116,7 +116,7 @@ export class LabService implements OnModuleInit {
       labFrontUrl: this.getLabFrontUrl(),
       labStatus: labStatus,
       glabStatus: {
-        status: containers.getContainer(ComposeServiceName.GLAB)?.status ?? 'none',
+        status: containers.getContainer(MainComposeServiceName.GLAB)?.status ?? 'none',
         startProgress: glabStartLog?.progress,
         hasStartError: glabStartLog?.errors?.length > 0,
       },
@@ -225,12 +225,12 @@ export class LabService implements OnModuleInit {
 
   public async stopContainer(containerName: string): Promise<boolean> {
     await this.checkLabIsConfigured();
-    return this.containerService.stopContainer(containerName);
+    return this.dockerContainerService.stopContainer(containerName);
   }
 
   public async deleteContainer(containerName: string): Promise<boolean> {
     await this.checkLabIsConfigured();
-    return this.containerService.deleteContainer(containerName);
+    return this.dockerContainerService.deleteContainer(containerName);
   }
 
   public async upContainers(options: ComposeUpOptions): Promise<void> {
@@ -259,15 +259,15 @@ export class LabService implements OnModuleInit {
   }
 
   public async getLogs(containerName: string): Promise<string> {
-    return this.containerService.getLogs(containerName);
+    return this.dockerContainerService.getLogs(containerName);
   }
 
   public async getErrorLogs(containerName: string): Promise<string> {
-    return this.containerService.getErrorLogs(containerName);
+    return this.dockerContainerService.getErrorLogs(containerName);
   }
 
   public exportLogsToFile(containerName: string): Promise<string> {
-    return this.containerService.exportLogsToFile(containerName, '/tmp/logs_export.txt');
+    return this.dockerContainerService.exportLogsToFile(containerName, '/tmp/logs_export.txt');
   }
 
   public async systemPrune(): Promise<void> {

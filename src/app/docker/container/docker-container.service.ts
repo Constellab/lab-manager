@@ -6,12 +6,7 @@ import { DockerCommand } from '../docker-command.class';
  * Service to manage individual docker containers
  */
 @Injectable()
-export class ContainerService {
-  public static readonly NETWORK_DEV = 'gencovery-network-dev';
-  public static readonly NETWORK_PROD = 'gencovery-network-prod';
-
-  public static readonly GLAB_INTERNAL_PORT = 3000;
-
+export class DockerContainerService {
   constructor(private taskService: TaskService) {}
 
   public async containerExists(containerName: string): Promise<boolean> {

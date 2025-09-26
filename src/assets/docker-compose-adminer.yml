@@ -1,0 +1,7 @@
+services:
+  adminer:
+    image: adminer:4.8.0
+    container_name: adminer
+    networks:
+      - DEV
+      - PROD

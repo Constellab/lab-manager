@@ -1,4 +1,9 @@
 import { Body, Controller, Get, Param, Post, Put, StreamableFile } from '@nestjs/common';
+import { createReadStream } from 'fs';
+import { BrickConfigsDTO, ConfigFile } from '../core/models/config-file.class';
+import { TaskStatusInfo } from '../core/models/task.class';
+import { UpdateLabManagerCommand } from '../core/services/external/external-space.class';
+import { AdminerInfo } from '../docker/adminer/adminer.class';
 import {
   ComposeRestartOptions,
   ComposeUpOptions,
@@ -10,11 +15,6 @@ import {
 } from '../docker/docker.class';
 import { LabInitConfig, LabManagerStatus } from './lab.class';
 import { LabService } from './lab.service';
-import { BrickConfigsDTO, ConfigFile } from '../core/models/config-file.class';
-import { TaskStatusInfo } from '../core/models/task.class';
-import { createReadStream } from 'fs';
-import { AdminerInfo } from '../docker/container/container.class';
-import { UpdateLabManagerCommand } from '../core/services/external/external-space.class';
 
 @Controller('lab')
 export class LabController {
