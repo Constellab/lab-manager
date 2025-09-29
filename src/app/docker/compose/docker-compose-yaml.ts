@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'fs';
 import { dump, load } from 'js-yaml';
 import { TraefikService } from '../../core/services/traefik/traefik.service';
 
-export interface DockerComposeService {
+export interface DockerComposeServiceJson {
   image: string;
   container_name: string;
   build?: string;
@@ -14,10 +14,11 @@ export interface DockerComposeService {
   labels?: string[];
 }
 
-export interface DockerComposeContent {
+export interface DockerComposeJson {
   'x-brick-name': string;
   'x-unique-name': string;
-  services: Record<string, DockerComposeService>;
+  'x-description'?: string;
+  services: Record<string, DockerComposeServiceJson>;
   networks: Record<string, unknown>;
   volumes: Record<string, unknown>;
 }
@@ -26,7 +27,7 @@ export interface DockerComposeContent {
  * Class to manipulate docker-compose.yml files
  */
 export class DockerComposeYaml {
-  content: DockerComposeContent;
+  content: DockerComposeJson;
 
   public static readonly NETWORK_DEV = 'gencovery-network-dev';
   public static readonly NETWORK_PROD = 'gencovery-network-prod';
@@ -39,15 +40,11 @@ export class DockerComposeYaml {
       throw new Error('The docker-compose.yml content is empty');
     }
     const yamlJson = load(strYaml);
-    const content = this.checkYaml(yamlJson as DockerComposeContent, brickName, uniqueName);
+    const content = this.checkYaml(yamlJson as DockerComposeJson, brickName, uniqueName);
     this.content = this.parseYaml(content);
   }
 
-  private checkYaml(
-    content: DockerComposeContent,
-    brickName?: string,
-    uniqueName?: string
-  ): DockerComposeContent {
+  private checkYaml(content: DockerComposeJson, brickName?: string, uniqueName?: string): DockerComposeJson {
     // check that the brickName and uniqueName match the ones in the file if provided
     if (brickName) {
       content['x-brick-name'] = brickName;
@@ -81,7 +78,7 @@ export class DockerComposeYaml {
    * Parse the content to replace the custom properties and variables
    * @param content
    */
-  private parseYaml(content: DockerComposeContent): DockerComposeContent {
+  private parseYaml(content: DockerComposeJson): DockerComposeJson {
     // replace the networks variable names with actual network names
     let hasDevNetwork = false;
     let hasProdNetwork = false;
@@ -178,6 +175,14 @@ export class DockerComposeYaml {
 
   getUniqueName(): string {
     return this.content['x-unique-name'];
+  }
+
+  getDescription(): string | undefined {
+    return this.content['x-description'];
+  }
+
+  setDescription(description: string): void {
+    this.content['x-description'] = description;
   }
 
   public static fromFile(filePath: string, brickName?: string, uniqueName?: string): DockerComposeYaml {

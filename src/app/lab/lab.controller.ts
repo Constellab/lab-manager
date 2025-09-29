@@ -1,18 +1,8 @@
-import { Body, Controller, Get, Param, Post, Put, StreamableFile } from '@nestjs/common';
-import { createReadStream } from 'fs';
+import { Body, Controller, Get, Post, Put } from '@nestjs/common';
 import { BrickConfigsDTO, ConfigFile } from '../core/models/config-file.class';
 import { TaskStatusInfo } from '../core/models/task.class';
 import { UpdateLabManagerCommand } from '../core/services/external/external-space.class';
-import { AdminerInfo } from '../docker/adminer/adminer.class';
-import {
-  ComposeRestartOptions,
-  ComposeUpOptions,
-  DockerInspect,
-  DockerLogs,
-  DockerPsFull,
-  ErrorLogs,
-  PullBiotaDbOptions,
-} from '../docker/docker.class';
+import { ErrorLogs, PullBiotaDbOptions } from '../docker/docker.class';
 import { LabInitConfig, LabManagerStatus } from './lab.class';
 import { LabService } from './lab.service';
 
@@ -92,109 +82,6 @@ export class LabController {
   @Put('bricks-config')
   updateBrickConfig(@Body() updateConfig: BrickConfigsDTO): Promise<void> {
     return this.labService.updateBrickConfig(updateConfig);
-  }
-
-  ///////////////////////// CONTAINER /////////////////////////
-  @Get('containers')
-  listContainers(): Promise<DockerInspect[]> {
-    return this.labService.listContainers();
-  }
-
-  @Get('containers/:containerName')
-  getContainersDetail(@Param('containerName') containerName: string): Promise<DockerPsFull> {
-    return this.labService.getContainerDetail(containerName);
-  }
-
-  @Get('containers/:containerName/size')
-  async getContainerSize(@Param('containerName') containerName: string): Promise<{ size: string }> {
-    const size = await this.labService.getContainerSize(containerName);
-    return { size };
-  }
-
-  @Get('containers/:containerName/logs')
-  async getLogs(@Param('containerName') containerName: string): Promise<DockerLogs> {
-    const logs = await this.labService.getLogs(containerName);
-    return { logs };
-  }
-
-  @Get('containers/:containerName/logs/error')
-  async getErrorLogs(@Param('containerName') containerName: string): Promise<DockerLogs> {
-    const logs = await this.labService.getErrorLogs(containerName);
-    return { logs };
-  }
-
-  @Get('containers/:containerName/logs/export')
-  async exportLogsToFile(@Param('containerName') containerName: string): Promise<StreamableFile> {
-    const filePath = await this.labService.exportLogsToFile(containerName);
-    const fileStream = createReadStream(filePath);
-
-    return new StreamableFile(fileStream);
-  }
-
-  /**
-   * Start a container service from docker-compose file
-   * @param serviceName
-   * @returns
-   */
-  @Put('containers/:serviceName/start')
-  startComposeContainer(@Param('serviceName') serviceName: string): Promise<void> {
-    return this.labService.startComposeContainer(serviceName);
-  }
-
-  @Put('containers/:containerName/stop')
-  stopContainer(@Param('containerName') containerName: string): Promise<boolean> {
-    return this.labService.stopContainer(containerName);
-  }
-
-  @Put('containers/:containerName/delete')
-  deleteContainer(@Param('containerName') containerName: string): Promise<boolean> {
-    return this.labService.deleteContainer(containerName);
-  }
-
-  @Post('up-containers')
-  async upContainers(@Body() options: ComposeUpOptions): Promise<void> {
-    return await this.labService.upContainers(options);
-  }
-
-  @Post('restart-containers')
-  restartContainers(@Body() options: ComposeRestartOptions): Promise<void> {
-    return this.labService.restartContainers(options);
-  }
-
-  @Post('stop-containers')
-  stopContainers(): Promise<void> {
-    return this.labService.stopContainers();
-  }
-
-  @Post('delete-containers')
-  deleteContainers(): Promise<void> {
-    return this.labService.deleteContainers();
-  }
-
-  @Post('pull-containers')
-  pullContainers(): Promise<void> {
-    return this.labService.pullContainers();
-  }
-
-  @Post('system-prune')
-  async systemPrune(): Promise<void> {
-    return this.labService.systemPrune();
-  }
-
-  ///////////////////////// ADMINER /////////////////////////
-  @Put('adminer/start')
-  startAdminer(): Promise<boolean> {
-    return this.labService.startAdminer();
-  }
-
-  @Put('adminer/stop')
-  stopAdminer(): Promise<boolean> {
-    return this.labService.stopAdminer();
-  }
-
-  @Get('adminer/info')
-  getAdminerInfo(): Promise<AdminerInfo> {
-    return this.labService.getAdminerInfo();
   }
 
   ///////////////////////// DESKTOP /////////////////////////

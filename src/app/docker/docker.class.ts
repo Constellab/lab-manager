@@ -84,7 +84,6 @@ export class DockerInspect {
 
 export interface ComposeUpOptions {
   updateContainers?: boolean;
-  pruneSystem?: boolean;
   destroyContainers?: boolean; // if true container will be destroyed and recreated
 }
 

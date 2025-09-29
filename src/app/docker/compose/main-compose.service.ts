@@ -2,21 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { GPUService } from 'src/app/core/services/gpu/gpu.service';
 import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { FileService } from '../../core/services/file/file.service';
-import { TaskService } from '../../core/services/task/task.service';
-import { DockerCommand } from '../docker-command.class';
-import {
-  ComposeRestartOptions,
-  ComposeUpOptions,
-  DockerProgress,
-  DockerPsFull,
-  ErrorLogs,
-} from '../docker.class';
+import { DockerProgress, ErrorLogs } from '../docker.class';
 import { DockerComposeInspect } from './docker-compose-inspect.class';
 import { DockerComposeService } from './docker-compose.service';
-
-export interface BeforeDockerCommandOptions {
-  generateComposeFile?: boolean;
-}
 
 /**
  * Service to manage the main docker-compose file and its services
@@ -27,7 +15,6 @@ export class MainComposeService {
 
   constructor(
     private fileService: FileService,
-    private taskService: TaskService,
     private gpuService: GPUService,
     private configService: CoreConfigService,
     private dockerComposeService: DockerComposeService
@@ -36,131 +23,6 @@ export class MainComposeService {
   public async inspectContainers(): Promise<DockerComposeInspect> {
     const mainCompose = this.dockerComposeService.createMainComposeObject();
     return await mainCompose.composeInspect();
-  }
-
-  public async getContainersDetail(containerName: string): Promise<DockerPsFull> {
-    const dockerCommand = new DockerCommand();
-    return await dockerCommand.getContainerFullInfo(containerName);
-  }
-
-  public getContainerSize(containerName: string): Promise<string> {
-    const dockerCommand = new DockerCommand();
-    return dockerCommand.getContainerSize(containerName);
-  }
-
-  public async pullContainers(beforeOptions: BeforeDockerCommandOptions = {}): Promise<void> {
-    await this.beforeDockerCommand(beforeOptions);
-
-    const taskName = 'Update services';
-    this.taskService.newTask(taskName);
-
-    try {
-      const mainCompose = this.dockerComposeService.createMainComposeObject();
-      const result = await mainCompose.composePull();
-      this.taskService.markTaskAsSuccess(taskName, result);
-    } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
-      throw e;
-    }
-  }
-
-  public async upContainers(
-    options: ComposeUpOptions,
-    beforeOptions: BeforeDockerCommandOptions = {}
-  ): Promise<void> {
-    await this.beforeDockerCommand(beforeOptions);
-
-    if (options.updateContainers) {
-      await this.pullContainers();
-    }
-
-    await this.upContainerCommand();
-
-    if (options.pruneSystem) {
-      await this.systemPrune();
-    }
-  }
-
-  public async upContainerCommand(services: string[] = []): Promise<void> {
-    const taskName = 'Start services';
-    this.taskService.newTask(taskName);
-
-    try {
-      const mainCompose = this.dockerComposeService.createMainComposeObject();
-      const result = await mainCompose.composeUp([], services);
-      this.taskService.markTaskAsSuccess(taskName, result);
-    } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
-      throw e;
-    }
-  }
-
-  public async stopContainers(services: string[] = []): Promise<void> {
-    const taskName = 'Stop services';
-    this.taskService.newTask(taskName);
-
-    try {
-      const mainCompose = this.dockerComposeService.createMainComposeObject();
-      const result = await mainCompose.composeStop(services);
-      this.taskService.markTaskAsSuccess(taskName, result);
-    } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
-      throw e;
-    }
-  }
-
-  public async deleteContainers(services: string[] = []): Promise<void> {
-    const taskName = 'Delete services';
-    this.taskService.newTask(taskName);
-
-    try {
-      const mainCompose = this.dockerComposeService.createMainComposeObject();
-      const result = await mainCompose.composeDown(services);
-      this.taskService.markTaskAsSuccess(taskName, result);
-    } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
-      throw e;
-    }
-  }
-
-  public async composeStop(): Promise<void> {
-    const taskName = 'Stop services';
-    this.taskService.newTask(taskName);
-
-    try {
-      const mainCompose = this.dockerComposeService.createMainComposeObject();
-      const result = await mainCompose.composeStop();
-      this.taskService.markTaskAsSuccess(taskName, result);
-    } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
-      throw e;
-    }
-  }
-
-  public async restartContainers(
-    options: ComposeRestartOptions,
-    beforeOptions: BeforeDockerCommandOptions = {}
-  ): Promise<void> {
-    await this.beforeDockerCommand(beforeOptions);
-
-    if (options.updateContainers) {
-      await this.pullContainers();
-    }
-
-    if (options.destroyContainers) {
-      await this.deleteContainers();
-
-      await this.upContainerCommand();
-    } else {
-      // do a stop and a up because if a new image is available
-      // with same tag, restart doesn't update it. Stop and up does.
-      await this.composeStop();
-      await this.upContainerCommand();
-    }
-
-    if (options.pruneSystem) {
-      await this.systemPrune();
-    }
   }
 
   /**
@@ -181,23 +43,6 @@ export class MainComposeService {
     if (!logs) return null;
 
     return logs.progress;
-  }
-
-  public async systemPrune(): Promise<void> {
-    // in local mode, don't prune because it breaks the local docker environment
-    if (this.configService.isLocal()) return;
-
-    const taskName = 'Clean system';
-    this.taskService.newTask(taskName);
-
-    try {
-      const dockerCommand = new DockerCommand();
-      const result = await dockerCommand.systemPrune();
-      this.taskService.markTaskAsSuccess(taskName, result);
-    } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
-      throw e;
-    }
   }
 
   public async generateDockerCompose(): Promise<void> {
@@ -272,12 +117,5 @@ export class MainComposeService {
 
   private buildFrontUrls(subDomains: string[]): string {
     return subDomains.map((subDomain) => 'https://' + subDomain + '.${VIRTUAL_HOST}').join(',');
-  }
-
-  private async beforeDockerCommand(options: BeforeDockerCommandOptions): Promise<void> {
-    if (!options) return;
-    if (options.generateComposeFile) {
-      await this.generateDockerCompose();
-    }
   }
 }

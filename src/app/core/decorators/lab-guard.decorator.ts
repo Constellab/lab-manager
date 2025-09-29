@@ -6,8 +6,7 @@ import { ReflectorHelper } from '../helpers/reflector.helper';
 const labGuardMetadata = 'labGuard';
 
 /**
- * @Public decorator for method or class to make a route public so the guard
- * don't check the existence of the token
+ * @Public decorator for method or class to make a route also available from the lab (using the SPACE API KEY)
  */
 export const LabGuard = (): CustomDecorator => SetMetadata(labGuardMetadata, true);
 

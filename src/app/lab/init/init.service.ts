@@ -6,6 +6,7 @@ import { PrivateFile } from '../../core/models/private-file.class';
 import { ConfigFileService } from '../../core/services/config-file/config-file.service';
 import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { FileService } from '../../core/services/file/file.service';
+import { DockerComposeAggregateService } from '../../docker/compose/docker-compose-aggregate.service';
 import { MainComposeService } from '../../docker/compose/main-compose.service';
 import { BiotaService } from '../biota/biota.service';
 import { EnvVariableService } from '../env-variable/env-variable.service';
@@ -22,7 +23,8 @@ export class InitService {
     private mainComposeService: MainComposeService,
     private biotaService: BiotaService,
     private envVariableService: EnvVariableService,
-    private taskService: TaskService
+    private taskService: TaskService,
+    private aggregateComposeService: DockerComposeAggregateService
   ) {}
 
   public async configureAndInitLab(labInitConfig: LabInitConfig): Promise<void> {
@@ -71,18 +73,15 @@ export class InitService {
     await this.biotaService.pullBiota();
 
     // PULL IMAGES
-    await this.mainComposeService.pullContainers();
+    await this.aggregateComposeService.pullMainServices();
 
     // UP CONTAINERS
-    await this.mainComposeService.restartContainers({});
+    await this.aggregateComposeService.restartMainServices({});
 
     // save the init version
     this.fileService.updatePrivateFileData({
       last_init_manager_version: this.configService.getLabManagerVersion(),
     });
-
-    // clean unused docker images
-    await this.mainComposeService.systemPrune();
   }
 
   /**

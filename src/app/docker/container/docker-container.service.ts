@@ -1,13 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { TaskService } from 'src/app/core/services/task/task.service';
+import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { DockerCommand } from '../docker-command.class';
+import { DockerPsFull } from '../docker.class';
 
 /**
  * Service to manage individual docker containers
  */
 @Injectable()
 export class DockerContainerService {
-  constructor(private taskService: TaskService) {}
+  constructor(
+    private taskService: TaskService,
+    private configService: CoreConfigService
+  ) {}
 
   public async containerExists(containerName: string): Promise<boolean> {
     const dockerCommand = new DockerCommand();
@@ -65,5 +70,32 @@ export class DockerContainerService {
   public exportLogsToFile(containerName: string, filePath: string): Promise<string> {
     const dockerCommand = new DockerCommand();
     return dockerCommand.exportLogsToFile(containerName, filePath);
+  }
+
+  public async getContainerDetail(containerName: string): Promise<DockerPsFull> {
+    const dockerCommand = new DockerCommand();
+    return await dockerCommand.getContainerFullInfo(containerName);
+  }
+
+  public getContainerSize(containerName: string): Promise<string> {
+    const dockerCommand = new DockerCommand();
+    return dockerCommand.getContainerSize(containerName);
+  }
+
+  public async systemPrune(): Promise<void> {
+    // in local mode, don't prune because it breaks the local docker environment
+    if (this.configService.isLocal()) return;
+
+    const taskName = 'Clean system';
+    this.taskService.newTask(taskName);
+
+    try {
+      const dockerCommand = new DockerCommand();
+      const result = await dockerCommand.systemPrune();
+      this.taskService.markTaskAsSuccess(taskName, result);
+    } catch (e) {
+      this.taskService.markTaskAsError(taskName, e.toString());
+      throw e;
+    }
   }
 }
