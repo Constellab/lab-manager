@@ -10,7 +10,6 @@ import { RCloneResult } from '../core/services/rclone/rclone.class';
 import { RcloneService } from '../core/services/rclone/rclone.service';
 import { TaskService } from '../core/services/task/task.service';
 import { SpawnResult } from '../core/utils/command';
-import { rxjsDebug } from '../core/utils/rxjs-debug';
 import { DockerComposeService } from '../docker/compose/docker-compose.service';
 import { LabBackupHistory } from './backup-history.class';
 import {
@@ -340,7 +339,7 @@ export class BackupService implements OnModuleInit {
     backup.setProcess(backupType, response.childProcess);
 
     // listen to progress
-    response.observable.pipe(rxjsDebug()).subscribe({
+    response.observable.subscribe({
       next: (result) => this.onProgress(result, backupType, backup),
       error: (error: SpawnResult) =>
         this.updateCurrentStatusStorageErrorMessage(error.data, backupType, backup),

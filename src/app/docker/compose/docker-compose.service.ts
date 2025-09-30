@@ -6,7 +6,6 @@ import { DockerInspect } from '../docker.class';
 import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
 import { DockerComposeYaml } from './docker-compose-yaml';
 import { DockerCompose } from './docker-compose.class';
-import { StartComposeRequestOptionsDTO } from './docker-compose.dto';
 import { MainDockerCompose } from './main-docker-compose.class';
 import { ComposeInfo, ComposeList, SubComposeManager } from './sub-compose-manager';
 
@@ -119,7 +118,10 @@ export class DockerComposeService {
     return dockerCompose;
   }
 
-  public async unregisterDockerCompose(brickName: string, uniqueName: string): Promise<boolean> {
+  public async unregisterDockerCompose(
+    brickName: string,
+    uniqueName: string
+  ): Promise<DockerComposeStatusInfo> {
     if (
       brickName === DockerComposeService.MAIN_COMPOSE_BRICK &&
       uniqueName === DockerComposeService.MAIN_COMPOSE_UNIQUE
@@ -138,7 +140,9 @@ export class DockerComposeService {
     dockerCompose.deleteFiles();
 
     // Remove entry from config using SubComposeManager
-    return this.subComposeManager.deleteSubCompose(brickName, uniqueName);
+    this.subComposeManager.deleteSubCompose(brickName, uniqueName);
+
+    return dockerCompose.getStatus();
   }
 
   /**
@@ -148,18 +152,14 @@ export class DockerComposeService {
    * @param uniqueName The unique name.
    * @returns
    */
-  public async registerAndStartSubCompose(
-    composeContent: string,
-    options: StartComposeRequestOptionsDTO,
-    brickName: string,
-    uniqueName: string
-  ): Promise<string> {
-    const composeYaml = new DockerComposeYaml(composeContent, brickName, uniqueName);
-    if (options?.description) {
-      composeYaml.setDescription(options.description);
+  public async registerAndStartSubCompose(composeYaml: DockerComposeYaml): Promise<DockerComposeStatusInfo> {
+    if (!composeYaml.getDescription()) {
+      throw new Error('The description of the compose is required');
     }
     const dockerCompose = await this.registerSubCompose(composeYaml);
-    return await dockerCompose.composeUp();
+    await dockerCompose.composeUp();
+
+    return await dockerCompose.getStatus();
   }
 
   public async getComposeStatus(brickName: string, uniqueName: string): Promise<DockerComposeStatusInfo> {

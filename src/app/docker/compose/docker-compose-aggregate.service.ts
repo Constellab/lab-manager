@@ -1,18 +1,27 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { join } from 'path';
 import { ConfigFileService } from '../../core/services/config-file/config-file.service';
+import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { FileService } from '../../core/services/file/file.service';
 import { TaskService } from '../../core/services/task/task.service';
 import { ComposeRestartOptions, ComposeUpOptions, DockerInspect } from '../docker.class';
+import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
+import { DockerComposeYaml } from './docker-compose-yaml';
+import { RegisterComposeRequestDTO, RegisterSQLDBComposeRequestDTO } from './docker-compose.dto';
 import { DockerComposeService } from './docker-compose.service';
 import { ComposeList } from './sub-compose-manager';
 
 @Injectable()
 export class DockerComposeAggregateService {
+  private static readonly MARIADB_IMAGE = 'mariadb:10.7.4';
+  private static readonly MARIADB_INTERNAL_VOLUME_PATH = '/var/lib/mysql';
+
   constructor(
     private dockerComposeService: DockerComposeService,
     private taskService: TaskService,
     private configFileService: ConfigFileService,
-    private fileService: FileService
+    private fileService: FileService,
+    private coreConfigService: CoreConfigService
   ) {}
 
   public getAllComposes(): ComposeList {
@@ -179,5 +188,112 @@ export class DockerComposeAggregateService {
       DockerComposeService.MAIN_COMPOSE_UNIQUE,
       options
     );
+  }
+
+  ///////////////////////////////// SUB COMPOSE  //////////////////////////////////////
+
+  /**
+   * Register and start a sub compose.
+   * @param composeContent docker compose file content as string
+   * @param brickName The brick name.
+   * @param uniqueName The unique name.
+   * @returns
+   */
+  public async registerAndStartSubCompose(
+    composeRequest: RegisterComposeRequestDTO,
+    brickName: string,
+    uniqueName: string
+  ): Promise<DockerComposeStatusInfo> {
+    if (!composeRequest.composeContent) {
+      throw new Error('The compose content is required');
+    }
+    const composeYaml = new DockerComposeYaml(composeRequest.composeContent, brickName, uniqueName);
+    composeYaml.setDescription(composeRequest.description);
+    return this.dockerComposeService.registerAndStartSubCompose(composeYaml);
+  }
+
+  public async unregisterSubCompose(brickName: string, uniqueName: string): Promise<DockerComposeStatusInfo> {
+    return await this.dockerComposeService.unregisterDockerCompose(brickName, uniqueName);
+  }
+
+  public async getSubComposeStatus(brickName: string, uniqueName: string): Promise<DockerComposeStatusInfo> {
+    return await this.dockerComposeService.getComposeStatus(brickName, uniqueName);
+  }
+
+  public getAllSubComposes(): ComposeList {
+    return this.dockerComposeService.getAllSubComposes();
+  }
+
+  public getComposeContent(brickName: string, uniqueName: string): string {
+    return this.dockerComposeService.getComposeContent(brickName, uniqueName);
+  }
+
+  private subComposeVolumePath(brickName: string, uniqueName: string, env: 'dev' | 'prod'): string {
+    const basePath =
+      env === 'dev'
+        ? this.coreConfigService.getDevDataExtensionsFolder()
+        : this.coreConfigService.getProdDataExtensionsFolder();
+    return join(basePath, brickName, uniqueName);
+  }
+
+  ///////////////////////////////// SPECIFIC SERVICES //////////////////////////////////////
+
+  public async registerSQLDBCompose(
+    brickName: string,
+    uniqueName: string,
+    request: RegisterSQLDBComposeRequestDTO
+  ): Promise<DockerComposeStatusInfo> {
+    const serviceName = request.host;
+    const composeYamlContent = `
+services:
+  ${serviceName}:
+    image: ${DockerComposeAggregateService.MARIADB_IMAGE}
+    command: --max_allowed_packet=256M
+    environment:
+      - MYSQL_ROOT_PASSWORD=${request.password}
+      - MYSQL_USER=${request.username}
+      - MYSQL_PASSWORD=${request.password}
+      - MYSQL_DATABASE=${request.database}
+    container_name: ${serviceName}
+`;
+
+    const composeYaml = new DockerComposeYaml(composeYamlContent, brickName, uniqueName);
+    composeYaml.setDescription(request.description);
+
+    if (request.env === 'prod') {
+      composeYaml.addProdNetwork(serviceName);
+    } else {
+      composeYaml.addDevNetwork(serviceName);
+    }
+
+    if (request.env !== 'test') {
+      if (this.coreConfigService.isLocal()) {
+        // In local mode we create a named volume
+        composeYaml.addNamedVolume(
+          serviceName,
+          `${brickName}_${uniqueName}`,
+          DockerComposeAggregateService.MARIADB_INTERNAL_VOLUME_PATH
+        );
+      } else {
+        // Create the volume in the correct dev or prod folder
+        const volumePath =
+          request.env === 'dev'
+            ? this.subComposeVolumePath(brickName, uniqueName, 'dev')
+            : this.subComposeVolumePath(brickName, uniqueName, 'prod');
+        composeYaml.addVolume(
+          serviceName,
+          volumePath,
+          DockerComposeAggregateService.MARIADB_INTERNAL_VOLUME_PATH
+        );
+      }
+    }
+
+    await this.dockerComposeService.registerAndStartSubCompose(composeYaml);
+
+    // wait for the mariadb service to be ready
+    const dockerCompose = this.dockerComposeService.getAndCheckDockerCompose(brickName, uniqueName);
+    await dockerCompose.waitForServiceToBeReady(serviceName);
+
+    return dockerCompose.getStatus();
   }
 }

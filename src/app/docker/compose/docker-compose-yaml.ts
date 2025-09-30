@@ -113,35 +113,7 @@ export class DockerComposeYaml {
     return content;
   }
 
-  addLabels(serviceName: string, labels: string[]): void {
-    if (!this.content.services[serviceName].labels) {
-      this.content.services[serviceName].labels = [];
-    }
-
-    this.content.services[serviceName].labels.push(...labels);
-  }
-
-  addTraefikLabels(serviceName: string, host: string, servicePort: number): void {
-    const labels = new TraefikService().getTraefikLabels(host, servicePort, serviceName);
-    this.addLabels(serviceName, labels);
-  }
-
-  addEnvironmentVariable(serviceName: string, envKey: string, envValue: string): void {
-    if (!this.content.services[serviceName].environment) {
-      this.content.services[serviceName].environment = [];
-    }
-
-    this.content.services[serviceName].environment.push(`${envKey}=${envValue}`);
-  }
-
-  addPortMapping(serviceName: string, hostPort: number, containerPort: number): void {
-    if (!this.content.services[serviceName].ports) {
-      this.content.services[serviceName].ports = [];
-    }
-
-    this.content.services[serviceName].ports.push(`${hostPort}:${containerPort}`);
-  }
-
+  ////////////////////// SERVICE  //////////////////////
   getContainerNames(): string[] {
     return Object.values(this.content.services).map((service) => service.container_name);
   }
@@ -160,6 +132,99 @@ export class DockerComposeYaml {
     }
     return this.content.services[serviceName].container_name;
   }
+
+  private checkServiceExists(serviceName: string): void {
+    if (!this.serviceExists(serviceName)) {
+      throw new Error(`The service ${serviceName} does not exist in the compose file`);
+    }
+  }
+
+  ////////////////////// ENV  //////////////////////
+  addEnvironmentVariable(serviceName: string, envKey: string, envValue: string): void {
+    this.checkServiceExists(serviceName);
+    if (!this.content.services[serviceName].environment) {
+      this.content.services[serviceName].environment = [];
+    }
+
+    this.content.services[serviceName].environment.push(`${envKey}=${envValue}`);
+  }
+
+  ////////////////////// PORTS //////////////////////
+  addPortMapping(serviceName: string, hostPort: number, containerPort: number): void {
+    this.checkServiceExists(serviceName);
+    if (!this.content.services[serviceName].ports) {
+      this.content.services[serviceName].ports = [];
+    }
+
+    this.content.services[serviceName].ports.push(`${hostPort}:${containerPort}`);
+  }
+  ////////////////////// NETWORKS //////////////////////
+
+  addProdNetwork(serviceName: string): void {
+    this.addNetwork(serviceName, DockerComposeYaml.NETWORK_PROD, true);
+  }
+
+  addDevNetwork(serviceName: string): void {
+    this.addNetwork(serviceName, DockerComposeYaml.NETWORK_DEV, true);
+  }
+
+  addNetwork(serviceName: string, networkName: string, external: boolean): void {
+    this.checkServiceExists(serviceName);
+
+    if (!this.content.services[serviceName].networks) {
+      this.content.services[serviceName].networks = [];
+    }
+    this.content.services[serviceName].networks.push(networkName);
+
+    if (!this.content.networks) {
+      this.content.networks = {};
+    }
+
+    if (!this.content.networks[networkName]) {
+      this.content.networks[networkName] = external ? { external: true } : {};
+    }
+  }
+
+  ///////////////////////// VOLUME ///////////////////////
+
+  addVolume(serviceName: string, hostPath: string, containerPath: string): void {
+    this.checkServiceExists(serviceName);
+    if (!this.content.services[serviceName].volumes) {
+      this.content.services[serviceName].volumes = [];
+    }
+
+    this.content.services[serviceName].volumes.push(`${hostPath}:${containerPath}`);
+  }
+
+  addNamedVolume(serviceName: string, volumeName: string, containerPath: string): void {
+    this.checkServiceExists(serviceName);
+    if (!this.content.volumes) {
+      this.content.volumes = {};
+    }
+
+    if (!this.content.volumes[volumeName]) {
+      this.content.volumes[volumeName] = {};
+    }
+
+    this.addVolume(serviceName, volumeName, containerPath);
+  }
+
+  ///////////////////////// LABELS ///////////////////////
+  addLabels(serviceName: string, labels: string[]): void {
+    this.checkServiceExists(serviceName);
+    if (!this.content.services[serviceName].labels) {
+      this.content.services[serviceName].labels = [];
+    }
+
+    this.content.services[serviceName].labels.push(...labels);
+  }
+
+  addTraefikLabels(serviceName: string, host: string, servicePort: number): void {
+    const labels = new TraefikService().getTraefikLabels(host, servicePort, serviceName);
+    this.addLabels(serviceName, labels);
+  }
+
+  ///////////////////////// OTHER ///////////////////////
 
   toString(): string {
     return dump(this.content, { lineWidth: -1, quotingType: "'" });

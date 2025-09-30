@@ -1,8 +1,13 @@
-export interface StartComposeRequestDTO {
+export interface RegisterComposeRequestDTO {
   composeContent: string;
-  options?: StartComposeRequestOptionsDTO;
+  description: string;
 }
 
-export interface StartComposeRequestOptionsDTO {
-  description?: string;
+export interface RegisterSQLDBComposeRequestDTO {
+  host: string;
+  username: string;
+  password: string;
+  database: string;
+  description: string;
+  env: 'prod' | 'dev' | 'test';
 }

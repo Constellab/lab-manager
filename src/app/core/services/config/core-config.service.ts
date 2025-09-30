@@ -121,6 +121,19 @@ export class CoreConfigService {
     return join(this.getProdFolderPath(), 'data');
   }
 
+  public getDevDataFolder(): string {
+    return join(this.getDevFolderPath(), 'data');
+  }
+
+  // Folder for sub composes volumes
+  public getProdDataExtensionsFolder(): string {
+    return join(this.getProdDataFolder(), 'extensions');
+  }
+
+  public getDevDataExtensionsFolder(): string {
+    return join(this.getDevDataFolder(), 'extensions');
+  }
+
   public getProdSettingsFolder(): string {
     return join(this.getProdFolderPath(), 'settings', 'glab');
   }
