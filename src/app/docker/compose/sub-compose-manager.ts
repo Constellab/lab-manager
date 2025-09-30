@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { DockerComposeYaml } from './docker-compose-yaml';
 
@@ -64,6 +64,62 @@ export class SubComposeManager {
     writeFileSync(composeFilePath, composeYaml.toString());
 
     return composeFilePath;
+  }
+
+  /**
+   * Add a sub-compose from a source directory containing additional files
+   * The docker-compose.yml will be generated from the composeYaml object
+   * @param composeYaml The DockerComposeYaml instance to generate docker-compose.yml from
+   * @param sourceDir The source directory containing all files including docker-compose.yml
+   * @returns The path to the created docker-compose.yml file
+   */
+  public addSubComposeFromDirectory(composeYaml: DockerComposeYaml, sourceDir: string): string {
+    const brickName = composeYaml.getBrickName();
+    const uniqueName = composeYaml.getUniqueName();
+
+    if (!existsSync(sourceDir)) {
+      throw new Error(`Source directory does not exist: ${sourceDir}`);
+    }
+
+    const subFolderPath = this.getSubFolderPath(brickName, uniqueName);
+
+    // Remove existing folder if it exists to ensure clean state
+    if (existsSync(subFolderPath)) {
+      rmSync(subFolderPath, { recursive: true, force: true });
+    }
+
+    // Create the subfolder
+    this.ensureDirectoryExists(subFolderPath);
+
+    // Copy all files from source directory to subfolder
+    this.copyDirectoryContents(sourceDir, subFolderPath);
+
+    // Override docker-compose.yml with the generated content from composeYaml
+    const composeFilePath = this.getComposeFilePath(brickName, uniqueName);
+    writeFileSync(composeFilePath, composeYaml.toString());
+
+    return composeFilePath;
+  }
+
+  /**
+   * Recursively copy all contents from source directory to destination directory
+   * @param sourceDir Source directory path
+   * @param destDir Destination directory path
+   */
+  private copyDirectoryContents(sourceDir: string, destDir: string): void {
+    const entries = readdirSync(sourceDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const sourcePath = join(sourceDir, entry.name);
+      const destPath = join(destDir, entry.name);
+
+      if (entry.isDirectory()) {
+        this.ensureDirectoryExists(destPath);
+        this.copyDirectoryContents(sourcePath, destPath);
+      } else {
+        copyFileSync(sourcePath, destPath);
+      }
+    }
   }
 
   public deleteSubCompose(brickName: string, uniqueName: string): boolean {

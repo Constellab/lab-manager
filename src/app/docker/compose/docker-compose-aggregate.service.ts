@@ -1,4 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { execSync } from 'child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
 import { join } from 'path';
 import { ConfigFileService } from '../../core/services/config-file/config-file.service';
 import { CoreConfigService } from '../../core/services/config/core-config.service';
@@ -226,6 +229,57 @@ export class DockerComposeAggregateService {
 
   public getComposeContent(brickName: string, uniqueName: string): string {
     return this.dockerComposeService.getComposeContent(brickName, uniqueName);
+  }
+
+  /**
+   * Register and start a sub-compose from a zip file
+   * @param brickName The brick name
+   * @param uniqueName The unique name
+   * @param zipBuffer The zip file buffer
+   * @param description Description of the compose
+   * @returns Status information after registration and startup
+   */
+  public async registerSubComposeFromZip(
+    brickName: string,
+    uniqueName: string,
+    zipBuffer: Buffer,
+    description: string
+  ): Promise<DockerComposeStatusInfo> {
+    let tempDir: string | null = null;
+
+    try {
+      // Create temporary directory for extraction
+      tempDir = mkdtempSync(join(tmpdir(), 'docker-compose-zip-'));
+
+      // Extract zip file using unzip command
+      const zipPath = join(tempDir, 'upload.zip');
+      const extractDir = join(tempDir, 'extracted');
+
+      // Write zip buffer to temporary file
+      writeFileSync(zipPath, zipBuffer as any);
+
+      // Extract zip file
+      execSync(`mkdir -p "${extractDir}" && unzip -q "${zipPath}" -d "${extractDir}"`, {
+        encoding: 'utf-8',
+      });
+
+      // Register the sub-compose from the extracted directory
+      return await this.dockerComposeService.registerSubComposeFromDirectory(
+        brickName,
+        uniqueName,
+        extractDir,
+        description
+      );
+    } finally {
+      // Clean up temporary directory
+      if (tempDir) {
+        try {
+          rmSync(tempDir, { recursive: true, force: true });
+        } catch (error) {
+          console.warn(`Failed to clean up temporary directory ${tempDir}:`, error);
+        }
+      }
+    }
   }
 
   private subComposeVolumePath(brickName: string, uniqueName: string, env: 'dev' | 'prod'): string {

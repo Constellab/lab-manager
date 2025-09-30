@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { FileService } from '../../core/services/file/file.service';
 import { DockerCommand } from '../docker-command.class';
@@ -52,36 +54,7 @@ export class DockerComposeService {
     const brickName = composeYaml.getBrickName();
     const uniqueName = composeYaml.getUniqueName();
 
-    if (
-      (brickName === DockerComposeService.MAIN_COMPOSE_BRICK &&
-        uniqueName === DockerComposeService.MAIN_COMPOSE_UNIQUE) ||
-      (brickName === DockerComposeService.SYSTEM_COMPOSE_BRICK &&
-        uniqueName === DockerComposeService.SYSTEM_COMPOSE_UNIQUE)
-    ) {
-      throw new Error('Cannot register the main compose');
-    }
-
-    // Check that the brick name and unique name are valid
-    // they should only contain alphanumeric characters, dashes or underscores
-    const nameRegex = /^[a-zA-Z0-9_-]+$/;
-    if (!nameRegex.test(brickName)) {
-      throw new Error(
-        'Invalid brick name. Only alphanumeric characters, dashes and underscores are allowed.'
-      );
-    }
-    if (!nameRegex.test(uniqueName)) {
-      throw new Error(
-        'Invalid unique name. Only alphanumeric characters, dashes and underscores are allowed.'
-      );
-    }
-    const existingCompose = this.getDockerCompose(brickName, uniqueName);
-
-    // Check if file exists and content differs
-    if (existingCompose && !existingCompose.isEqualToComposeYaml(composeYaml)) {
-      if (await existingCompose.oneServiceIsRunning()) {
-        await this.unregisterDockerCompose(brickName, uniqueName);
-      }
-    }
+    await this.checkBeforeRegister(composeYaml);
 
     // Use SubComposeManager to handle file writing and registration
     const composeFilePath = this.subComposeManager.addSubCompose(composeYaml);
@@ -160,6 +133,76 @@ export class DockerComposeService {
     await dockerCompose.composeUp();
 
     return await dockerCompose.getStatus();
+  }
+
+  /**
+   * Register and start a sub-compose from a directory containing docker-compose.yml and other files
+   * @param brickName The brick name
+   * @param uniqueName The unique name
+   * @param sourceDir Path to directory containing docker-compose.yml and other files
+   * @param description Description of the compose
+   * @returns Status information after registration and startup
+   */
+  public async registerSubComposeFromDirectory(
+    brickName: string,
+    uniqueName: string,
+    sourceDir: string,
+    description: string
+  ): Promise<DockerComposeStatusInfo> {
+    // Validate docker-compose.yml exists
+    const composeFilePath = join(sourceDir, 'docker-compose.yml');
+    const composeContent = readFileSync(composeFilePath, 'utf-8');
+
+    // Parse and validate the compose file
+    const composeYaml = new DockerComposeYaml(composeContent, brickName, uniqueName);
+    composeYaml.setDescription(description);
+
+    await this.checkBeforeRegister(composeYaml);
+
+    // Copy all files from source directory (except docker-compose.yml) and generate docker-compose.yml from composeYaml
+    const composeFileFinalPath = this.subComposeManager.addSubComposeFromDirectory(composeYaml, sourceDir);
+
+    // Create DockerCompose instance and start it
+    const dockerCompose = new DockerCompose(composeFileFinalPath, brickName, uniqueName);
+    await dockerCompose.composeUp();
+
+    return await dockerCompose.getStatus();
+  }
+
+  private async checkBeforeRegister(composeYaml: DockerComposeYaml): Promise<void> {
+    const brickName = composeYaml.getBrickName();
+    const uniqueName = composeYaml.getUniqueName();
+
+    if (
+      (brickName === DockerComposeService.MAIN_COMPOSE_BRICK &&
+        uniqueName === DockerComposeService.MAIN_COMPOSE_UNIQUE) ||
+      (brickName === DockerComposeService.SYSTEM_COMPOSE_BRICK &&
+        uniqueName === DockerComposeService.SYSTEM_COMPOSE_UNIQUE)
+    ) {
+      throw new Error('Cannot register the main compose');
+    }
+
+    // Check that the brick name and unique name are valid
+    // they should only contain alphanumeric characters, dashes or underscores
+    const nameRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!nameRegex.test(brickName)) {
+      throw new Error(
+        'Invalid brick name. Only alphanumeric characters, dashes and underscores are allowed.'
+      );
+    }
+    if (!nameRegex.test(uniqueName)) {
+      throw new Error(
+        'Invalid unique name. Only alphanumeric characters, dashes and underscores are allowed.'
+      );
+    }
+    const existingCompose = this.getDockerCompose(brickName, uniqueName);
+
+    // Check if file exists and content differs
+    if (existingCompose && !existingCompose.isEqualToComposeYaml(composeYaml)) {
+      if (await existingCompose.oneServiceIsRunning()) {
+        await this.unregisterDockerCompose(brickName, uniqueName);
+      }
+    }
   }
 
   public async getComposeStatus(brickName: string, uniqueName: string): Promise<DockerComposeStatusInfo> {

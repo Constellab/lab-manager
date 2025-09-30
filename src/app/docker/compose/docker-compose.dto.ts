@@ -11,3 +11,7 @@ export interface RegisterSQLDBComposeRequestDTO {
   description: string;
   env: 'prod' | 'dev' | 'test';
 }
+
+export interface RegisterComposeFromZipRequestDTO {
+  description: string;
+}

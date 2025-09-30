@@ -1,11 +1,27 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { LabGuard } from 'src/app/core/decorators/lab-guard.decorator';
 import { DockerComposeAggregateService } from './compose/docker-compose-aggregate.service';
 import { DockerComposeStatusInfo } from './compose/docker-compose-inspect.class';
-import { RegisterComposeRequestDTO, RegisterSQLDBComposeRequestDTO } from './compose/docker-compose.dto';
+import {
+  RegisterComposeFromZipRequestDTO,
+  RegisterComposeRequestDTO,
+  RegisterSQLDBComposeRequestDTO,
+} from './compose/docker-compose.dto';
 import { ComposeList } from './compose/sub-compose-manager';
 import { ComposeRestartOptions, ComposeUpOptions, DockerInspect } from './docker.class';
 import { DockerNameValidationPipe } from './pipes/docker-name-validation.pipe';
+import { JsonParsePipe } from './pipes/json-parse.pipe';
 
 /**
  * Controller to manage Docker Compose operations
@@ -34,6 +50,30 @@ export class DockerComposeController {
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
   ): Promise<DockerComposeStatusInfo> {
     return await this.dockerComposeAggregateService.registerSQLDBCompose(brickName, uniqueName, body);
+  }
+
+  @Post('sub-compose/:brickName/:uniqueName/register-from-zip')
+  @UseInterceptors(FileInterceptor('file'))
+  async registerSubComposeFromZip(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('body', JsonParsePipe) body: RegisterComposeFromZipRequestDTO,
+    @Param('brickName', DockerNameValidationPipe) brickName: string,
+    @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
+  ): Promise<DockerComposeStatusInfo> {
+    if (!file) {
+      throw new Error('No file uploaded');
+    }
+
+    if (!body.description) {
+      throw new Error('Description is required');
+    }
+
+    return await this.dockerComposeAggregateService.registerSubComposeFromZip(
+      brickName,
+      uniqueName,
+      file.buffer,
+      body.description
+    );
   }
 
   @Delete('sub-compose/:brickName/:uniqueName/unregister')
