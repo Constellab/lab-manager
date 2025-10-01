@@ -72,11 +72,15 @@ COPY --from=builder /lab-manager/dist/ ./dist
 
 RUN chmod -R 777 dist/assets
 
-# Create non-root user with configurable UID/GID
+# Create non-root user matching host ubuntu user
 ARG USER_ID=1000
 ARG GROUP_ID=1000
-RUN groupadd -g ${GROUP_ID} labuser && \
-    useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash labuser && \
+ARG DOCKER_GID=999
+
+# Create docker group with host's docker GID and add user to it
+RUN groupadd -g ${DOCKER_GID} docker_host || true && \
+    groupadd -g ${GROUP_ID} labuser && \
+    useradd -m -u ${USER_ID} -g ${GROUP_ID} -G ${DOCKER_GID} -s /bin/bash labuser && \
     chown -R labuser:labuser /lab-manager
 
 USER labuser
