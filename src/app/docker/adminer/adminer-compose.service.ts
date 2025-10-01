@@ -69,9 +69,10 @@ export class AdminerComposeService {
         );
       }
 
-      dockerYaml.setDescription('Adminer - Database management tool');
-
-      const dockerCompose = await this.dockerComposeService.registerSubCompose(dockerYaml);
+      const dockerCompose = await this.dockerComposeService.registerSubCompose(
+        dockerYaml,
+        'Adminer - Database management tool'
+      );
       const wasStarted = await dockerCompose.composeUp();
 
       this.taskService.markTaskAsSuccess(taskName, 'Ok');

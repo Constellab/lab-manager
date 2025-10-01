@@ -1,8 +1,11 @@
 import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
 
+export type DockerEnvironmentVariables = { [key: string]: string };
+
 export interface RegisterComposeRequestDTO {
   composeContent: string;
   description: string;
+  env?: DockerEnvironmentVariables;
 }
 
 export interface RegisterSQLDBComposeRequestDTO {
@@ -19,4 +22,5 @@ export interface RegisterSQLDBComposeResponseDTO {
 
 export interface RegisterComposeFromZipRequestDTO {
   description: string;
+  env?: DockerEnvironmentVariables;
 }

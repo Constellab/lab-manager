@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'fs';
 import { dump, load } from 'js-yaml';
 import { TraefikService } from '../../core/services/traefik/traefik.service';
+import { DockerEnvironmentVariables } from './docker-compose.dto';
 
 export interface DockerComposeServiceJson {
   image: string;
@@ -41,7 +42,7 @@ export class DockerComposeYaml {
 
   public static readonly LAB_NETWORK_VAR_NAME = '${LAB_NETWORK}';
   public static readonly LAB_VOLUME_HOST_VAR_NAME = '${LAB_VOLUME_HOST}';
-  public static readonly CONTAINER_PREFIX = '${CONTAINER_PREFIX}';
+  public static readonly CONTAINER_PREFIX = 'CONTAINER_PREFIX';
 
   constructor(strYaml: string, brickName?: string, uniqueName?: string) {
     if (!strYaml || strYaml.trim().length === 0) {
@@ -160,13 +161,15 @@ export class DockerComposeYaml {
     }
   }
 
-  replaceContainerPrefix(): void {
+  replaceContainerPrefix(context: DockerComposeYamlContext): void {
     const brickName = this.getBrickName();
     const uniqueName = this.getUniqueName();
-    const prefix = `${brickName}-${uniqueName}`;
+    let prefix = `${brickName}-${uniqueName}`;
+    if (context === 'dev' || context === 'prod') {
+      prefix = `${context}-${prefix}`;
+    }
 
-    const contentStr = this.toString().split(DockerComposeYaml.CONTAINER_PREFIX).join(prefix);
-    this.content = this.checkYaml(load(contentStr) as DockerComposeJson);
+    this.replaceEnvVariables({ [DockerComposeYaml.CONTAINER_PREFIX]: prefix });
   }
 
   ////////////////////// ENV  //////////////////////
@@ -281,6 +284,15 @@ export class DockerComposeYaml {
   }
 
   ///////////////////////// OTHER ///////////////////////
+
+  public replaceEnvVariables(env: DockerEnvironmentVariables): void {
+    let contentStr = this.toString();
+    for (const [key, value] of Object.entries(env)) {
+      const varName = `\${${key}}`;
+      contentStr = contentStr.split(varName).join(value);
+    }
+    this.content = this.checkYaml(load(contentStr) as DockerComposeJson);
+  }
 
   toString(): string {
     return dump(this.content, { lineWidth: -1, quotingType: "'" });

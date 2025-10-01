@@ -73,7 +73,7 @@ export class DockerComposeController {
       brickName,
       uniqueName,
       file.buffer,
-      body.description
+      body
     );
   }
 

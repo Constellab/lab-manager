@@ -10,6 +10,7 @@ import { ComposeRestartOptions, ComposeUpOptions, DockerInspect } from '../docke
 import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
 import { DockerComposeYaml } from './docker-compose-yaml';
 import {
+  RegisterComposeFromZipRequestDTO,
   RegisterComposeRequestDTO,
   RegisterSQLDBComposeRequestDTO,
   RegisterSQLDBComposeResponseDTO,
@@ -212,8 +213,11 @@ export class DockerComposeAggregateService {
       throw new Error('The compose content is required');
     }
     const composeYaml = new DockerComposeYaml(composeRequest.composeContent, brickName, uniqueName);
-    composeYaml.setDescription(composeRequest.description);
-    return this.dockerComposeService.registerAndStartSubCompose(composeYaml);
+    return this.dockerComposeService.registerAndStartSubCompose(
+      composeYaml,
+      composeRequest.description,
+      composeRequest.env
+    );
   }
 
   public async unregisterSubCompose(brickName: string, uniqueName: string): Promise<DockerComposeStatusInfo> {
@@ -244,7 +248,7 @@ export class DockerComposeAggregateService {
     brickName: string,
     uniqueName: string,
     zipBuffer: Buffer,
-    description: string
+    body: RegisterComposeFromZipRequestDTO
   ): Promise<DockerComposeStatusInfo> {
     let tempDir: string | null = null;
 
@@ -269,7 +273,8 @@ export class DockerComposeAggregateService {
         brickName,
         uniqueName,
         extractDir,
-        description
+        body.description,
+        body.env
       );
     } finally {
       // Clean up temporary directory
@@ -308,9 +313,8 @@ services:
 `;
 
     const composeYaml = new DockerComposeYaml(composeYamlContent, brickName, uniqueName);
-    composeYaml.setDescription(request.description);
 
-    await this.dockerComposeService.registerAndStartSubCompose(composeYaml);
+    await this.dockerComposeService.registerAndStartSubCompose(composeYaml, request.description);
 
     // wait for the mariadb service to be ready
     const dockerCompose = this.dockerComposeService.getAndCheckDockerCompose(brickName, uniqueName);

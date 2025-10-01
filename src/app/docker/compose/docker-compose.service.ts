@@ -13,6 +13,7 @@ import {
   DockerComposeYamlContext,
 } from './docker-compose-yaml';
 import { DockerCompose } from './docker-compose.class';
+import { DockerEnvironmentVariables } from './docker-compose.dto';
 import { MainDockerCompose } from './main-docker-compose.class';
 import { ComposeInfo, ComposeList, SubComposeManager } from './sub-compose-manager';
 
@@ -55,28 +56,15 @@ export class DockerComposeService {
    * @param composeYaml The ComposeYaml instance.
    * @returns The created DockerCompose instance.
    */
-  public async registerSubCompose(composeYaml: DockerComposeYaml): Promise<DockerCompose> {
+  public async registerSubCompose(
+    composeYaml: DockerComposeYaml,
+    description: string,
+    environmentVariables?: DockerEnvironmentVariables
+  ): Promise<DockerCompose> {
     const brickName = composeYaml.getBrickName();
     const uniqueName = composeYaml.getUniqueName();
 
-    await this.checkBeforeRegister(composeYaml);
-
-    // Determine the context based on the authentication
-    const authContext = AuthContextService.getContext();
-    let dockerContext: DockerComposeYamlContext = 'none';
-    if (authContext?.type === 'lab') {
-      dockerContext = authContext.env === 'prod' ? 'prod' : 'dev';
-    } else if (authContext?.type === 'space' || authContext?.type === 'local') {
-      dockerContext = 'all';
-    }
-
-    // Parse variables in the compose file based on the context
-    composeYaml.replaceNetworkVariable(dockerContext);
-
-    const hostVolume = this.getHostVolumeVariable(brickName, uniqueName);
-    composeYaml.replaceVolumeVariable(hostVolume);
-
-    composeYaml.replaceContainerPrefix();
+    await this.checkAndFomatComposeYaml(composeYaml, description, environmentVariables);
 
     // Use SubComposeManager to handle file writing and registration
     const composeFilePath = this.subComposeManager.addSubCompose(composeYaml);
@@ -177,11 +165,12 @@ export class DockerComposeService {
    * @param uniqueName The unique name.
    * @returns
    */
-  public async registerAndStartSubCompose(composeYaml: DockerComposeYaml): Promise<DockerComposeStatusInfo> {
-    if (!composeYaml.getDescription()) {
-      throw new Error('The description of the compose is required');
-    }
-    const dockerCompose = await this.registerSubCompose(composeYaml);
+  public async registerAndStartSubCompose(
+    composeYaml: DockerComposeYaml,
+    description: string,
+    env?: DockerEnvironmentVariables
+  ): Promise<DockerComposeStatusInfo> {
+    const dockerCompose = await this.registerSubCompose(composeYaml, description, env);
     await dockerCompose.composeUp();
 
     return await dockerCompose.getStatus();
@@ -199,7 +188,8 @@ export class DockerComposeService {
     brickName: string,
     uniqueName: string,
     sourceDir: string,
-    description: string
+    description: string,
+    environmentVariables?: DockerEnvironmentVariables
   ): Promise<DockerComposeStatusInfo> {
     // Validate docker-compose.yml exists
     const composeFilePath = join(sourceDir, 'docker-compose.yml');
@@ -207,9 +197,8 @@ export class DockerComposeService {
 
     // Parse and validate the compose file
     const composeYaml = new DockerComposeYaml(composeContent, brickName, uniqueName);
-    composeYaml.setDescription(description);
 
-    await this.checkBeforeRegister(composeYaml);
+    await this.checkAndFomatComposeYaml(composeYaml, description, environmentVariables);
 
     // Copy all files from source directory (except docker-compose.yml)
     // and generate docker-compose.yml from composeYaml
@@ -222,7 +211,11 @@ export class DockerComposeService {
     return await dockerCompose.getStatus();
   }
 
-  private async checkBeforeRegister(composeYaml: DockerComposeYaml): Promise<void> {
+  private async checkAndFomatComposeYaml(
+    composeYaml: DockerComposeYaml,
+    description: string,
+    environmentVariables: DockerEnvironmentVariables
+  ): Promise<void> {
     const brickName = composeYaml.getBrickName();
     const uniqueName = composeYaml.getUniqueName();
 
@@ -248,7 +241,30 @@ export class DockerComposeService {
         'Invalid unique name. Only alphanumeric characters, dashes and underscores are allowed.'
       );
     }
+
+    // Set description
+    composeYaml.setDescription(description);
+
+    // Determine the context based on the authentication
+    const authContext = AuthContextService.getContext();
+    let dockerContext: DockerComposeYamlContext = 'none';
+    if (authContext?.type === 'lab') {
+      dockerContext = authContext.env === 'prod' ? 'prod' : 'dev';
+    } else if (authContext?.type === 'space' || authContext?.type === 'local') {
+      dockerContext = 'all';
+    }
+
+    // Parse variables in the compose file based on the context
+    composeYaml.replaceNetworkVariable(dockerContext);
+    const hostVolume = this.getHostVolumeVariable(brickName, uniqueName);
+    composeYaml.replaceVolumeVariable(hostVolume);
+    composeYaml.replaceContainerPrefix(dockerContext);
     const existingCompose = this.getDockerCompose(brickName, uniqueName);
+
+    // Replace any additional environment variables
+    if (environmentVariables) {
+      composeYaml.replaceEnvVariables(environmentVariables);
+    }
 
     // Check if file exists and content differs
     if (existingCompose && !existingCompose.isEqualToComposeYaml(composeYaml)) {
