@@ -39,8 +39,10 @@ export class ApiKeyGuard implements CanActivate {
     if (isDecoratedWithLabGuard(this.reflector, context)) {
       try {
         const privateFile = this.fileService.readPrivateFile();
-        // TODO : handle dev api keys
-        return apiKey === authorizationSchema + ' ' + privateFile.space.prod_api_key;
+        return (
+          apiKey === authorizationSchema + ' ' + privateFile.space.prod_api_key ||
+          apiKey === authorizationSchema + ' ' + privateFile.space.dev_api_key
+        );
       } catch {
         this.logger.error('[LabApiKeyGuard] Private file not found, cannot validate API key');
         return false;
