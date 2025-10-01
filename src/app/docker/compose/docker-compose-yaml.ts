@@ -166,7 +166,7 @@ export class DockerComposeYaml {
     const uniqueName = this.getUniqueName();
     let prefix = `${brickName}-${uniqueName}`;
     if (context === 'dev' || context === 'prod') {
-      prefix = `${context}-${prefix}`;
+      prefix = `${prefix}-${context}`;
     }
 
     this.replaceEnvVariables({ [DockerComposeYaml.CONTAINER_PREFIX]: prefix });
