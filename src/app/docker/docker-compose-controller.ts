@@ -17,6 +17,7 @@ import {
   RegisterComposeFromZipRequestDTO,
   RegisterComposeRequestDTO,
   RegisterSQLDBComposeRequestDTO,
+  RegisterSQLDBComposeResponseDTO,
 } from './compose/docker-compose.dto';
 import { ComposeList } from './compose/sub-compose-manager';
 import { ComposeRestartOptions, ComposeUpOptions, DockerInspect } from './docker.class';
@@ -48,7 +49,7 @@ export class DockerComposeController {
     @Body() body: RegisterSQLDBComposeRequestDTO,
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
-  ): Promise<DockerComposeStatusInfo> {
+  ): Promise<RegisterSQLDBComposeResponseDTO> {
     return await this.dockerComposeAggregateService.registerSQLDBCompose(brickName, uniqueName, body);
   }
 

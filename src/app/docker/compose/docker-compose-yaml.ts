@@ -23,6 +23,13 @@ export interface DockerComposeJson {
   volumes: Record<string, unknown>;
 }
 
+export type DockerComposeYamlContext = 'prod' | 'dev' | 'all' | 'none';
+
+export interface DockerComposeVolumeVariable {
+  hostVolume: string;
+  isNamed: boolean;
+}
+
 /**
  * Class to manipulate docker-compose.yml files
  */
@@ -32,16 +39,16 @@ export class DockerComposeYaml {
   public static readonly NETWORK_DEV = 'gencovery-network-dev';
   public static readonly NETWORK_PROD = 'gencovery-network-prod';
 
-  public static readonly NETWORK_DEV_VAR_NAME = 'DEV';
-  public static readonly NETWORK_PROD_VAR_NAME = 'PROD';
+  public static readonly LAB_NETWORK_VAR_NAME = '${LAB_NETWORK}';
+  public static readonly LAB_VOLUME_HOST_VAR_NAME = '${LAB_VOLUME_HOST}';
+  public static readonly CONTAINER_PREFIX = '${CONTAINER_PREFIX}';
 
   constructor(strYaml: string, brickName?: string, uniqueName?: string) {
     if (!strYaml || strYaml.trim().length === 0) {
       throw new Error('The docker-compose.yml content is empty');
     }
     const yamlJson = load(strYaml);
-    const content = this.checkYaml(yamlJson as DockerComposeJson, brickName, uniqueName);
-    this.content = this.parseYaml(content);
+    this.content = this.checkYaml(yamlJson as DockerComposeJson, brickName, uniqueName);
   }
 
   private checkYaml(content: DockerComposeJson, brickName?: string, uniqueName?: string): DockerComposeJson {
@@ -74,43 +81,57 @@ export class DockerComposeYaml {
     return content;
   }
 
+  ////////////////////// VARIABLE  //////////////////////
+
   /**
    * Parse the content to replace the custom properties and variables
-   * @param content
    */
-  private parseYaml(content: DockerComposeJson): DockerComposeJson {
+  public replaceNetworkVariable(context: DockerComposeYamlContext): void {
     // replace the networks variable names with actual network names
-    let hasDevNetwork = false;
-    let hasProdNetwork = false;
-    for (const serviceName of Object.keys(content.services)) {
-      const service = content.services[serviceName];
-      if (service.networks && service.networks.length > 0) {
-        service.networks = service.networks.map((network) => {
-          if (network === DockerComposeYaml.NETWORK_DEV_VAR_NAME) {
-            hasDevNetwork = true;
-            return DockerComposeYaml.NETWORK_DEV;
-          } else if (network === DockerComposeYaml.NETWORK_PROD_VAR_NAME) {
-            hasProdNetwork = true;
-            return DockerComposeYaml.NETWORK_PROD;
-          } else {
-            return network;
+    // replace based on the context
+    for (const serviceName of Object.keys(this.content.services)) {
+      const networks = this.getServiceNetworks(serviceName);
+      for (const net of networks) {
+        if (net === DockerComposeYaml.LAB_NETWORK_VAR_NAME) {
+          // remove the variable network
+          this.removeServiceNetwork(serviceName, net);
+          // add the actual network based on context
+          if (context === 'prod' || context === 'all') {
+            this.addProdNetwork(serviceName);
           }
-        });
+          if (context === 'dev' || context === 'all') {
+            this.addDevNetwork(serviceName);
+          }
+        }
       }
     }
+  }
 
-    // loop through global networks and define them if not defined
-    if (!content.networks) {
-      content.networks = {};
-    }
-    if (hasDevNetwork) {
-      content.networks[DockerComposeYaml.NETWORK_DEV] = { external: true };
-    }
-    if (hasProdNetwork) {
-      content.networks[DockerComposeYaml.NETWORK_PROD] = { external: true };
-    }
+  /**
+   * Replace the volume variable in the compose file
+   * @param volume The volume variable to replace in the compose file
+   */
+  public replaceVolumeVariable(volume: DockerComposeVolumeVariable): void {
+    // replace the networks variable names with actual network names
+    // replace based on the context
+    for (const serviceName of Object.keys(this.content.services)) {
+      // replace the volume host path variable with actual path based on context
+      const volumes = this.getServiceVolumes(serviceName);
 
-    return content;
+      for (let i = 0; i < volumes.length; i++) {
+        if (volumes[i].startsWith(DockerComposeYaml.LAB_VOLUME_HOST_VAR_NAME)) {
+          if (volume.isNamed) {
+            // replace the left part until the colon with the named volume
+            const parts = volumes[i].split(':');
+            volumes[i] = `${volume.hostVolume}:${parts[1].trim()}`;
+            this.addNamedVolume(volume.hostVolume);
+          } else {
+            // determine which volume path to use based on context
+            volumes[i] = volumes[i].replace(DockerComposeYaml.LAB_VOLUME_HOST_VAR_NAME, volume.hostVolume);
+          }
+        }
+      }
+    }
   }
 
   ////////////////////// SERVICE  //////////////////////
@@ -137,6 +158,15 @@ export class DockerComposeYaml {
     if (!this.serviceExists(serviceName)) {
       throw new Error(`The service ${serviceName} does not exist in the compose file`);
     }
+  }
+
+  replaceContainerPrefix(): void {
+    const brickName = this.getBrickName();
+    const uniqueName = this.getUniqueName();
+    const prefix = `${brickName}-${uniqueName}`;
+
+    const contentStr = this.toString().split(DockerComposeYaml.CONTAINER_PREFIX).join(prefix);
+    this.content = this.checkYaml(load(contentStr) as DockerComposeJson);
   }
 
   ////////////////////// ENV  //////////////////////
@@ -176,6 +206,10 @@ export class DockerComposeYaml {
     }
     this.content.services[serviceName].networks.push(networkName);
 
+    this.addGlobalNetwork(networkName, external);
+  }
+
+  addGlobalNetwork(networkName: string, external: boolean): void {
     if (!this.content.networks) {
       this.content.networks = {};
     }
@@ -185,7 +219,26 @@ export class DockerComposeYaml {
     }
   }
 
+  getServiceNetworks(serviceName: string): string[] {
+    this.checkServiceExists(serviceName);
+    return this.content.services[serviceName].networks || [];
+  }
+
+  private removeServiceNetwork(serviceName: string, networkName: string): void {
+    this.checkServiceExists(serviceName);
+    if (this.content.services[serviceName].networks) {
+      this.content.services[serviceName].networks = this.content.services[serviceName].networks.filter(
+        (net) => net !== networkName
+      );
+    }
+  }
+
   ///////////////////////// VOLUME ///////////////////////
+
+  getServiceVolumes(serviceName: string): string[] {
+    this.checkServiceExists(serviceName);
+    return this.content.services[serviceName].volumes || [];
+  }
 
   addVolume(serviceName: string, hostPath: string, containerPath: string): void {
     this.checkServiceExists(serviceName);
@@ -196,8 +249,13 @@ export class DockerComposeYaml {
     this.content.services[serviceName].volumes.push(`${hostPath}:${containerPath}`);
   }
 
-  addNamedVolume(serviceName: string, volumeName: string, containerPath: string): void {
+  addNamedVolumeToService(serviceName: string, volumeName: string, containerPath: string): void {
     this.checkServiceExists(serviceName);
+    this.addNamedVolume(volumeName);
+    this.addVolume(serviceName, volumeName, containerPath);
+  }
+
+  addNamedVolume(volumeName: string): void {
     if (!this.content.volumes) {
       this.content.volumes = {};
     }
@@ -205,8 +263,6 @@ export class DockerComposeYaml {
     if (!this.content.volumes[volumeName]) {
       this.content.volumes[volumeName] = {};
     }
-
-    this.addVolume(serviceName, volumeName, containerPath);
   }
 
   ///////////////////////// LABELS ///////////////////////

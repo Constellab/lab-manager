@@ -4,27 +4,28 @@ import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { ConfigFileService } from '../../core/services/config-file/config-file.service';
-import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { FileService } from '../../core/services/file/file.service';
 import { TaskService } from '../../core/services/task/task.service';
 import { ComposeRestartOptions, ComposeUpOptions, DockerInspect } from '../docker.class';
 import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
 import { DockerComposeYaml } from './docker-compose-yaml';
-import { RegisterComposeRequestDTO, RegisterSQLDBComposeRequestDTO } from './docker-compose.dto';
+import {
+  RegisterComposeRequestDTO,
+  RegisterSQLDBComposeRequestDTO,
+  RegisterSQLDBComposeResponseDTO,
+} from './docker-compose.dto';
 import { DockerComposeService } from './docker-compose.service';
 import { ComposeList } from './sub-compose-manager';
 
 @Injectable()
 export class DockerComposeAggregateService {
   private static readonly MARIADB_IMAGE = 'mariadb:10.7.4';
-  private static readonly MARIADB_INTERNAL_VOLUME_PATH = '/var/lib/mysql';
 
   constructor(
     private dockerComposeService: DockerComposeService,
     private taskService: TaskService,
     private configFileService: ConfigFileService,
-    private fileService: FileService,
-    private coreConfigService: CoreConfigService
+    private fileService: FileService
   ) {}
 
   public getAllComposes(): ComposeList {
@@ -282,25 +283,16 @@ export class DockerComposeAggregateService {
     }
   }
 
-  private subComposeVolumePath(brickName: string, uniqueName: string, env: 'dev' | 'prod'): string {
-    const basePath =
-      env === 'dev'
-        ? this.coreConfigService.getDevDataExtensionsFolder()
-        : this.coreConfigService.getProdDataExtensionsFolder();
-    return join(basePath, brickName, uniqueName);
-  }
-
   ///////////////////////////////// SPECIFIC SERVICES //////////////////////////////////////
 
   public async registerSQLDBCompose(
     brickName: string,
     uniqueName: string,
     request: RegisterSQLDBComposeRequestDTO
-  ): Promise<DockerComposeStatusInfo> {
-    const serviceName = request.host;
+  ): Promise<RegisterSQLDBComposeResponseDTO> {
     const composeYamlContent = `
 services:
-  ${serviceName}:
+  mariadb:
     image: ${DockerComposeAggregateService.MARIADB_IMAGE}
     command: --max_allowed_packet=256M
     environment:
@@ -308,46 +300,26 @@ services:
       - MYSQL_USER=${request.username}
       - MYSQL_PASSWORD=${request.password}
       - MYSQL_DATABASE=${request.database}
-    container_name: ${serviceName}
+    container_name: \${CONTAINER_PREFIX}-db
+    networks:
+      - \${LAB_NETWORK}
+    volumes:
+      - \${LAB_VOLUME_HOST}:/var/lib/mysql
 `;
 
     const composeYaml = new DockerComposeYaml(composeYamlContent, brickName, uniqueName);
     composeYaml.setDescription(request.description);
 
-    if (request.env === 'prod') {
-      composeYaml.addProdNetwork(serviceName);
-    } else {
-      composeYaml.addDevNetwork(serviceName);
-    }
-
-    if (request.env !== 'test') {
-      if (this.coreConfigService.isLocal()) {
-        // In local mode we create a named volume
-        composeYaml.addNamedVolume(
-          serviceName,
-          `${brickName}_${uniqueName}`,
-          DockerComposeAggregateService.MARIADB_INTERNAL_VOLUME_PATH
-        );
-      } else {
-        // Create the volume in the correct dev or prod folder
-        const volumePath =
-          request.env === 'dev'
-            ? this.subComposeVolumePath(brickName, uniqueName, 'dev')
-            : this.subComposeVolumePath(brickName, uniqueName, 'prod');
-        composeYaml.addVolume(
-          serviceName,
-          volumePath,
-          DockerComposeAggregateService.MARIADB_INTERNAL_VOLUME_PATH
-        );
-      }
-    }
-
     await this.dockerComposeService.registerAndStartSubCompose(composeYaml);
 
     // wait for the mariadb service to be ready
     const dockerCompose = this.dockerComposeService.getAndCheckDockerCompose(brickName, uniqueName);
-    await dockerCompose.waitForServiceToBeReady(serviceName);
+    await dockerCompose.waitForServiceToBeReady('mariadb');
 
-    return dockerCompose.getStatus();
+    const status = await dockerCompose.getStatus();
+    return {
+      dbHost: composeYaml.getContainerNameFromService('mariadb'),
+      status,
+    };
   }
 }

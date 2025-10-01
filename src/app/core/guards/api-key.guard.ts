@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
+import { AuthContextService } from '../auth/auth-context.service';
 import { isDecoratedWithLabGuard } from '../decorators/lab-guard.decorator';
 import { isDecoratedWithPublic } from '../decorators/public.decorator';
 import { apiKeyHeader, authorizationSchema } from '../models/config.class';
@@ -19,34 +20,57 @@ export class ApiKeyGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     if (isDecoratedWithPublic(this.reflector, context)) {
+      // Set context for public routes
+      AuthContextService.setContext({
+        type: 'public',
+      });
       return true;
     }
-
-    // in local, no need for api key
-    if (this.configService.isLocal()) return true;
 
     const req: Request = context.switchToHttp().getRequest();
 
+    // CHeck authentication from Space
     const apiKey = req.header(apiKeyHeader);
 
-    if (!apiKey) return false;
+    if (apiKey) {
+      if (apiKey === authorizationSchema + ' ' + this.configService.getLabManagerApiKey()) {
+        AuthContextService.setContext({
+          type: 'space',
+        });
+        return true;
+      }
 
-    if (apiKey === authorizationSchema + ' ' + this.configService.getLabManagerApiKey()) {
-      return true;
+      // handle route annotated with @LabGuard for lab authentication
+      if (isDecoratedWithLabGuard(this.reflector, context)) {
+        try {
+          const privateFile = this.fileService.readPrivateFile();
+          if (apiKey === authorizationSchema + ' ' + privateFile.space.prod_api_key) {
+            AuthContextService.setContext({
+              type: 'lab',
+              env: 'prod',
+            });
+            return true;
+          }
+
+          if (apiKey === authorizationSchema + ' ' + privateFile.space.dev_api_key) {
+            AuthContextService.setContext({
+              type: 'lab',
+              env: 'dev',
+            });
+            return true;
+          }
+        } catch {
+          this.logger.error('[LabApiKeyGuard] Private file not found, cannot validate API key');
+        }
+      }
     }
 
-    // handle route annotated with @LabGuard
-    if (isDecoratedWithLabGuard(this.reflector, context)) {
-      try {
-        const privateFile = this.fileService.readPrivateFile();
-        return (
-          apiKey === authorizationSchema + ' ' + privateFile.space.prod_api_key ||
-          apiKey === authorizationSchema + ' ' + privateFile.space.dev_api_key
-        );
-      } catch {
-        this.logger.error('[LabApiKeyGuard] Private file not found, cannot validate API key');
-        return false;
-      }
+    // in local, no need for api key
+    if (this.configService.isLocal()) {
+      AuthContextService.setContext({
+        type: 'local',
+      });
+      return true;
     }
 
     return false;

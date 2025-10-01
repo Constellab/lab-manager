@@ -1,12 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { AuthContextService } from '../../core/auth/auth-context.service';
 import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { FileService } from '../../core/services/file/file.service';
 import { DockerCommand } from '../docker-command.class';
 import { DockerInspect } from '../docker.class';
 import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
-import { DockerComposeYaml } from './docker-compose-yaml';
+import {
+  DockerComposeVolumeVariable,
+  DockerComposeYaml,
+  DockerComposeYamlContext,
+} from './docker-compose-yaml';
 import { DockerCompose } from './docker-compose.class';
 import { MainDockerCompose } from './main-docker-compose.class';
 import { ComposeInfo, ComposeList, SubComposeManager } from './sub-compose-manager';
@@ -56,10 +61,57 @@ export class DockerComposeService {
 
     await this.checkBeforeRegister(composeYaml);
 
+    // Determine the context based on the authentication
+    const authContext = AuthContextService.getContext();
+    let dockerContext: DockerComposeYamlContext = 'none';
+    if (authContext?.type === 'lab') {
+      dockerContext = authContext.env === 'prod' ? 'prod' : 'dev';
+    } else if (authContext?.type === 'space' || authContext?.type === 'local') {
+      dockerContext = 'all';
+    }
+
+    // Parse variables in the compose file based on the context
+    composeYaml.replaceNetworkVariable(dockerContext);
+
+    const hostVolume = this.getHostVolumeVariable(brickName, uniqueName);
+    composeYaml.replaceVolumeVariable(hostVolume);
+
+    composeYaml.replaceContainerPrefix();
+
     // Use SubComposeManager to handle file writing and registration
     const composeFilePath = this.subComposeManager.addSubCompose(composeYaml);
 
     return new DockerCompose(composeFilePath, brickName, uniqueName);
+  }
+
+  /**
+   * Get the parent path for the volumes of the sub-composes based on environment
+   * and brick/unique name.
+   * @returns The path to the volume parent folder
+   */
+  private getHostVolumeVariable(brickName: string, uniqueName: string): DockerComposeVolumeVariable {
+    if (this.configService.isLocal()) {
+      // TODO TO improve as this will not work with multiple volumes
+      // In local mode we use named volumes
+      return {
+        hostVolume: `${brickName}_${uniqueName}`,
+        isNamed: true,
+      };
+    }
+    let parentPath: string;
+    const authContext = AuthContextService.getContext();
+    // when the request is made from lab in dev mode, use the dev extensions folder
+    // otherwise use the prod extensions folder
+    if (authContext?.type === 'lab' && authContext?.env === 'dev') {
+      parentPath = this.configService.getDevDataExtensionsFolder();
+    } else {
+      parentPath = this.configService.getProdDataExtensionsFolder();
+    }
+
+    return {
+      hostVolume: join(parentPath, brickName, uniqueName),
+      isNamed: false,
+    };
   }
 
   public getSubComposeFolderPath(): string {

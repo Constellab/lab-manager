@@ -36,7 +36,7 @@ export class BiotaService {
 
     const zipFilePath = join(biotaDbFolder, 'mariadb.zip');
 
-    this.fileService.createDirIfNotExists(biotaDbFolder);
+    this.fileService.createDirIfNotExists(biotaDbFolder, true);
 
     // Check if the biota db is already downloaded in the right version
     if (!forceUpdate && !this.biotaDbNeedsToBePulled()) {
