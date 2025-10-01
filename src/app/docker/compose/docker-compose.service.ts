@@ -159,7 +159,8 @@ export class DockerComposeService {
 
     await this.checkBeforeRegister(composeYaml);
 
-    // Copy all files from source directory (except docker-compose.yml) and generate docker-compose.yml from composeYaml
+    // Copy all files from source directory (except docker-compose.yml)
+    // and generate docker-compose.yml from composeYaml
     const composeFileFinalPath = this.subComposeManager.addSubComposeFromDirectory(composeYaml, sourceDir);
 
     // Create DockerCompose instance and start it

@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { DockerComposeYaml } from './docker-compose-yaml';
 
@@ -118,8 +118,21 @@ export class SubComposeManager {
         this.copyDirectoryContents(sourcePath, destPath);
       } else {
         copyFileSync(sourcePath, destPath);
+        if (this.isExecutableFile(entry.name)) {
+          chmodSync(destPath, 0o755);
+        }
       }
     }
+  }
+
+  /**
+   * Check if a file should be executable based on its extension
+   * @param filename The filename to check
+   * @returns true if the file should be executable
+   */
+  private isExecutableFile(filename: string): boolean {
+    const executableExtensions = ['.sh', '.py', '.pl', '.rb', '.bash', '.zsh', '.fish', '.js'];
+    return executableExtensions.some((ext) => filename.endsWith(ext));
   }
 
   public deleteSubCompose(brickName: string, uniqueName: string): boolean {
@@ -137,12 +150,14 @@ export class SubComposeManager {
   private ensureSubComposeFolderExists(): void {
     if (!existsSync(this.subComposeFolderPath)) {
       mkdirSync(this.subComposeFolderPath, { recursive: true });
+      chmodSync(this.subComposeFolderPath, 0o755);
     }
   }
 
   private ensureDirectoryExists(dirPath: string): void {
     if (!existsSync(dirPath)) {
       mkdirSync(dirPath, { recursive: true });
+      chmodSync(dirPath, 0o755);
     }
   }
 
