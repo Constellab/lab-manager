@@ -106,6 +106,7 @@ services:
     volumes:
       - lab-manager-config:/conf
       - lab-manager-dev-lab:/lab
+      - lab-manager-dev-data:/data
     depends_on:
       - gws_core_dev_db
       - gws_biota_db
@@ -230,4 +231,6 @@ volumes:
   lab-manager-prod-data:
     external: true
   lab-manager-dev-lab:
+    external: true
+  lab-manager-dev-data:
     external: true

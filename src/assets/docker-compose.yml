@@ -45,7 +45,6 @@ services:
       - gws_core_prod_db
     volumes:
       - /app/prod/lab:/lab
-      - /app/prod/logs:/logs
       - /app/prod/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
       - /app/prod/data:/data
@@ -124,7 +123,6 @@ services:
       - gws_core_dev_db
     volumes:
       - /app/dev/lab:/lab
-      - /app/dev/logs:/logs
       - /app/dev/data:/data
       - /app/dev/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
