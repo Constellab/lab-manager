@@ -26,8 +26,8 @@ export class DockerComposeService {
   // Reference for the compose containing the reverse proxy and lab manager
   public static readonly SYSTEM_COMPOSE_BRICK = 'gws_core';
   public static readonly SYSTEM_COMPOSE_UNIQUE = 'global';
-  public static readonly SYSTEM_REVERSE_PROXY_NAME = 'reverse-proxy';
-  public static readonly SYSTEM_LAB_MANAGER_NAME = 'lab-manager';
+  public static readonly SYSTEM_REVERSE_PROXY_NAME = 'reverse_proxy';
+  public static readonly SYSTEM_LAB_MANAGER_NAME = 'lab_manager';
 
   public static readonly SUB_COMPOSE_FOLDER = 'sub-composes';
 

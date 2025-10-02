@@ -21,6 +21,12 @@ export class DockerComposeInspect {
   }
 
   public getStatus(): DockerComposeStatusInfo {
+    if (this.containers.length === 0) {
+      return {
+        status: 'DOWN',
+        info: 'No containers found',
+      };
+    }
     // if one containers is error return error
     if (this.containers.some((container) => container.status === 'error')) {
       return {

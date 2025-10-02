@@ -97,6 +97,10 @@ export class FileService {
     return this.getVolumePath(this.dockerComposeFileName);
   }
 
+  public dockerComposeFileExists(): boolean {
+    return this.exists(this.dockerComposePath);
+  }
+
   public get dockerComposeFileName(): string {
     if (this.configService.isLocal()) {
       return 'docker-compose-local.yml';

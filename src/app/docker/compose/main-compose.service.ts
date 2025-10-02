@@ -21,6 +21,9 @@ export class MainComposeService {
   ) {}
 
   public async inspectContainers(): Promise<DockerComposeInspect> {
+    if (!this.fileService.dockerComposeFileExists()) {
+      return new DockerComposeInspect();
+    }
     const mainCompose = this.dockerComposeService.createMainComposeObject();
     return await mainCompose.composeInspect();
   }
