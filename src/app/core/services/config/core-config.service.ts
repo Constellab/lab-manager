@@ -141,6 +141,18 @@ export class CoreConfigService {
     return join(this.getGwsDbFolder(), 'gws_core');
   }
 
+  /**
+   * Check if a file exists in dist folder
+   * @param path
+   */
+  public getDistPath(...path: string[]): string {
+    return join(this.config.distFolder, ...path);
+  }
+
+  public getAssetPath(...path: string[]): string {
+    return this.getDistPath(this.config.assetsFolderName, ...path);
+  }
+
   //////////////////////// PROD FOLDERS ////////////////////////
 
   // app/prod/data
@@ -171,6 +183,11 @@ export class CoreConfigService {
   // app/gws_db/gws_core/prod/mariadb
   public getGwsCoreDbProdMariaDbFolder(): string {
     return join(this.getGwsCoreDbFolder(), 'prod', 'mariadb');
+  }
+
+  // Folder for sub composes volumes
+  public getProdDataExtensionsFolder(): string {
+    return join(this.getProdDataFolder(), 'extensions');
   }
 
   //////////////////////// DEV FOLDERS ////////////////////////
@@ -208,6 +225,10 @@ export class CoreConfigService {
   // app/gws_db/gws_core/dev/mariadb
   public getGwsCoreDbDevMariaDbFolder(): string {
     return join(this.getGwsCoreDbFolder(), 'dev', 'mariadb');
+  }
+
+  public getDevDataExtensionsFolder(): string {
+    return join(this.getDevDataFolder(), 'extensions');
   }
 
   public static getEnvVariable(name: string): string {
