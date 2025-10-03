@@ -60,7 +60,7 @@ export class FileService {
   }
 
   private get privateFilePath(): string {
-    return this.getVolumePath(this.privateFileName);
+    return this.getConfPath(this.privateFileName);
   }
 
   //////////////////////// LOG START FILE //////////////////////
@@ -94,7 +94,7 @@ export class FileService {
   }
 
   public get dockerComposePath(): string {
-    return this.getVolumePath(this.dockerComposeFileName);
+    return this.getConfPath(this.dockerComposeFileName);
   }
 
   public dockerComposeFileExists(): boolean {
@@ -112,7 +112,7 @@ export class FileService {
   //////////////////////// ENV FILE //////////////////////
 
   public get envFilePath(): string {
-    return this.getVolumePath(this.envFileName);
+    return this.getConfPath(this.envFileName);
   }
 
   public updateEnvFile(env: string): void {
@@ -156,8 +156,8 @@ export class FileService {
    * Check if a file exists in dist folder
    * @param path
    */
-  public getVolumePath(...path: string[]): string {
-    return this.configService.getVolumePath(...path);
+  public getConfPath(...path: string[]): string {
+    return join(this.configService.getConfFolder(), ...path);
   }
 
   public copyFile(source: string, destination: string): void {
@@ -194,6 +194,7 @@ export class FileService {
     return files.length === 0;
   }
 
+  // eslint-disable-next-line max-len
   // code from https://stackoverflow.com/questions/30448002/how-to-get-directory-size-in-node-js-without-recursively-going-through-directory
   public async getFolderSize(dirPath: string): Promise<number> {
     // const files = await readdir(path);

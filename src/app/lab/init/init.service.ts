@@ -112,13 +112,20 @@ export class InitService {
     try {
       this.taskService.newTask(taskName, 'Generating app volume');
 
-      const appFolder = this.configService.getAppFolder();
-
-      this.fileService.createDirIfNotExists(join(appFolder, 'prod', 'lab', '.sys'), true);
-      this.fileService.createDirIfNotExists(join(appFolder, 'prod', 'data'), true);
-      this.fileService.createDirIfNotExists(join(appFolder, 'dev', 'lab', '.sys'), true);
-      this.fileService.createDirIfNotExists(join(appFolder, 'dev', 'data'), true);
-      this.fileService.createDirIfNotExists(join(appFolder, 'conf'));
+      // Init the volume folder of docker so they are created with the right owner
+      // config
+      this.fileService.createDirIfNotExists(this.configService.getVolumePath(), true);
+      this.fileService.createDirIfNotExists(join(this.configService.getConfFolder()), true);
+      // Prod env
+      this.fileService.createDirIfNotExists(this.configService.getProdLabFolder(), true);
+      this.fileService.createDirIfNotExists(this.configService.getProdDataFolder(), true);
+      this.fileService.createDirIfNotExists(this.configService.getProdSettingsFolder(), true);
+      this.fileService.createDirIfNotExists(this.configService.getGwsCoreDbProdMariaDbFolder(), true);
+      // Dev env
+      this.fileService.createDirIfNotExists(this.configService.getDevLabFolder(), true);
+      this.fileService.createDirIfNotExists(this.configService.getDevDataFolder(), true);
+      this.fileService.createDirIfNotExists(this.configService.getDevSettingsFolder(), true);
+      this.fileService.createDirIfNotExists(this.configService.getGwsCoreDbDevMariaDbFolder(), true);
 
       this.taskService.markTaskAsSuccess(taskName, 'App volume generated');
     } catch (e) {

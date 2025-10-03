@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigFile } from '../../models/config-file.class';
-import { FileService } from '../file/file.service';
 import { CoreConfigService } from '../config/core-config.service';
+import { FileService } from '../file/file.service';
 
 @Injectable()
 export class ConfigFileService {
@@ -87,6 +87,6 @@ export class ConfigFileService {
   }
 
   private get configFilePath(): string {
-    return this.fileService.getVolumePath(this.configFileName);
+    return this.fileService.getConfPath(this.configFileName);
   }
 }

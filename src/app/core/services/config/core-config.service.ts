@@ -101,78 +101,11 @@ export class CoreConfigService {
     return 8501;
   }
 
-  public getAppFolder(): string {
-    return '/app';
-  }
-
   public getPort(): number {
     return this.getConfigNumber('PORT');
   }
 
-  public getProdFolderPath(): string {
-    return join(this.getAppFolder(), 'prod');
-  }
-
-  public getDevFolderPath(): string {
-    return join(this.getAppFolder(), 'dev');
-  }
-
-  public getProdDataFolder(): string {
-    return join(this.getProdFolderPath(), 'data');
-  }
-
-  public getDevDataFolder(): string {
-    return join(this.getDevFolderPath(), 'data');
-  }
-
-  // Folder for sub composes volumes
-  public getProdDataExtensionsFolder(): string {
-    return join(this.getProdDataFolder(), 'extensions');
-  }
-
-  public getDevDataExtensionsFolder(): string {
-    return join(this.getDevDataFolder(), 'extensions');
-  }
-
-  public getProdSettingsFolder(): string {
-    return join(this.getProdFolderPath(), 'settings', 'glab');
-  }
-
-  public getGwsDbFolder(): string {
-    return this.getAppFolder() + '/gws_db';
-  }
-
-  public getProdStartLogFile(): string {
-    return join(this.getProdFolderPath(), 'lab', '.sys', 'start-log.json');
-  }
-
-  public getDevStartLogFile(): string {
-    return join(this.getDevFolderPath(), 'lab', '.sys', 'start-log.json');
-  }
-
-  public getBiotaDbFolder(): string {
-    return join(this.getGwsDbFolder(), 'gws_biota');
-  }
-
-  public getGwsCoreDbFolder(): string {
-    return join(this.getGwsDbFolder(), 'gws_core');
-  }
-
-  public getGwsCoreDbProdMariaDbFolder(): string {
-    return join(this.getGwsCoreDbFolder(), 'prod', 'mariadb');
-  }
-
-  /**
-   * Check if a file exists in dist folder
-   * @param path
-   */
-  public getDistPath(...path: string[]): string {
-    return join(this.config.distFolder, ...path);
-  }
-
-  public getAssetPath(...path: string[]): string {
-    return this.getDistPath(this.config.assetsFolderName, ...path);
-  }
+  //////////////////////// FOLDERS ////////////////////////
 
   /**
    * Get the path of the volume.
@@ -186,6 +119,95 @@ export class CoreConfigService {
     }
 
     return join(volumePath, ...path);
+  }
+
+  // app/conf
+  public getConfFolder(): string {
+    return join(this.getVolumePath(), 'conf');
+  }
+
+  // app/gws_db
+  public getGwsDbFolder(): string {
+    return this.getVolumePath() + '/gws_db';
+  }
+
+  // app/gws_db/gws_biota
+  public getBiotaDbFolder(): string {
+    return join(this.getGwsDbFolder(), 'gws_biota');
+  }
+
+  // app/gws_db/gws_core
+  public getGwsCoreDbFolder(): string {
+    return join(this.getGwsDbFolder(), 'gws_core');
+  }
+
+  //////////////////////// PROD FOLDERS ////////////////////////
+
+  // app/prod/data
+  public getProdDataFolder(): string {
+    return join(this.getProdFolderPath(), 'data');
+  }
+
+  // app/prod/settings/glab
+  public getProdSettingsFolder(): string {
+    return join(this.getProdFolderPath(), 'settings', 'glab');
+  }
+
+  // app/prod
+  public getProdFolderPath(): string {
+    return join(this.getVolumePath(), 'prod');
+  }
+
+  // app/prod/lab
+  public getProdLabFolder(): string {
+    return join(this.getProdFolderPath(), 'lab');
+  }
+
+  // app/prod/lab/.sys/start-log.json
+  public getProdStartLogFile(): string {
+    return join(this.getProdLabFolder(), '.sys', 'start-log.json');
+  }
+
+  // app/gws_db/gws_core/prod/mariadb
+  public getGwsCoreDbProdMariaDbFolder(): string {
+    return join(this.getGwsCoreDbFolder(), 'prod', 'mariadb');
+  }
+
+  //////////////////////// DEV FOLDERS ////////////////////////
+
+  // app/dev
+  public getDevFolderPath(): string {
+    return join(this.getVolumePath(), 'dev');
+  }
+
+  // app/dev/lab
+  public getDevLabFolder(): string {
+    return join(this.getDevFolderPath(), 'lab');
+  }
+
+  // app/dev/data
+  public getDevDataFolder(): string {
+    return join(this.getDevFolderPath(), 'data');
+  }
+
+  // app/dev/settings/glab
+  public getDevSettingsFolder(): string {
+    return join(this.getDevFolderPath(), 'settings', 'glab');
+  }
+
+  // app/dev/lab/.sys/start-log.json
+  public getDevStartLogFile(): string {
+    return join(this.getDevFolderPath(), 'lab', '.sys', 'start-log.json');
+  }
+
+  // app/dev/.ssh
+  public getDevEnvSSHFolder(): string {
+    return join(this.getDevFolderPath(), '.ssh');
+  }
+
+  // app/gws_db/gws_core/dev/mariadb
+  public getGwsCoreDbDevMariaDbFolder(): string {
+    return join(this.getGwsCoreDbFolder(), 'dev', 'mariadb');
   }
 
   public static getEnvVariable(name: string): string {

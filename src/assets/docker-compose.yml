@@ -45,9 +45,9 @@ services:
       - gws_core_prod_db
     volumes:
       - /app/prod/lab:/lab
+      - /app/prod/data:/data
       - /app/prod/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
-      - /app/prod/data:/data
     labels:
       - traefik.enable=true
       # Config for the HTTPS glab domain to port 8080
@@ -126,6 +126,7 @@ services:
       - /app/dev/data:/data
       - /app/dev/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
+      # store the SSH keys in a volume to keep them persistent
       - /app/dev/.ssh:/home/labuser/.ssh
       # Create a volume for the SSH server configuration
       # to keep the keys and prevent error : remote host identification has changed
