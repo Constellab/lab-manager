@@ -52,9 +52,6 @@ export class InitService {
       throw new BadRequestException('You must configure the bricks before calling init');
     }
     try {
-      this.logger.log('[INIT] Init started');
-      this.initAppVolume();
-
       await this.init();
 
       this.logger.log('[INIT] Init ended successfully');
@@ -88,8 +85,6 @@ export class InitService {
    * Configure the lab manager to be ready to start the docker containers (but not start them)
    */
   public configureLabManager(labInitConfig: LabInitConfig): void {
-    this.initAppVolume();
-
     this.generatePrivateFile(labInitConfig);
   }
 
@@ -104,34 +99,6 @@ export class InitService {
       this.configFileService.readConfigFile(),
       this.fileService.readPrivateFile()
     );
-  }
-
-  private initAppVolume(): void {
-    const taskName = 'Generate volumes';
-
-    try {
-      this.taskService.newTask(taskName, 'Generating app volume');
-
-      // Init the volume folder of docker so they are created with the right owner
-      // config
-      this.fileService.createDirIfNotExists(this.configService.getVolumePath(), true);
-      this.fileService.createDirIfNotExists(join(this.configService.getConfFolder()), true);
-      // Prod env
-      this.fileService.createDirIfNotExists(this.configService.getProdLabFolder(), true);
-      this.fileService.createDirIfNotExists(this.configService.getProdDataFolder(), true);
-      this.fileService.createDirIfNotExists(this.configService.getProdSettingsFolder(), true);
-      this.fileService.createDirIfNotExists(this.configService.getGwsCoreDbProdMariaDbFolder(), true);
-      // Dev env
-      this.fileService.createDirIfNotExists(this.configService.getDevLabFolder(), true);
-      this.fileService.createDirIfNotExists(this.configService.getDevDataFolder(), true);
-      this.fileService.createDirIfNotExists(this.configService.getDevSettingsFolder(), true);
-      this.fileService.createDirIfNotExists(this.configService.getGwsCoreDbDevMariaDbFolder(), true);
-
-      this.taskService.markTaskAsSuccess(taskName, 'App volume generated');
-    } catch (e) {
-      this.taskService.markTaskAsError(taskName, `Error while generating app volume : ${e.message}`);
-      throw e;
-    }
   }
 
   private generatePrivateFile(labInitConfig: LabInitConfig): void {

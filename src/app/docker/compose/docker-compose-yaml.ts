@@ -31,6 +31,12 @@ export interface DockerComposeVolumeVariable {
   isNamed: boolean;
 }
 
+export interface DockerComposeVolume {
+  hostPath: string;
+  containerPath: string;
+  isNamed: boolean;
+}
+
 /**
  * Class to manipulate docker-compose.yml files
  */
@@ -238,7 +244,7 @@ export class DockerComposeYaml {
 
   ///////////////////////// VOLUME ///////////////////////
 
-  getServiceVolumes(serviceName: string): string[] {
+  private getServiceVolumes(serviceName: string): string[] {
     this.checkServiceExists(serviceName);
     return this.content.services[serviceName].volumes || [];
   }
@@ -266,6 +272,25 @@ export class DockerComposeYaml {
     if (!this.content.volumes[volumeName]) {
       this.content.volumes[volumeName] = {};
     }
+  }
+
+  getAllVolumes(): DockerComposeVolume[] {
+    const volumes: DockerComposeVolume[] = [];
+    for (const serviceName of this.getServiceNames()) {
+      const serviceVolumes = this.getServiceVolumes(serviceName);
+      for (const vol of serviceVolumes) {
+        const parts = vol.split(':');
+        if (parts.length === 2) {
+          const hostPath = parts[0].trim();
+          const containerPath = parts[1].trim();
+          const isNamed = !hostPath.startsWith('/') && !hostPath.startsWith('.');
+          if (!volumes.find((v) => v.hostPath === hostPath && v.containerPath === containerPath)) {
+            volumes.push({ hostPath, containerPath, isNamed });
+          }
+        }
+      }
+    }
+    return volumes;
   }
 
   ///////////////////////// LABELS ///////////////////////

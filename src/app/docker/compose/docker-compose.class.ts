@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { existsSync, readFileSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync } from 'fs';
 import { Command, ExecCommandMode } from '../../core/utils/command';
 import { DockerCommand } from '../docker-command.class';
 import { DockerComposeInspect, DockerComposeStatusInfo } from './docker-compose-inspect.class';
@@ -70,6 +70,7 @@ export class DockerCompose {
    * @param containers if provided, only up the containers
    */
   public composeUp(options: string[] = [], containers: string[] = []): Promise<string> {
+    this.beforeUp();
     return this.execDockerComposeCommand(`up -d ${options.join(' ')} ${containers.join(' ')}`);
   }
 
@@ -78,6 +79,7 @@ export class DockerCompose {
   }
 
   public composeRestart(): Promise<string> {
+    this.beforeUp();
     return this.execDockerComposeCommand('restart');
   }
 
@@ -88,6 +90,20 @@ export class DockerCompose {
   public composeDown(containers: string[] = []): Promise<string> {
     return this.execDockerComposeCommand(`down ${containers.join(' ')}`);
   }
+
+  /**
+   * Call before a docker compose up command to create the volumes folders
+   * This is required so the volumes are not created by docker as root
+   */
+  private beforeUp(): void {
+    const volumes = this.composeYaml.getAllVolumes();
+    for(const volume of volumes) {
+      if (volume.isNamed) continue;
+      if(existsSync(volume.hostPath)) continue;
+      mkdirSync(volume.hostPath, { recursive: true });
+    }
+  }
+
 
   private execDockerComposeCommand(options: string): Promise<string> {
     let command: string = `docker compose -f ${this.composeFilePath}`;

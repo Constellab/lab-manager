@@ -18,7 +18,6 @@ import { CoreConfigService } from '../config/core-config.service';
 
 @Injectable()
 export class FileService {
-  private readonly assets = 'assets';
 
   private readonly privateFileName = 'private.json';
 
