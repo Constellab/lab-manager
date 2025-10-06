@@ -216,7 +216,8 @@ export class DockerComposeAggregateService {
     return this.dockerComposeService.registerAndStartSubCompose(
       composeYaml,
       composeRequest.description,
-      composeRequest.env
+      composeRequest.env,
+      true
     );
   }
 
@@ -249,7 +250,7 @@ export class DockerComposeAggregateService {
     uniqueName: string,
     zipBuffer: Buffer,
     body: RegisterComposeFromZipRequestDTO
-  ): Promise<DockerComposeStatusInfo> {
+  ): Promise<void> {
     let tempDir: string | null = null;
 
     try {
@@ -269,7 +270,7 @@ export class DockerComposeAggregateService {
       });
 
       // Register the sub-compose from the extracted directory
-      return await this.dockerComposeService.registerSubComposeFromDirectory(
+      await this.dockerComposeService.registerSubComposeFromDirectory(
         brickName,
         uniqueName,
         extractDir,

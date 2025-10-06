@@ -194,6 +194,8 @@ export class DockerComposeService {
    * @param uniqueName The unique name
    * @param sourceDir Path to directory containing docker-compose.yml and other files
    * @param description Description of the compose
+   * @param environmentVariables Optional environment variables to replace in the compose file
+   * @param async If true, the compose up will be done in background and errors will be logged but not thrown.
    * @returns Status information after registration and startup
    */
   public async registerSubComposeFromDirectory(
@@ -201,8 +203,9 @@ export class DockerComposeService {
     uniqueName: string,
     sourceDir: string,
     description: string,
-    environmentVariables?: DockerEnvironmentVariables
-  ): Promise<DockerComposeStatusInfo> {
+    environmentVariables?: DockerEnvironmentVariables,
+    async: boolean = true
+  ): Promise<void> {
     // Validate docker-compose.yml exists
     const composeFilePath = join(sourceDir, 'docker-compose.yml');
     const composeContent = readFileSync(composeFilePath, 'utf-8');
@@ -218,9 +221,15 @@ export class DockerComposeService {
 
     // Create DockerCompose instance and start it
     const dockerCompose = new DockerCompose(composeFileFinalPath, brickName, uniqueName);
-    await dockerCompose.composeUp();
 
-    return await dockerCompose.getStatus();
+    if (async) {
+      dockerCompose.composeUp().catch((err) => {
+        // Log the error but don't throw as we are in an async call
+        console.error(`Error starting the compose ${brickName}:${uniqueName} : ${err}`);
+      });
+    } else {
+      await dockerCompose.composeUp();
+    }
   }
 
   private async checkAndFomatComposeYaml(
