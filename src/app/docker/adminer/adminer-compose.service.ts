@@ -46,10 +46,11 @@ export class AdminerComposeService {
 
     try {
       const templatePath = this.coreConfigService.getAssetPath(AdminerComposeService.ADMINER_TEMPLATE_FILE);
-      const dockerYaml = DockerComposeYaml.fromFile(
+      const dockerYaml = DockerComposeYaml.fromTemplateFile(
         templatePath,
         AdminerComposeService.ADMINER_BRICK_NAME,
-        AdminerComposeService.ADMINER_UNIQUE_NAME
+        AdminerComposeService.ADMINER_UNIQUE_NAME,
+        'all'
       );
 
       // in local we add a port mapping, in prod we add traefik labels

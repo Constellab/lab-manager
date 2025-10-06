@@ -8,7 +8,6 @@ import { FileService } from '../../core/services/file/file.service';
 import { TaskService } from '../../core/services/task/task.service';
 import { ComposeRestartOptions, ComposeUpOptions, DockerInspect } from '../docker.class';
 import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
-import { DockerComposeYaml } from './docker-compose-yaml';
 import {
   RegisterComposeFromZipRequestDTO,
   RegisterComposeRequestDTO,
@@ -212,13 +211,7 @@ export class DockerComposeAggregateService {
     if (!composeRequest.composeContent) {
       throw new Error('The compose content is required');
     }
-    const composeYaml = new DockerComposeYaml(composeRequest.composeContent, brickName, uniqueName);
-    return this.dockerComposeService.registerAndStartSubCompose(
-      composeYaml,
-      composeRequest.description,
-      composeRequest.env,
-      true
-    );
+    return this.dockerComposeService.registerAndStartSubCompose(brickName, uniqueName, composeRequest, true);
   }
 
   public async unregisterSubCompose(brickName: string, uniqueName: string): Promise<DockerComposeStatusInfo> {
@@ -313,9 +306,11 @@ services:
       - \${LAB_VOLUME_HOST}:/var/lib/mysql
 `;
 
-    const composeYaml = new DockerComposeYaml(composeYamlContent, brickName, uniqueName);
-
-    await this.dockerComposeService.registerAndStartSubCompose(composeYaml, request.description, null, false);
+    await this.dockerComposeService.registerAndStartSubCompose(brickName, uniqueName, {
+      composeContent: composeYamlContent,
+      description: request.description,
+      env: {},
+    });
 
     // wait for the mariadb service to be ready
     const dockerCompose = this.dockerComposeService.getAndCheckDockerCompose(brickName, uniqueName);
@@ -323,7 +318,7 @@ services:
 
     const status = await dockerCompose.getStatus();
     return {
-      dbHost: composeYaml.getContainerNameFromService('mariadb'),
+      dbHost: dockerCompose.getComposeYaml().getContainerNameFromService('mariadb'),
       status,
     };
   }

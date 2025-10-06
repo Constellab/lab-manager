@@ -9,7 +9,7 @@ import { DockerInspect } from '../docker.class';
 import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
 import { DockerComposeYaml } from './docker-compose-yaml';
 import { DockerCompose } from './docker-compose.class';
-import { DockerEnvironmentVariables } from './docker-compose.dto';
+import { DockerEnvironmentVariables, RegisterComposeRequestDTO } from './docker-compose.dto';
 import {
   ComposeInfo,
   ComposeList,
@@ -42,7 +42,7 @@ export class DockerComposeService {
   public createMainComposeObject(): MainDockerCompose {
     const composePath = this.fileService.dockerComposePath;
     const envPath = this.fileService.envFilePath;
-    const composeYaml = DockerComposeYaml.fromFile(
+    const composeYaml = DockerComposeYaml.fromTemplateFile(
       composePath,
       DockerComposeService.MAIN_COMPOSE_BRICK,
       DockerComposeService.MAIN_COMPOSE_UNIQUE,
@@ -104,7 +104,7 @@ export class DockerComposeService {
   }
 
   public getSubComposeFolderPath(): string {
-    return this.configService.getVolumePath(DockerComposeService.SUB_COMPOSE_FOLDER);
+    return join(this.configService.getConfFolder(), DockerComposeService.SUB_COMPOSE_FOLDER);
   }
 
   public getDockerCompose(brickName: string, uniqueName: string): DockerCompose | null {
@@ -157,21 +157,24 @@ export class DockerComposeService {
 
   /**
    * Register and start a sub compose.
-   * @param composeContent docker compose file content as string
    * @param brickName The brick name.
    * @param uniqueName The unique name.
-   * @param description Description of the compose.
-   * @param env Optional environment variables to replace in the compose file.
+   * @param composeContent docker compose file content as string
    * @param async If true, the compose up will be done in background and errors will be logged but not thrown.
    * @returns
    */
   public async registerAndStartSubCompose(
-    composeYaml: DockerComposeYaml,
-    description: string,
-    env?: DockerEnvironmentVariables,
+    brickName: string,
+    uniqueName: string,
+    composeRequest: RegisterComposeRequestDTO,
     async: boolean = true
   ): Promise<void> {
-    const dockerCompose = await this.registerSubCompose(composeYaml, description, env);
+    const composeYaml = this.createSubComposeYaml(composeRequest.composeContent, brickName, uniqueName);
+    const dockerCompose = await this.registerSubCompose(
+      composeYaml,
+      composeRequest.description,
+      composeRequest.env
+    );
 
     if (async) {
       dockerCompose.composeUp().catch((err) => {
@@ -208,7 +211,7 @@ export class DockerComposeService {
     const composeContent = readFileSync(composeFilePath, 'utf-8');
 
     // Parse and validate the compose file
-    const composeYaml = new DockerComposeYaml(composeContent, brickName, uniqueName);
+    const composeYaml = this.createSubComposeYaml(composeContent, brickName, uniqueName);
 
     await this.checkAndFomatSubComposeYaml(composeYaml, description, environmentVariables);
 
@@ -366,6 +369,10 @@ export class DockerComposeService {
 
   private get subComposeManager(): SubComposeManager {
     return new SubComposeManager(this.getSubComposeFolderPath());
+  }
+
+  private createSubComposeYaml(strYml: string, brickName: string, uniqueName: string): DockerComposeYaml {
+    return new DockerComposeYaml(strYml, brickName, uniqueName, this.getDockerComposeEnv());
   }
 
   private getDockerComposeEnv(): DockerComposeYamlEnv {

@@ -26,7 +26,12 @@ export class DockerComposeYaml {
   public static readonly X_HTTPS_LABELS = 'x-gws-https';
   public static readonly X_GWS_CONFIG = 'x-gws-config';
 
-  constructor(strYaml: string, brickName?: string, uniqueName?: string, env?: DockerComposeYamlEnv) {
+  constructor(
+    strYaml: string,
+    brickName: string | null,
+    uniqueName: string | null,
+    env: DockerComposeYamlEnv | null
+  ) {
     if (!strYaml || strYaml.trim().length === 0) {
       throw new Error('The docker-compose.yml content is empty');
     }
@@ -36,9 +41,9 @@ export class DockerComposeYaml {
 
   private checkYaml(
     content: DockerComposeJson,
-    brickName?: string,
-    uniqueName?: string,
-    env?: DockerComposeYamlEnv
+    brickName: string | null,
+    uniqueName: string | null,
+    env: DockerComposeYamlEnv | null
   ): DockerComposeJson {
     // check that the brickName and uniqueName match the ones in the file if provided
     if (brickName) {
@@ -422,11 +427,11 @@ export class DockerComposeYaml {
     this.content['x-gws-env'] = env;
   }
 
-  public static fromFile(
+  public static fromTemplateFile(
     filePath: string,
-    brickName?: string,
-    uniqueName?: string,
-    env?: DockerComposeYamlEnv
+    brickName: string,
+    uniqueName: string,
+    env: DockerComposeYamlEnv
   ): DockerComposeYaml {
     if (!filePath || filePath.trim().length === 0) {
       throw new Error('The file path is empty');
@@ -436,5 +441,9 @@ export class DockerComposeYaml {
     }
     const fileContent = readFileSync(filePath, 'utf-8');
     return new DockerComposeYaml(fileContent, brickName, uniqueName, env);
+  }
+
+  public static fromFile(filePath: string): DockerComposeYaml {
+    return DockerComposeYaml.fromTemplateFile(filePath, null, null, null);
   }
 }

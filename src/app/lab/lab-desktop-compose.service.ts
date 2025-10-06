@@ -54,7 +54,7 @@ export class LabDesktopComposeService implements OnModuleInit {
       const templatePath = this.coreConfigService.getAssetPath(
         LabDesktopComposeService.LAB_DESKTOP_TEMPLATE_FILE
       );
-      const dockerYaml = DockerComposeYaml.fromFile(
+      const dockerYaml = DockerComposeYaml.fromTemplateFile(
         templatePath,
         LabDesktopComposeService.LAB_DESKTOP_BRICK_NAME,
         LabDesktopComposeService.LAB_DESKTOP_UNIQUE_NAME,
