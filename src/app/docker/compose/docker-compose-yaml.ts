@@ -93,7 +93,18 @@ export class DockerComposeYaml {
     this.replaceNetworkVariable();
     this.replaceVolumeVariable(volume);
     this.replaceXGwsConfig(systemEnv.labDomain);
-    this.replaceEnvVariables({ [DockerComposeYaml.LAB_DOMAIN_VAR_NAME]: systemEnv.labDomain });
+
+    const brickName = this.getBrickName();
+    const uniqueName = this.getUniqueName();
+    let containerPrefix = `${brickName}-${uniqueName}`;
+    if (this.getEnv() === 'dev' || this.getEnv() === 'prod') {
+      containerPrefix = `${containerPrefix}-${this.getEnv()}`;
+    }
+
+    this.replaceEnvVariables({
+      [DockerComposeYaml.LAB_DOMAIN_VAR_NAME]: systemEnv.labDomain,
+      [DockerComposeYaml.CONTAINER_PREFIX]: containerPrefix,
+    });
     if (env) {
       this.replaceEnvVariables(env);
     }
@@ -123,17 +134,6 @@ export class DockerComposeYaml {
     if (!this.serviceExists(serviceName)) {
       throw new Error(`The service ${serviceName} does not exist in the compose file`);
     }
-  }
-
-  replaceContainerPrefix(): void {
-    const brickName = this.getBrickName();
-    const uniqueName = this.getUniqueName();
-    let prefix = `${brickName}-${uniqueName}`;
-    if (this.getEnv() === 'dev' || this.getEnv() === 'prod') {
-      prefix = `${prefix}-${this.getEnv()}`;
-    }
-
-    this.replaceEnvVariables({ [DockerComposeYaml.CONTAINER_PREFIX]: prefix });
   }
 
   ////////////////////// ENV  //////////////////////
@@ -208,7 +208,7 @@ export class DockerComposeYaml {
   /**
    * Parse the content to replace the custom properties and variables
    */
-  public replaceNetworkVariable(): void {
+  private replaceNetworkVariable(): void {
     // replace the networks variable names with actual network names
     // replace based on the context
     for (const serviceName of Object.keys(this.content.services)) {
@@ -284,7 +284,7 @@ export class DockerComposeYaml {
    * Replace the volume variable in the compose file
    * @param volume The volume variable to replace in the compose file
    */
-  public replaceVolumeVariable(volume: DockerComposeVolumeVariable): void {
+  private replaceVolumeVariable(volume: DockerComposeVolumeVariable): void {
     // replace the networks variable names with actual network names
     // replace based on the context
     for (const serviceName of Object.keys(this.content.services)) {
