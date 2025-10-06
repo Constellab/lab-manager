@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { existsSync, mkdirSync, readFileSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import { Command, ExecCommandMode } from '../../core/utils/command';
 import { DockerCommand } from '../docker-command.class';
 import { DockerComposeInspect, DockerComposeStatusInfo } from './docker-compose-inspect.class';
@@ -8,27 +8,14 @@ import { DockerComposeYaml } from './docker-compose-yaml';
 export class DockerCompose {
   private readonly logger = new Logger(DockerCompose.name);
 
-  private composeYaml: DockerComposeYaml;
-
   constructor(
     private composeFilePath: string,
-    private brickName: string,
-    private uniqueName: string,
+    private composeYaml: DockerComposeYaml,
     private envFilePath: string | null = null
-  ) {
-    this.loadComposeYaml();
-  }
+  ) {}
 
   public getComposeFileContent(): string {
-    if (!existsSync(this.composeFilePath)) {
-      throw new Error(`The docker-compose file ${this.composeFilePath} does not exist`);
-    }
-    return readFileSync(this.composeFilePath, { encoding: 'utf-8' });
-  }
-
-  private loadComposeYaml(): void {
-    const strYaml = this.getComposeFileContent();
-    this.composeYaml = new DockerComposeYaml(strYaml, this.brickName, this.uniqueName);
+    return this.composeYaml.toString();
   }
 
   public getComposeYaml(): DockerComposeYaml {
@@ -182,7 +169,8 @@ export class DockerCompose {
   private checkServiceExists(serviceName: string): void {
     if (!this.composeYaml.serviceExists(serviceName)) {
       throw new Error(
-        `The service ${serviceName} does not exist in the compose file ${this.brickName} ${this.uniqueName}`
+        `The service ${serviceName} does not exist in the compose file ` +
+          `${this.composeYaml.getBrickName()} ${this.composeYaml.getUniqueName()}`
       );
     }
   }

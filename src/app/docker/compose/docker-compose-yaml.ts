@@ -2,40 +2,15 @@ import { existsSync, readFileSync } from 'fs';
 import { dump, load } from 'js-yaml';
 import { TraefikService } from '../../core/services/traefik/traefik.service';
 import { DockerEnvironmentVariables } from './docker-compose.dto';
+import {
+  DockerComposeJson,
+  DockerComposeVolume,
+  DockerComposeVolumeVariable,
+  DockerComposeYamlEnv,
+} from './docker-compose.types';
 
-export interface DockerComposeServiceJson {
-  image: string;
-  container_name: string;
-  build?: string;
-  ports?: string[];
-  volumes?: string[];
-  environment?: string[];
-  networks?: string[];
-  depends_on?: string[];
-  labels?: string[];
-}
-
-export interface DockerComposeJson {
-  'x-brick-name': string;
-  'x-unique-name': string;
-  'x-description'?: string;
-  services: Record<string, DockerComposeServiceJson>;
-  networks: Record<string, unknown>;
-  volumes: Record<string, unknown>;
-}
-
-export type DockerComposeYamlContext = 'prod' | 'dev' | 'all' | 'none';
-
-export interface DockerComposeVolumeVariable {
-  hostVolume: string;
-  isNamed: boolean;
-}
-
-export interface DockerComposeVolume {
-  hostPath: string;
-  containerPath: string;
-  isNamed: boolean;
-}
+// Re-export types for backward compatibility
+export type { DockerComposeVolume, DockerComposeVolumeVariable, DockerComposeYamlEnv };
 
 /**
  * Class to manipulate docker-compose.yml files
@@ -49,16 +24,22 @@ export class DockerComposeYaml {
   public static readonly LAB_NETWORK_VAR_NAME = '${LAB_NETWORK}';
   public static readonly LAB_VOLUME_HOST_VAR_NAME = '${LAB_VOLUME_HOST}';
   public static readonly CONTAINER_PREFIX = 'CONTAINER_PREFIX';
+  public static readonly LAB_DOMAIN_VAR_NAME = 'LAB_DOMAIN';
 
-  constructor(strYaml: string, brickName?: string, uniqueName?: string) {
+  constructor(strYaml: string, brickName?: string, uniqueName?: string, env?: DockerComposeYamlEnv) {
     if (!strYaml || strYaml.trim().length === 0) {
       throw new Error('The docker-compose.yml content is empty');
     }
     const yamlJson = load(strYaml);
-    this.content = this.checkYaml(yamlJson as DockerComposeJson, brickName, uniqueName);
+    this.content = this.checkYaml(yamlJson as DockerComposeJson, brickName, uniqueName, env);
   }
 
-  private checkYaml(content: DockerComposeJson, brickName?: string, uniqueName?: string): DockerComposeJson {
+  private checkYaml(
+    content: DockerComposeJson,
+    brickName?: string,
+    uniqueName?: string,
+    env?: DockerComposeYamlEnv
+  ): DockerComposeJson {
     // check that the brickName and uniqueName match the ones in the file if provided
     if (brickName) {
       content['x-brick-name'] = brickName;
@@ -68,11 +49,18 @@ export class DockerComposeYaml {
       content['x-unique-name'] = uniqueName;
     }
 
+    if (env) {
+      content['x-env'] = env;
+    }
+
     if (!content['x-brick-name'] || content['x-brick-name'].trim().length === 0) {
       throw new Error('The docker-compose file is missing the x-brick-name property');
     }
     if (!content['x-unique-name'] || content['x-unique-name'].trim().length === 0) {
       throw new Error('The docker-compose file is missing the x-unique-name property');
+    }
+    if (!content['x-env']) {
+      throw new Error('The docker-compose file is missing the x-env property');
     }
 
     if (!content.services || Object.keys(content.services).length === 0) {
@@ -90,54 +78,18 @@ export class DockerComposeYaml {
 
   ////////////////////// VARIABLE  //////////////////////
 
-  /**
-   * Parse the content to replace the custom properties and variables
-   */
-  public replaceNetworkVariable(context: DockerComposeYamlContext): void {
-    // replace the networks variable names with actual network names
-    // replace based on the context
-    for (const serviceName of Object.keys(this.content.services)) {
-      const networks = this.getServiceNetworks(serviceName);
-      for (const net of networks) {
-        if (net === DockerComposeYaml.LAB_NETWORK_VAR_NAME) {
-          // remove the variable network
-          this.removeServiceNetwork(serviceName, net);
-          // add the actual network based on context
-          if (context === 'prod' || context === 'all') {
-            this.addProdNetwork(serviceName);
-          }
-          if (context === 'dev' || context === 'all') {
-            this.addDevNetwork(serviceName);
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Replace the volume variable in the compose file
-   * @param volume The volume variable to replace in the compose file
-   */
-  public replaceVolumeVariable(volume: DockerComposeVolumeVariable): void {
-    // replace the networks variable names with actual network names
-    // replace based on the context
-    for (const serviceName of Object.keys(this.content.services)) {
-      // replace the volume host path variable with actual path based on context
-      const volumes = this.getServiceVolumes(serviceName);
-
-      for (let i = 0; i < volumes.length; i++) {
-        if (volumes[i].startsWith(DockerComposeYaml.LAB_VOLUME_HOST_VAR_NAME)) {
-          if (volume.isNamed) {
-            // replace the left part until the colon with the named volume
-            const parts = volumes[i].split(':');
-            volumes[i] = `${volume.hostVolume}:${parts[1].trim()}`;
-            this.addNamedVolume(volume.hostVolume);
-          } else {
-            // determine which volume path to use based on context
-            volumes[i] = volumes[i].replace(DockerComposeYaml.LAB_VOLUME_HOST_VAR_NAME, volume.hostVolume);
-          }
-        }
-      }
+  public parseVariables(
+    volume: DockerComposeVolumeVariable,
+    systemEnv: {
+      labDomain: string;
+    },
+    env: DockerEnvironmentVariables | null
+  ): void {
+    this.replaceNetworkVariable();
+    this.replaceVolumeVariable(volume);
+    this.replaceEnvVariables({ [DockerComposeYaml.LAB_DOMAIN_VAR_NAME]: systemEnv.labDomain });
+    if (env) {
+      this.replaceEnvVariables(env);
     }
   }
 
@@ -167,12 +119,12 @@ export class DockerComposeYaml {
     }
   }
 
-  replaceContainerPrefix(context: DockerComposeYamlContext): void {
+  replaceContainerPrefix(): void {
     const brickName = this.getBrickName();
     const uniqueName = this.getUniqueName();
     let prefix = `${brickName}-${uniqueName}`;
-    if (context === 'dev' || context === 'prod') {
-      prefix = `${prefix}-${context}`;
+    if (this.getEnv() === 'dev' || this.getEnv() === 'prod') {
+      prefix = `${prefix}-${this.getEnv()}`;
     }
 
     this.replaceEnvVariables({ [DockerComposeYaml.CONTAINER_PREFIX]: prefix });
@@ -242,6 +194,30 @@ export class DockerComposeYaml {
     }
   }
 
+  /**
+   * Parse the content to replace the custom properties and variables
+   */
+  public replaceNetworkVariable(): void {
+    // replace the networks variable names with actual network names
+    // replace based on the context
+    for (const serviceName of Object.keys(this.content.services)) {
+      const networks = this.getServiceNetworks(serviceName);
+      for (const net of networks) {
+        if (net === DockerComposeYaml.LAB_NETWORK_VAR_NAME) {
+          // remove the variable network
+          this.removeServiceNetwork(serviceName, net);
+          // add the actual network based on context
+          if (this.getEnv() === 'prod' || this.getEnv() === 'all') {
+            this.addProdNetwork(serviceName);
+          }
+          if (this.getEnv() === 'dev' || this.getEnv() === 'all') {
+            this.addDevNetwork(serviceName);
+          }
+        }
+      }
+    }
+  }
+
   ///////////////////////// VOLUME ///////////////////////
 
   private getServiceVolumes(serviceName: string): string[] {
@@ -291,6 +267,33 @@ export class DockerComposeYaml {
       }
     }
     return volumes;
+  }
+
+  /**
+   * Replace the volume variable in the compose file
+   * @param volume The volume variable to replace in the compose file
+   */
+  public replaceVolumeVariable(volume: DockerComposeVolumeVariable): void {
+    // replace the networks variable names with actual network names
+    // replace based on the context
+    for (const serviceName of Object.keys(this.content.services)) {
+      // replace the volume host path variable with actual path based on context
+      const volumes = this.getServiceVolumes(serviceName);
+
+      for (let i = 0; i < volumes.length; i++) {
+        if (volumes[i].startsWith(DockerComposeYaml.LAB_VOLUME_HOST_VAR_NAME)) {
+          if (volume.isNamed) {
+            // replace the left part until the colon with the named volume
+            const parts = volumes[i].split(':');
+            volumes[i] = `${volume.hostVolume}:${parts[1].trim()}`;
+            this.addNamedVolume(volume.hostVolume);
+          } else {
+            // determine which volume path to use based on context
+            volumes[i] = volumes[i].replace(DockerComposeYaml.LAB_VOLUME_HOST_VAR_NAME, volume.hostVolume);
+          }
+        }
+      }
+    }
   }
 
   ///////////////////////// LABELS ///////////////////////
@@ -343,7 +346,20 @@ export class DockerComposeYaml {
     this.content['x-description'] = description;
   }
 
-  public static fromFile(filePath: string, brickName?: string, uniqueName?: string): DockerComposeYaml {
+  getEnv(): DockerComposeYamlEnv {
+    return this.content['x-env'];
+  }
+
+  setEnv(env: DockerComposeYamlEnv): void {
+    this.content['x-env'] = env;
+  }
+
+  public static fromFile(
+    filePath: string,
+    brickName?: string,
+    uniqueName?: string,
+    env?: DockerComposeYamlEnv
+  ): DockerComposeYaml {
     if (!filePath || filePath.trim().length === 0) {
       throw new Error('The file path is empty');
     }
@@ -351,6 +367,6 @@ export class DockerComposeYaml {
       throw new Error(`The file '${filePath}' does not exist`);
     }
     const fileContent = readFileSync(filePath, 'utf-8');
-    return new DockerComposeYaml(fileContent, brickName, uniqueName);
+    return new DockerComposeYaml(fileContent, brickName, uniqueName, env);
   }
 }

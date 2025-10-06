@@ -7,11 +7,7 @@ import { FileService } from '../../core/services/file/file.service';
 import { DockerCommand } from '../docker-command.class';
 import { DockerInspect } from '../docker.class';
 import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
-import {
-  DockerComposeVolumeVariable,
-  DockerComposeYaml,
-  DockerComposeYamlContext,
-} from './docker-compose-yaml';
+import { DockerComposeVolumeVariable, DockerComposeYaml, DockerComposeYamlEnv } from './docker-compose-yaml';
 import { DockerCompose } from './docker-compose.class';
 import { DockerEnvironmentVariables } from './docker-compose.dto';
 import { MainDockerCompose } from './main-docker-compose.class';
@@ -22,6 +18,7 @@ export class DockerComposeService {
   // Reference for the main compose containing the app for the lab (glab, codelab, db...)
   public static readonly MAIN_COMPOSE_BRICK = 'gws_core';
   public static readonly MAIN_COMPOSE_UNIQUE = 'main';
+  public static readonly MAIN_COMPOSE_ENV: DockerComposeYamlEnv = 'all';
 
   // Reference for the compose containing the reverse proxy and lab manager
   public static readonly SYSTEM_COMPOSE_BRICK = 'gws_core';
@@ -39,12 +36,13 @@ export class DockerComposeService {
   public createMainComposeObject(): MainDockerCompose {
     const composePath = this.fileService.dockerComposePath;
     const envPath = this.fileService.envFilePath;
-    return new MainDockerCompose(
+    const composeYaml = DockerComposeYaml.fromFile(
       composePath,
       DockerComposeService.MAIN_COMPOSE_BRICK,
       DockerComposeService.MAIN_COMPOSE_UNIQUE,
-      envPath
+      DockerComposeService.MAIN_COMPOSE_ENV
     );
+    return new MainDockerCompose(composePath, composeYaml, envPath);
   }
 
   ///////////////////////////////////// Registration /////////////////////////////////////
@@ -61,15 +59,12 @@ export class DockerComposeService {
     description: string,
     environmentVariables?: DockerEnvironmentVariables
   ): Promise<DockerCompose> {
-    const brickName = composeYaml.getBrickName();
-    const uniqueName = composeYaml.getUniqueName();
-
-    await this.checkAndFomatComposeYaml(composeYaml, description, environmentVariables);
+    await this.checkAndFomatSubComposeYaml(composeYaml, description, environmentVariables);
 
     // Use SubComposeManager to handle file writing and registration
     const composeFilePath = this.subComposeManager.addSubCompose(composeYaml);
 
-    return new DockerCompose(composeFilePath, brickName, uniqueName);
+    return new DockerCompose(composeFilePath, composeYaml);
   }
 
   /**
@@ -113,12 +108,8 @@ export class DockerComposeService {
     ) {
       return this.createMainComposeObject();
     }
-    const composeFilePath = this.subComposeManager.getComposeFilePathIfExists(brickName, uniqueName);
-    if (!composeFilePath) {
-      return null;
-    }
 
-    return new DockerCompose(composeFilePath, brickName, uniqueName);
+    return this.subComposeManager.getSubCompose(brickName, uniqueName, this.getDockerComposeEnv());
   }
 
   public getAndCheckDockerCompose(brickName: string, uniqueName: string): DockerCompose {
@@ -153,7 +144,7 @@ export class DockerComposeService {
     dockerCompose.deleteFiles();
 
     // Remove entry from config using SubComposeManager
-    this.subComposeManager.deleteSubCompose(brickName, uniqueName);
+    this.subComposeManager.deleteSubCompose(brickName, uniqueName, this.getDockerComposeEnv());
 
     return dockerCompose.getStatus();
   }
@@ -213,14 +204,14 @@ export class DockerComposeService {
     // Parse and validate the compose file
     const composeYaml = new DockerComposeYaml(composeContent, brickName, uniqueName);
 
-    await this.checkAndFomatComposeYaml(composeYaml, description, environmentVariables);
+    await this.checkAndFomatSubComposeYaml(composeYaml, description, environmentVariables);
 
     // Copy all files from source directory (except docker-compose.yml)
     // and generate docker-compose.yml from composeYaml
     const composeFileFinalPath = this.subComposeManager.addSubComposeFromDirectory(composeYaml, sourceDir);
 
     // Create DockerCompose instance and start it
-    const dockerCompose = new DockerCompose(composeFileFinalPath, brickName, uniqueName);
+    const dockerCompose = new DockerCompose(composeFileFinalPath, composeYaml);
 
     if (async) {
       dockerCompose.composeUp().catch((err) => {
@@ -232,7 +223,7 @@ export class DockerComposeService {
     }
   }
 
-  private async checkAndFomatComposeYaml(
+  private async checkAndFomatSubComposeYaml(
     composeYaml: DockerComposeYaml,
     description: string,
     environmentVariables: DockerEnvironmentVariables
@@ -263,31 +254,36 @@ export class DockerComposeService {
       );
     }
 
-    // Set description
-    composeYaml.setDescription(description);
-
     // Determine the context based on the authentication
     const authContext = AuthContextService.getContext();
-    let dockerContext: DockerComposeYamlContext = 'none';
+    let dockerContext: DockerComposeYamlEnv = 'none';
     if (authContext?.type === 'lab') {
       dockerContext = authContext.env === 'prod' ? 'prod' : 'dev';
     } else if (authContext?.type === 'space' || authContext?.type === 'local') {
       dockerContext = 'all';
     }
-
-    // Parse variables in the compose file based on the context
-    composeYaml.replaceNetworkVariable(dockerContext);
-    const hostVolume = this.getHostVolumeVariable(brickName, uniqueName);
-    composeYaml.replaceVolumeVariable(hostVolume);
-    composeYaml.replaceContainerPrefix(dockerContext);
-    const existingCompose = this.getDockerCompose(brickName, uniqueName);
-
-    // Replace any additional environment variables
-    if (environmentVariables) {
-      composeYaml.replaceEnvVariables(environmentVariables);
+    if (composeYaml.getEnv() != null && composeYaml.getEnv() !== dockerContext) {
+      throw new Error(
+        `The docker-compose file environment (${composeYaml.getEnv()}) ` +
+          `does not match the current context (${dockerContext})`
+      );
     }
 
+    // Set description
+    composeYaml.setDescription(description);
+
+    // Parse variables in the compose file based on the context
+    const hostVolume = this.getHostVolumeVariable(brickName, uniqueName);
+    composeYaml.parseVariables(
+      hostVolume,
+      {
+        labDomain: this.configService.getVirtualHost(),
+      },
+      environmentVariables
+    );
+
     // Check if file exists and content differs
+    const existingCompose = this.getDockerCompose(brickName, uniqueName);
     if (existingCompose && !existingCompose.isEqualToComposeYaml(composeYaml)) {
       if (await existingCompose.oneServiceIsRunning()) {
         await this.unregisterDockerCompose(brickName, uniqueName);
@@ -329,6 +325,7 @@ export class DockerComposeService {
       composeFilePath: this.fileService.dockerComposePath,
       description: 'Main compose for the lab services',
       isSubCompose: false,
+      env: DockerComposeService.MAIN_COMPOSE_ENV,
     };
 
     const systemComposeInfo: ComposeInfo = {
@@ -337,6 +334,7 @@ export class DockerComposeService {
       composeFilePath: null,
       description: 'System compose for the reverse proxy and lab manager',
       isSubCompose: false,
+      env: DockerComposeService.MAIN_COMPOSE_ENV,
     };
 
     const subComposes = this.subComposeManager.getAllSubComposes();
@@ -362,5 +360,17 @@ export class DockerComposeService {
 
   private get subComposeManager(): SubComposeManager {
     return new SubComposeManager(this.getSubComposeFolderPath());
+  }
+
+  private getDockerComposeEnv(): DockerComposeYamlEnv {
+    // Determine the context based on the authentication
+    const authContext = AuthContextService.getContext();
+    let dockerContext: DockerComposeYamlEnv = 'none';
+    if (authContext?.type === 'lab') {
+      dockerContext = authContext.env === 'prod' ? 'prod' : 'dev';
+    } else if (authContext?.type === 'space' || authContext?.type === 'local') {
+      dockerContext = 'all';
+    }
+    return dockerContext;
   }
 }

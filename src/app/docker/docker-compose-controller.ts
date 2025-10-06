@@ -60,7 +60,7 @@ export class DockerComposeController {
     @Body('body', JsonParsePipe) body: RegisterComposeFromZipRequestDTO,
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
-  ): Promise<DockerComposeStatusInfo> {
+  ): Promise<void> {
     if (!file) {
       throw new Error('No file uploaded');
     }
