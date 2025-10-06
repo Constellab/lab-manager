@@ -3,6 +3,7 @@ import { dump, load } from 'js-yaml';
 import { DockerEnvironmentVariables } from './docker-compose.dto';
 import {
   DockerComposeJson,
+  DockerComposeUniqueId,
   DockerComposeVolume,
   DockerComposeVolumeVariable,
   DockerComposeYamlEnv,
@@ -26,38 +27,27 @@ export class DockerComposeYaml {
   public static readonly X_HTTPS_LABELS = 'x-gws-https';
   public static readonly X_GWS_CONFIG = 'x-gws-config';
 
-  constructor(
-    strYaml: string,
-    brickName: string | null,
-    uniqueName: string | null,
-    env: DockerComposeYamlEnv | null
-  ) {
+  constructor(strYaml: string, composeId?: DockerComposeUniqueId | null) {
     if (!strYaml || strYaml.trim().length === 0) {
       throw new Error('The docker-compose.yml content is empty');
     }
     const yamlJson = load(strYaml);
-    this.content = this.checkYaml(yamlJson as DockerComposeJson, brickName, uniqueName, env);
+    if (composeId?.brickName) {
+      yamlJson['x-gws-brick-name'] = composeId.brickName;
+    }
+
+    if (composeId?.uniqueName) {
+      yamlJson['x-gws-unique-name'] = composeId.uniqueName;
+    }
+
+    if (composeId?.env) {
+      yamlJson['x-gws-env'] = composeId.env;
+    }
+    this.content = this.checkYaml(yamlJson as DockerComposeJson);
   }
 
-  private checkYaml(
-    content: DockerComposeJson,
-    brickName?: string | null,
-    uniqueName?: string | null,
-    env?: DockerComposeYamlEnv | null
-  ): DockerComposeJson {
+  private checkYaml(content: DockerComposeJson): DockerComposeJson {
     // check that the brickName and uniqueName match the ones in the file if provided
-    if (brickName) {
-      content['x-gws-brick-name'] = brickName;
-    }
-
-    if (uniqueName) {
-      content['x-gws-unique-name'] = uniqueName;
-    }
-
-    if (env) {
-      content['x-gws-env'] = env;
-    }
-
     if (!content['x-gws-brick-name'] || content['x-gws-brick-name'].trim().length === 0) {
       throw new Error('The docker-compose file is missing the x-gws-brick-name property');
     }
@@ -415,6 +405,14 @@ export class DockerComposeYaml {
     return this.content['x-gws-description'];
   }
 
+  getComposeId(): DockerComposeUniqueId {
+    return {
+      brickName: this.getBrickName(),
+      uniqueName: this.getUniqueName(),
+      env: this.getEnv(),
+    };
+  }
+
   setDescription(description: string): void {
     this.content['x-gws-description'] = description;
   }
@@ -427,12 +425,7 @@ export class DockerComposeYaml {
     this.content['x-gws-env'] = env;
   }
 
-  public static fromTemplateFile(
-    filePath: string,
-    brickName: string,
-    uniqueName: string,
-    env: DockerComposeYamlEnv
-  ): DockerComposeYaml {
+  public static fromTemplateFile(filePath: string, composeId: DockerComposeUniqueId): DockerComposeYaml {
     if (!filePath || filePath.trim().length === 0) {
       throw new Error('The file path is empty');
     }
@@ -440,10 +433,10 @@ export class DockerComposeYaml {
       throw new Error(`The file '${filePath}' does not exist`);
     }
     const fileContent = readFileSync(filePath, 'utf-8');
-    return new DockerComposeYaml(fileContent, brickName, uniqueName, env);
+    return new DockerComposeYaml(fileContent, composeId);
   }
 
   public static fromFile(filePath: string): DockerComposeYaml {
-    return DockerComposeYaml.fromTemplateFile(filePath, null, null, null);
+    return new DockerComposeYaml(readFileSync(filePath, 'utf-8'), null);
   }
 }

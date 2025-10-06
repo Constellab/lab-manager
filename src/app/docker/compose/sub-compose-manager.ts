@@ -2,7 +2,7 @@ import { chmodSync, copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, wr
 import { join } from 'path';
 import { DockerComposeYaml } from './docker-compose-yaml';
 import { DockerCompose } from './docker-compose.class';
-import { ComposeInfo, ComposeList, DockerComposeYamlEnv } from './docker-compose.types';
+import { ComposeInfo, ComposeList, DockerComposeUniqueId } from './docker-compose.types';
 
 export class SubComposeManager {
   private subComposeFolderPath: string;
@@ -42,12 +42,8 @@ export class SubComposeManager {
   }
 
   public addSubCompose(composeYaml: DockerComposeYaml): string {
-    const brickName = composeYaml.getBrickName();
-    const uniqueName = composeYaml.getUniqueName();
-    const env = composeYaml.getEnv();
-
-    const subFolderPath = this.getSubFolderPath(brickName, uniqueName, env);
-    const composeFilePath = this.getComposeFilePath(brickName, uniqueName, env);
+    const subFolderPath = this.getSubFolderPath(composeYaml.getComposeId());
+    const composeFilePath = this.getComposeFilePath(composeYaml.getComposeId());
 
     // Ensure the specific subfolder exists
     this.ensureDirectoryExists(subFolderPath);
@@ -66,15 +62,11 @@ export class SubComposeManager {
    * @returns The path to the created docker-compose.yml file
    */
   public addSubComposeFromDirectory(composeYaml: DockerComposeYaml, sourceDir: string): string {
-    const brickName = composeYaml.getBrickName();
-    const uniqueName = composeYaml.getUniqueName();
-    const env = composeYaml.getEnv();
-
     if (!existsSync(sourceDir)) {
       throw new Error(`Source directory does not exist: ${sourceDir}`);
     }
 
-    const subFolderPath = this.getSubFolderPath(brickName, uniqueName, env);
+    const subFolderPath = this.getSubFolderPath(composeYaml.getComposeId());
 
     // Remove existing folder if it exists to ensure clean state
     if (existsSync(subFolderPath)) {
@@ -88,7 +80,7 @@ export class SubComposeManager {
     this.copyDirectoryContents(sourceDir, subFolderPath);
 
     // Override docker-compose.yml with the generated content from composeYaml
-    const composeFilePath = this.getComposeFilePath(brickName, uniqueName, env);
+    const composeFilePath = this.getComposeFilePath(composeYaml.getComposeId());
     writeFileSync(composeFilePath, composeYaml.toString());
 
     return composeFilePath;
@@ -128,8 +120,8 @@ export class SubComposeManager {
     return executableExtensions.some((ext) => filename.endsWith(ext));
   }
 
-  public deleteSubCompose(brickName: string, uniqueName: string, env: DockerComposeYamlEnv): boolean {
-    const subFolderPath = this.getSubFolderPath(brickName, uniqueName, env);
+  public deleteSubCompose(composeId: DockerComposeUniqueId): boolean {
+    const subFolderPath = this.getSubFolderPath(composeId);
 
     if (!existsSync(subFolderPath)) {
       return false;
@@ -154,25 +146,21 @@ export class SubComposeManager {
     }
   }
 
-  private getSubFolderPath(brickName: string, uniqueName: string, env: DockerComposeYamlEnv): string {
-    let subFolderName = `${brickName}-${uniqueName}`;
-    if (env === 'dev' || env === 'prod') {
-      subFolderName = `${subFolderName}-${env}`;
+  private getSubFolderPath(composeId: DockerComposeUniqueId): string {
+    let subFolderName = `${composeId.brickName}-${composeId.uniqueName}`;
+    if (composeId.env === 'dev' || composeId.env === 'prod') {
+      subFolderName = `${subFolderName}-${composeId.env}`;
     }
     return join(this.subComposeFolderPath, subFolderName);
   }
 
-  public getComposeFilePath(brickName: string, uniqueName: string, env: DockerComposeYamlEnv): string {
-    const subFolderPath = this.getSubFolderPath(brickName, uniqueName, env);
+  public getComposeFilePath(composeId: DockerComposeUniqueId): string {
+    const subFolderPath = this.getSubFolderPath(composeId);
     return join(subFolderPath, 'docker-compose.yml');
   }
 
-  public getSubCompose(
-    brickName: string,
-    uniqueName: string,
-    env: DockerComposeYamlEnv
-  ): DockerCompose | null {
-    const composeFilePath = this.getComposeFilePath(brickName, uniqueName, env);
+  public getSubCompose(composeId: DockerComposeUniqueId): DockerCompose | null {
+    const composeFilePath = this.getComposeFilePath(composeId);
 
     if (!existsSync(composeFilePath)) {
       return null;

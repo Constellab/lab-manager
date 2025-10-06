@@ -1,5 +1,14 @@
 export type DockerComposeYamlEnv = 'prod' | 'dev' | 'all' | 'none';
 
+/*
+ * Object to uniquely identify a docker-compose instance
+ */
+export interface DockerComposeUniqueId {
+  brickName: string;
+  uniqueName: string;
+  env: DockerComposeYamlEnv | null;
+}
+
 export interface DockerComposeServiceJson {
   image: string;
   container_name: string;

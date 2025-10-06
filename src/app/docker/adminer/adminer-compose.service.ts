@@ -5,14 +5,18 @@ import { TaskService } from 'src/app/core/services/task/task.service';
 import { DockerComposeYaml } from '../compose/docker-compose-yaml';
 import { DockerCompose } from '../compose/docker-compose.class';
 import { DockerComposeService } from '../compose/docker-compose.service';
+import { DockerComposeUniqueId } from '../compose/docker-compose.types';
 import { AdminerInfo } from './adminer.class';
 
 @Injectable()
 export class AdminerComposeService {
-  public static readonly ADMINER_BRICK_NAME = 'gws_core';
-  public static readonly ADMINER_UNIQUE_NAME = 'adminer';
-  public static readonly ADMINER_SERVICE_NAME = 'adminer';
+  public static readonly ADMINER_ID: DockerComposeUniqueId = {
+    brickName: 'gws_core',
+    uniqueName: 'adminer',
+    env: 'all',
+  };
 
+  public static readonly ADMINER_SERVICE_NAME = 'adminer';
   private static readonly ADMINER_DESKTOP_PORT = 8081;
   private static readonly ADMINER_INNTER_PORT = 8080;
 
@@ -26,10 +30,7 @@ export class AdminerComposeService {
   ) {}
 
   public getExistingAdminerCompose(): DockerCompose | null {
-    return this.dockerComposeService.getDockerCompose(
-      AdminerComposeService.ADMINER_BRICK_NAME,
-      AdminerComposeService.ADMINER_UNIQUE_NAME
-    );
+    return this.dockerComposeService.getDockerCompose(AdminerComposeService.ADMINER_ID);
   }
 
   public async adminerIsRunning(): Promise<boolean> {
@@ -46,12 +47,7 @@ export class AdminerComposeService {
 
     try {
       const templatePath = this.coreConfigService.getAssetPath(AdminerComposeService.ADMINER_TEMPLATE_FILE);
-      const dockerYaml = DockerComposeYaml.fromTemplateFile(
-        templatePath,
-        AdminerComposeService.ADMINER_BRICK_NAME,
-        AdminerComposeService.ADMINER_UNIQUE_NAME,
-        'all'
-      );
+      const dockerYaml = DockerComposeYaml.fromTemplateFile(templatePath, AdminerComposeService.ADMINER_ID);
 
       // in local we add a port mapping, in prod we add traefik labels
       if (this.coreConfigService.isLocal()) {

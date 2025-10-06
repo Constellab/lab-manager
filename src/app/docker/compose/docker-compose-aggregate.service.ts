@@ -15,7 +15,7 @@ import {
   RegisterSQLDBComposeResponseDTO,
 } from './docker-compose.dto';
 import { DockerComposeService } from './docker-compose.service';
-import { ComposeList } from './docker-compose.types';
+import { ComposeList, DockerComposeUniqueId } from './docker-compose.types';
 
 @Injectable()
 export class DockerComposeAggregateService {
@@ -32,26 +32,26 @@ export class DockerComposeAggregateService {
     return this.dockerComposeService.getAllComposes();
   }
 
-  public async listServices(brick_name: string, unique_name: string): Promise<DockerInspect[]> {
+  public async listServices(composeId: DockerComposeUniqueId): Promise<DockerInspect[]> {
     if (
-      brick_name === DockerComposeService.SYSTEM_COMPOSE_BRICK &&
-      unique_name === DockerComposeService.SYSTEM_COMPOSE_UNIQUE
+      composeId.brickName === DockerComposeService.SYSTEM_COMPOSE_ID.brickName &&
+      composeId.uniqueName === DockerComposeService.SYSTEM_COMPOSE_ID.uniqueName
     ) {
       return this.dockerComposeService.inspectSystemCompose();
     }
     await this.checkLabIsConfigured();
-    const compose = this.dockerComposeService.getAndCheckDockerCompose(brick_name, unique_name);
+    const compose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
     const inspect = await compose.composeInspect();
     return inspect.getContainers();
   }
 
-  public async pullServicesTask(brick_name: string, unique_name: string): Promise<void> {
+  public async pullServicesTask(composeId: DockerComposeUniqueId): Promise<void> {
     await this.checkLabIsConfigured();
     const taskName = 'Update services';
     this.taskService.newTask(taskName);
 
     try {
-      const mainCompose = this.dockerComposeService.getAndCheckDockerCompose(brick_name, unique_name);
+      const mainCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
       const result = await mainCompose.composePull();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
@@ -60,21 +60,16 @@ export class DockerComposeAggregateService {
     }
   }
 
-  public async upServicesTask(
-    brick_name: string,
-    unique_name: string,
-    options: ComposeUpOptions
-  ): Promise<void> {
+  public async upServicesTask(composeId: DockerComposeUniqueId, options: ComposeUpOptions): Promise<void> {
     if (options.updateContainers) {
-      await this.pullServicesTask(brick_name, unique_name);
+      await this.pullServicesTask(composeId);
     }
 
-    await this.upServicesTaskCommand(brick_name, unique_name);
+    await this.upServicesTaskCommand(composeId);
   }
 
   public async upServicesTaskCommand(
-    brick_name: string,
-    unique_name: string,
+    composeId: DockerComposeUniqueId,
     services: string[] = []
   ): Promise<void> {
     await this.checkLabIsConfigured();
@@ -82,7 +77,7 @@ export class DockerComposeAggregateService {
     this.taskService.newTask(taskName);
 
     try {
-      const mainCompose = this.dockerComposeService.getAndCheckDockerCompose(brick_name, unique_name);
+      const mainCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
       const result = await mainCompose.composeUp([], services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
@@ -91,17 +86,13 @@ export class DockerComposeAggregateService {
     }
   }
 
-  public async stopServicesTask(
-    brick_name: string,
-    unique_name: string,
-    services: string[] = []
-  ): Promise<void> {
+  public async stopServicesTask(composeId: DockerComposeUniqueId, services: string[] = []): Promise<void> {
     await this.checkLabIsConfigured();
     const taskName = 'Stop services';
     this.taskService.newTask(taskName);
 
     try {
-      const mainCompose = this.dockerComposeService.getAndCheckDockerCompose(brick_name, unique_name);
+      const mainCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
       const result = await mainCompose.composeStop(services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
@@ -110,17 +101,13 @@ export class DockerComposeAggregateService {
     }
   }
 
-  public async deleteServicesTask(
-    brick_name: string,
-    unique_name: string,
-    services: string[] = []
-  ): Promise<void> {
+  public async deleteServicesTask(composeId: DockerComposeUniqueId, services: string[] = []): Promise<void> {
     await this.checkLabIsConfigured();
     const taskName = 'Delete services';
     this.taskService.newTask(taskName);
 
     try {
-      const mainCompose = this.dockerComposeService.getAndCheckDockerCompose(brick_name, unique_name);
+      const mainCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
       const result = await mainCompose.composeDown(services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
@@ -130,24 +117,23 @@ export class DockerComposeAggregateService {
   }
 
   public async restartServicesTask(
-    brick_name: string,
-    unique_name: string,
+    composeId: DockerComposeUniqueId,
     options: ComposeRestartOptions
   ): Promise<void> {
     await this.checkLabIsConfigured();
     if (options.updateContainers) {
-      await this.pullServicesTask(brick_name, unique_name);
+      await this.pullServicesTask(composeId);
     }
 
     if (options.destroyContainers) {
-      await this.deleteServicesTask(brick_name, unique_name);
+      await this.deleteServicesTask(composeId);
 
-      await this.upServicesTaskCommand(brick_name, unique_name);
+      await this.upServicesTaskCommand(composeId);
     } else {
       // do a stop and a up because if a new image is available
       // with same tag, restart doesn't update it. Stop and up does.
-      await this.stopServicesTask(brick_name, unique_name);
-      await this.upServicesTaskCommand(brick_name, unique_name);
+      await this.stopServicesTask(composeId);
+      await this.upServicesTaskCommand(composeId);
     }
   }
 
@@ -180,18 +166,11 @@ export class DockerComposeAggregateService {
   ///////////////////////////////// MAIN FILE //////////////////////////////////////
 
   public async pullMainServices(): Promise<void> {
-    return this.pullServicesTask(
-      DockerComposeService.MAIN_COMPOSE_BRICK,
-      DockerComposeService.MAIN_COMPOSE_UNIQUE
-    );
+    return this.pullServicesTask(DockerComposeService.MAIN_COMPOSE_ID);
   }
 
   public async restartMainServices(options: ComposeRestartOptions): Promise<void> {
-    return this.restartServicesTask(
-      DockerComposeService.MAIN_COMPOSE_BRICK,
-      DockerComposeService.MAIN_COMPOSE_UNIQUE,
-      options
-    );
+    return this.restartServicesTask(DockerComposeService.MAIN_COMPOSE_ID, options);
   }
 
   ///////////////////////////////// SUB COMPOSE  //////////////////////////////////////
@@ -201,46 +180,46 @@ export class DockerComposeAggregateService {
    * @param composeContent docker compose file content as string
    * @param brickName The brick name.
    * @param uniqueName The unique name.
+   * @param env The environment.
    * @returns
    */
   public async registerAndStartSubCompose(
     composeRequest: RegisterComposeRequestDTO,
-    brickName: string,
-    uniqueName: string
+    composeId: DockerComposeUniqueId
   ): Promise<void> {
     if (!composeRequest.composeContent) {
       throw new Error('The compose content is required');
     }
-    return this.dockerComposeService.registerAndStartSubCompose(brickName, uniqueName, composeRequest, true);
+    return this.dockerComposeService.registerAndStartSubCompose(composeId, composeRequest, true);
   }
 
-  public async unregisterSubCompose(brickName: string, uniqueName: string): Promise<DockerComposeStatusInfo> {
-    return await this.dockerComposeService.unregisterDockerCompose(brickName, uniqueName);
+  public async unregisterSubCompose(composeId: DockerComposeUniqueId): Promise<DockerComposeStatusInfo> {
+    return await this.dockerComposeService.unregisterDockerCompose(composeId);
   }
 
-  public async getSubComposeStatus(brickName: string, uniqueName: string): Promise<DockerComposeStatusInfo> {
-    return await this.dockerComposeService.getComposeStatus(brickName, uniqueName);
+  public async getSubComposeStatus(composeId: DockerComposeUniqueId): Promise<DockerComposeStatusInfo> {
+    return await this.dockerComposeService.getComposeStatus(composeId);
   }
 
   public getAllSubComposes(): ComposeList {
     return this.dockerComposeService.getAllSubComposes();
   }
 
-  public getComposeContent(brickName: string, uniqueName: string): string {
-    return this.dockerComposeService.getComposeContent(brickName, uniqueName);
+  public getComposeContent(composeId: DockerComposeUniqueId): string {
+    return this.dockerComposeService.getComposeContent(composeId);
   }
 
   /**
    * Register and start a sub-compose from a zip file
    * @param brickName The brick name
    * @param uniqueName The unique name
+   * @param env The environment
    * @param zipBuffer The zip file buffer
    * @param description Description of the compose
    * @returns Status information after registration and startup
    */
   public async registerSubComposeFromZip(
-    brickName: string,
-    uniqueName: string,
+    composeId: DockerComposeUniqueId,
     zipBuffer: Buffer,
     body: RegisterComposeFromZipRequestDTO
   ): Promise<void> {
@@ -264,8 +243,7 @@ export class DockerComposeAggregateService {
 
       // Register the sub-compose from the extracted directory
       await this.dockerComposeService.registerSubComposeFromDirectory(
-        brickName,
-        uniqueName,
+        composeId,
         extractDir,
         body.description,
         body.env
@@ -285,8 +263,7 @@ export class DockerComposeAggregateService {
   ///////////////////////////////// SPECIFIC SERVICES //////////////////////////////////////
 
   public async registerSQLDBCompose(
-    brickName: string,
-    uniqueName: string,
+    composeId: DockerComposeUniqueId,
     request: RegisterSQLDBComposeRequestDTO
   ): Promise<RegisterSQLDBComposeResponseDTO> {
     const composeYamlContent = `
@@ -306,14 +283,14 @@ services:
       - \${LAB_VOLUME_HOST}:/var/lib/mysql
 `;
 
-    await this.dockerComposeService.registerAndStartSubCompose(brickName, uniqueName, {
+    await this.dockerComposeService.registerAndStartSubCompose(composeId, {
       composeContent: composeYamlContent,
       description: request.description,
       env: {},
     });
 
     // wait for the mariadb service to be ready
-    const dockerCompose = this.dockerComposeService.getAndCheckDockerCompose(brickName, uniqueName);
+    const dockerCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
     await dockerCompose.waitForServiceToBeReady('mariadb');
 
     const status = await dockerCompose.getStatus();

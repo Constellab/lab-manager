@@ -4,11 +4,15 @@ import { TaskService } from '../core/services/task/task.service';
 import { DockerComposeYaml } from '../docker/compose/docker-compose-yaml';
 import { DockerCompose } from '../docker/compose/docker-compose.class';
 import { DockerComposeService } from '../docker/compose/docker-compose.service';
+import { DockerComposeUniqueId } from '../docker/compose/docker-compose.types';
 
 @Injectable()
 export class LabDesktopComposeService implements OnModuleInit {
-  public static readonly LAB_DESKTOP_BRICK_NAME = 'gws_core';
-  public static readonly LAB_DESKTOP_UNIQUE_NAME = 'lab_desktop';
+  public static readonly LAB_DESKTOP_ID: DockerComposeUniqueId = {
+    brickName: 'gws_core',
+    uniqueName: 'lab_desktop',
+    env: 'none',
+  };
   public static readonly LAB_DESKTOP_SERVICE_NAME = 'lab_desktop';
 
   private static readonly LAB_DESKTOP_IMAGE_NAME = 'constellab/lab-manager-standalone';
@@ -32,10 +36,7 @@ export class LabDesktopComposeService implements OnModuleInit {
   }
 
   public getExistingLabDesktopCompose(): DockerCompose | null {
-    return this.dockerComposeService.getDockerCompose(
-      LabDesktopComposeService.LAB_DESKTOP_BRICK_NAME,
-      LabDesktopComposeService.LAB_DESKTOP_UNIQUE_NAME
-    );
+    return this.dockerComposeService.getDockerCompose(LabDesktopComposeService.LAB_DESKTOP_ID);
   }
 
   public async labDesktopIsRunning(): Promise<boolean> {
@@ -56,9 +57,7 @@ export class LabDesktopComposeService implements OnModuleInit {
       );
       const dockerYaml = DockerComposeYaml.fromTemplateFile(
         templatePath,
-        LabDesktopComposeService.LAB_DESKTOP_BRICK_NAME,
-        LabDesktopComposeService.LAB_DESKTOP_UNIQUE_NAME,
-        'none'
+        LabDesktopComposeService.LAB_DESKTOP_ID
       );
 
       const expectedVersion = this.coreConfigService.getLabManagerStandaloneFrontVersion();
