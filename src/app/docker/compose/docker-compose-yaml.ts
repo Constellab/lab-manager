@@ -41,9 +41,9 @@ export class DockerComposeYaml {
 
   private checkYaml(
     content: DockerComposeJson,
-    brickName: string | null,
-    uniqueName: string | null,
-    env: DockerComposeYamlEnv | null
+    brickName?: string | null,
+    uniqueName?: string | null,
+    env?: DockerComposeYamlEnv | null
   ): DockerComposeJson {
     // check that the brickName and uniqueName match the ones in the file if provided
     if (brickName) {
