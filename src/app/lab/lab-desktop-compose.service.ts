@@ -57,7 +57,8 @@ export class LabDesktopComposeService implements OnModuleInit {
       const dockerYaml = DockerComposeYaml.fromFile(
         templatePath,
         LabDesktopComposeService.LAB_DESKTOP_BRICK_NAME,
-        LabDesktopComposeService.LAB_DESKTOP_UNIQUE_NAME
+        LabDesktopComposeService.LAB_DESKTOP_UNIQUE_NAME,
+        'none'
       );
 
       const expectedVersion = this.coreConfigService.getLabManagerStandaloneFrontVersion();

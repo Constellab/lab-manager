@@ -1,16 +1,14 @@
 import { existsSync, readFileSync } from 'fs';
 import { dump, load } from 'js-yaml';
-import { TraefikService } from '../../core/services/traefik/traefik.service';
 import { DockerEnvironmentVariables } from './docker-compose.dto';
 import {
   DockerComposeJson,
   DockerComposeVolume,
   DockerComposeVolumeVariable,
   DockerComposeYamlEnv,
+  XHttpsLabel,
 } from './docker-compose.types';
-
-// Re-export types for backward compatibility
-export type { DockerComposeVolume, DockerComposeVolumeVariable, DockerComposeYamlEnv };
+import { TraefikLabels } from './traefik.labels';
 
 /**
  * Class to manipulate docker-compose.yml files
@@ -25,6 +23,8 @@ export class DockerComposeYaml {
   public static readonly LAB_VOLUME_HOST_VAR_NAME = '${LAB_VOLUME_HOST}';
   public static readonly CONTAINER_PREFIX = 'CONTAINER_PREFIX';
   public static readonly LAB_DOMAIN_VAR_NAME = 'LAB_DOMAIN';
+  public static readonly X_HTTPS_LABELS = 'x-gws-https';
+  public static readonly X_GWS_CONFIG = 'x-gws-config';
 
   constructor(strYaml: string, brickName?: string, uniqueName?: string, env?: DockerComposeYamlEnv) {
     if (!strYaml || strYaml.trim().length === 0) {
@@ -42,25 +42,25 @@ export class DockerComposeYaml {
   ): DockerComposeJson {
     // check that the brickName and uniqueName match the ones in the file if provided
     if (brickName) {
-      content['x-brick-name'] = brickName;
+      content['x-gws-brick-name'] = brickName;
     }
 
     if (uniqueName) {
-      content['x-unique-name'] = uniqueName;
+      content['x-gws-unique-name'] = uniqueName;
     }
 
     if (env) {
-      content['x-env'] = env;
+      content['x-gws-env'] = env;
     }
 
-    if (!content['x-brick-name'] || content['x-brick-name'].trim().length === 0) {
-      throw new Error('The docker-compose file is missing the x-brick-name property');
+    if (!content['x-gws-brick-name'] || content['x-gws-brick-name'].trim().length === 0) {
+      throw new Error('The docker-compose file is missing the x-gws-brick-name property');
     }
-    if (!content['x-unique-name'] || content['x-unique-name'].trim().length === 0) {
-      throw new Error('The docker-compose file is missing the x-unique-name property');
+    if (!content['x-gws-unique-name'] || content['x-gws-unique-name'].trim().length === 0) {
+      throw new Error('The docker-compose file is missing the x-gws-unique-name property');
     }
-    if (!content['x-env']) {
-      throw new Error('The docker-compose file is missing the x-env property');
+    if (!content['x-gws-env']) {
+      throw new Error('The docker-compose file is missing the x-gws-env property');
     }
 
     if (!content.services || Object.keys(content.services).length === 0) {
@@ -87,6 +87,7 @@ export class DockerComposeYaml {
   ): void {
     this.replaceNetworkVariable();
     this.replaceVolumeVariable(volume);
+    this.replaceXGwsConfig(systemEnv.labDomain);
     this.replaceEnvVariables({ [DockerComposeYaml.LAB_DOMAIN_VAR_NAME]: systemEnv.labDomain });
     if (env) {
       this.replaceEnvVariables(env);
@@ -164,6 +165,11 @@ export class DockerComposeYaml {
 
     if (!this.content.services[serviceName].networks) {
       this.content.services[serviceName].networks = [];
+    }
+
+    // check if the network already exists for the service
+    if (this.content.services[serviceName].networks.includes(networkName)) {
+      return;
     }
     this.content.services[serviceName].networks.push(networkName);
 
@@ -307,8 +313,70 @@ export class DockerComposeYaml {
   }
 
   addTraefikLabels(serviceName: string, host: string, servicePort: number): void {
-    const labels = new TraefikService().getTraefikLabels(host, servicePort, serviceName);
-    this.addLabels(serviceName, labels);
+    const labels = new TraefikLabels().addTraefikRouterLabels(host, servicePort, serviceName);
+    this.addLabels(serviceName, labels.getLabels());
+  }
+
+  ///////////////////////// X GWS CONFIG ///////////////////////
+
+  /**
+   * In the x-gws-config section, replace the following custom label to traefik labels
+   * x-gws-config:
+   *   - x-gws-https:
+   *       name: ragflow
+   *       subDomain: ragflow
+   *       internalPort: 80
+   * @param labDomain
+   */
+  private replaceXGwsConfig(labDomain: string): void {
+    for (const serviceName of Object.keys(this.content.services)) {
+      const service = this.content.services[serviceName];
+
+      // Check if service has x-gws-config
+      if (!service[DockerComposeYaml.X_GWS_CONFIG]) {
+        continue;
+      }
+
+      const gwsConfig = service[DockerComposeYaml.X_GWS_CONFIG];
+      if (!Array.isArray(gwsConfig)) {
+        continue;
+      }
+
+      // Initialize labels array if it doesn't exist
+      if (!service.labels) {
+        service.labels = [];
+      }
+
+      // Process each config item
+      const traefikLabels = new TraefikLabels();
+      for (const configItem of gwsConfig) {
+        if (typeof configItem === 'object' && configItem !== null) {
+          if (DockerComposeYaml.X_HTTPS_LABELS in configItem) {
+            const httpsLabel = configItem[DockerComposeYaml.X_HTTPS_LABELS] as XHttpsLabel;
+            const host = `${httpsLabel.subDomain}.${labDomain}`;
+            traefikLabels.addTraefikDomainLabels(host, httpsLabel.internalPort, httpsLabel.name);
+          }
+        }
+      }
+
+      if (traefikLabels.hasLabels()) {
+        let network: string | undefined;
+        if (this.getEnv() === 'prod' || this.getEnv() === 'all') {
+          network = DockerComposeYaml.NETWORK_PROD;
+        } else if (this.getEnv() === 'dev') {
+          network = DockerComposeYaml.NETWORK_DEV;
+        }
+        // Add generated labels to the service
+        service.labels.push(...traefikLabels.getLabels(network));
+
+        if (network) {
+          this.addNetwork(serviceName, network, true);
+        }
+      }
+
+      // Remove the x-gws-config after processing
+      delete service[DockerComposeYaml.X_GWS_CONFIG];
+    }
   }
 
   ///////////////////////// OTHER ///////////////////////
@@ -331,27 +399,27 @@ export class DockerComposeYaml {
   }
 
   getBrickName(): string {
-    return this.content['x-brick-name'];
+    return this.content['x-gws-brick-name'];
   }
 
   getUniqueName(): string {
-    return this.content['x-unique-name'];
+    return this.content['x-gws-unique-name'];
   }
 
   getDescription(): string | undefined {
-    return this.content['x-description'];
+    return this.content['x-gws-description'];
   }
 
   setDescription(description: string): void {
-    this.content['x-description'] = description;
+    this.content['x-gws-description'] = description;
   }
 
   getEnv(): DockerComposeYamlEnv {
-    return this.content['x-env'];
+    return this.content['x-gws-env'];
   }
 
   setEnv(env: DockerComposeYamlEnv): void {
-    this.content['x-env'] = env;
+    this.content['x-gws-env'] = env;
   }
 
   public static fromFile(

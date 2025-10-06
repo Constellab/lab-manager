@@ -7,11 +7,17 @@ import { FileService } from '../../core/services/file/file.service';
 import { DockerCommand } from '../docker-command.class';
 import { DockerInspect } from '../docker.class';
 import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
-import { DockerComposeVolumeVariable, DockerComposeYaml, DockerComposeYamlEnv } from './docker-compose-yaml';
+import { DockerComposeYaml } from './docker-compose-yaml';
 import { DockerCompose } from './docker-compose.class';
 import { DockerEnvironmentVariables } from './docker-compose.dto';
+import {
+  ComposeInfo,
+  ComposeList,
+  DockerComposeVolumeVariable,
+  DockerComposeYamlEnv,
+} from './docker-compose.types';
 import { MainDockerCompose } from './main-docker-compose.class';
-import { ComposeInfo, ComposeList, SubComposeManager } from './sub-compose-manager';
+import { SubComposeManager } from './sub-compose-manager';
 
 @Injectable()
 export class DockerComposeService {

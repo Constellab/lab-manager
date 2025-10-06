@@ -19,7 +19,7 @@ import {
   RegisterSQLDBComposeRequestDTO,
   RegisterSQLDBComposeResponseDTO,
 } from './compose/docker-compose.dto';
-import { ComposeList } from './compose/sub-compose-manager';
+import { ComposeList } from './compose/docker-compose.types';
 import { ComposeRestartOptions, ComposeUpOptions, DockerInspect } from './docker.class';
 import { DockerNameValidationPipe } from './pipes/docker-name-validation.pipe';
 import { JsonParsePipe } from './pipes/json-parse.pipe';

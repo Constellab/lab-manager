@@ -16,7 +16,7 @@ import {
   RegisterSQLDBComposeResponseDTO,
 } from './docker-compose.dto';
 import { DockerComposeService } from './docker-compose.service';
-import { ComposeList } from './sub-compose-manager';
+import { ComposeList } from './docker-compose.types';
 
 @Injectable()
 export class DockerComposeAggregateService {

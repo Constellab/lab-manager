@@ -10,6 +10,7 @@ export interface DockerComposeServiceJson {
   networks?: string[];
   depends_on?: string[];
   labels?: string[];
+  'x-gws-config'?: Record<string, unknown>[];
 }
 
 export interface DockerComposeJson {
@@ -20,11 +21,6 @@ export interface DockerComposeJson {
   services: Record<string, DockerComposeServiceJson>;
   networks: Record<string, unknown>;
   volumes: Record<string, unknown>;
-}
-
-export interface DockerComposeVolumeVariable {
-  hostVolume: string;
-  isNamed: boolean;
 }
 
 export interface DockerComposeVolume {
@@ -44,4 +40,17 @@ export interface ComposeInfo {
 
 export interface ComposeList {
   composes: ComposeInfo[];
+}
+
+/////////////////// VARIABLES IN docker-compose.yml ///////////////////
+
+export interface DockerComposeVolumeVariable {
+  hostVolume: string;
+  isNamed: boolean;
+}
+
+export interface XHttpsLabel {
+  name: string;
+  subDomain: string;
+  internalPort: number;
 }

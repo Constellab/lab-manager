@@ -4,9 +4,6 @@ import { DockerComposeYaml } from './docker-compose-yaml';
 import { DockerCompose } from './docker-compose.class';
 import { ComposeInfo, ComposeList, DockerComposeYamlEnv } from './docker-compose.types';
 
-// Re-export types for backward compatibility
-export type { ComposeInfo, ComposeList, DockerComposeYamlEnv };
-
 export class SubComposeManager {
   private subComposeFolderPath: string;
 
