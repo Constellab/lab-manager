@@ -163,17 +163,29 @@ export class DockerComposeService {
    * @param composeContent docker compose file content as string
    * @param brickName The brick name.
    * @param uniqueName The unique name.
+   * @param description Description of the compose.
+   * @param env Optional environment variables to replace in the compose file.
+   * @param async If true, the compose up will be done in background and errors will be logged but not thrown.
    * @returns
    */
   public async registerAndStartSubCompose(
     composeYaml: DockerComposeYaml,
     description: string,
-    env?: DockerEnvironmentVariables
-  ): Promise<DockerComposeStatusInfo> {
+    env?: DockerEnvironmentVariables,
+    async: boolean = true
+  ): Promise<void> {
     const dockerCompose = await this.registerSubCompose(composeYaml, description, env);
-    await dockerCompose.composeUp();
 
-    return await dockerCompose.getStatus();
+    if (async) {
+      dockerCompose.composeUp().catch((err) => {
+        // Log the error but don't throw as we are in an async call
+        console.error(
+          `Error starting the compose ${composeYaml.getBrickName()}:${composeYaml.getUniqueName()} : ${err}`
+        );
+      });
+    } else {
+      await dockerCompose.composeUp();
+    }
   }
 
   /**

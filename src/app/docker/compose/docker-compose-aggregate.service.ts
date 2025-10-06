@@ -208,7 +208,7 @@ export class DockerComposeAggregateService {
     composeRequest: RegisterComposeRequestDTO,
     brickName: string,
     uniqueName: string
-  ): Promise<DockerComposeStatusInfo> {
+  ): Promise<void> {
     if (!composeRequest.composeContent) {
       throw new Error('The compose content is required');
     }
@@ -314,7 +314,7 @@ services:
 
     const composeYaml = new DockerComposeYaml(composeYamlContent, brickName, uniqueName);
 
-    await this.dockerComposeService.registerAndStartSubCompose(composeYaml, request.description);
+    await this.dockerComposeService.registerAndStartSubCompose(composeYaml, request.description, null, false);
 
     // wait for the mariadb service to be ready
     const dockerCompose = this.dockerComposeService.getAndCheckDockerCompose(brickName, uniqueName);

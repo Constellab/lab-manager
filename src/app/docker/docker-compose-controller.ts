@@ -40,7 +40,7 @@ export class DockerComposeController {
     @Body() body: RegisterComposeRequestDTO,
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
-  ): Promise<DockerComposeStatusInfo> {
+  ): Promise<void> {
     return await this.dockerComposeAggregateService.registerAndStartSubCompose(body, brickName, uniqueName);
   }
 

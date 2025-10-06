@@ -97,13 +97,12 @@ export class DockerCompose {
    */
   private beforeUp(): void {
     const volumes = this.composeYaml.getAllVolumes();
-    for(const volume of volumes) {
+    for (const volume of volumes) {
       if (volume.isNamed) continue;
-      if(existsSync(volume.hostPath)) continue;
+      if (existsSync(volume.hostPath)) continue;
       mkdirSync(volume.hostPath, { recursive: true });
     }
   }
-
 
   private execDockerComposeCommand(options: string): Promise<string> {
     let command: string = `docker compose -f ${this.composeFilePath}`;
