@@ -64,7 +64,7 @@ export class DockerComposeYaml {
     // check that all services have a container_name
     for (const serviceName of Object.keys(content.services)) {
       if (!content.services[serviceName].container_name) {
-        throw new Error(`The service ${serviceName} is missing the container_name property`);
+        throw new Error(`The service '${serviceName}' is missing the container_name property`);
       }
     }
 
@@ -415,6 +415,14 @@ export class DockerComposeYaml {
 
   setDescription(description: string): void {
     this.content['x-gws-description'] = description;
+  }
+
+  getAutoStart(): boolean | undefined {
+    return this.content['x-gws-auto-start'];
+  }
+
+  setAutoStart(autoStart: boolean): void {
+    this.content['x-gws-auto-start'] = autoStart;
   }
 
   getEnv(): DockerComposeYamlEnv {

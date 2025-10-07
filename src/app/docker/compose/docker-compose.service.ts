@@ -8,7 +8,7 @@ import { DockerInspect } from '../docker.class';
 import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
 import { DockerComposeYaml } from './docker-compose-yaml';
 import { DockerCompose } from './docker-compose.class';
-import { DockerEnvironmentVariables, RegisterComposeRequestDTO } from './docker-compose.dto';
+import { RegisterComposeConfig } from './docker-compose.dto';
 import {
   ComposeInfo,
   ComposeList,
@@ -57,14 +57,14 @@ export class DockerComposeService {
    * If a compose with the same brick and unique name exists and its content differs,
    * it will be replaced with the new one and the old containers will be removed.
    * @param composeYaml The ComposeYaml instance.
+   * @param config The configuration for the compose registration.
    * @returns The created DockerCompose instance.
    */
   public async registerSubCompose(
     composeYaml: DockerComposeYaml,
-    description: string,
-    environmentVariables?: DockerEnvironmentVariables
+    config: RegisterComposeConfig
   ): Promise<DockerCompose> {
-    await this.checkAndFomatSubComposeYaml(composeYaml, description, environmentVariables);
+    await this.checkAndFomatSubComposeYaml(composeYaml, config);
 
     // Use SubComposeManager to handle file writing and registration
     const composeFilePath = this.subComposeManager.addSubCompose(composeYaml);
@@ -162,15 +162,12 @@ export class DockerComposeService {
    */
   public async registerAndStartSubCompose(
     composeId: DockerComposeUniqueId,
-    composeRequest: RegisterComposeRequestDTO,
+    composeContent: string,
+    config: RegisterComposeConfig,
     async: boolean = true
   ): Promise<void> {
-    const composeYaml = new DockerComposeYaml(composeRequest.composeContent, composeId);
-    const dockerCompose = await this.registerSubCompose(
-      composeYaml,
-      composeRequest.description,
-      composeRequest.env
-    );
+    const composeYaml = new DockerComposeYaml(composeContent, composeId);
+    const dockerCompose = await this.registerSubCompose(composeYaml, config);
 
     if (async) {
       dockerCompose.composeUp().catch((err) => {
@@ -188,16 +185,14 @@ export class DockerComposeService {
    * Register and start a sub-compose from a directory containing docker-compose.yml and other files
    * @param composeId The unique identifier for the compose
    * @param sourceDir Path to directory containing docker-compose.yml and other files
-   * @param description Description of the compose
-   * @param environmentVariables Optional environment variables to replace in the compose file
+   * @param config The configuration for the compose registration
    * @param async If true, the compose up will be done in background and errors will be logged but not thrown.
    * @returns Status information after registration and startup
    */
   public async registerSubComposeFromDirectory(
     composeId: DockerComposeUniqueId,
     sourceDir: string,
-    description: string,
-    environmentVariables?: DockerEnvironmentVariables,
+    config: RegisterComposeConfig,
     async: boolean = true
   ): Promise<void> {
     // Validate docker-compose.yml exists
@@ -207,7 +202,7 @@ export class DockerComposeService {
     // Parse and validate the compose file
     const composeYaml = new DockerComposeYaml(composeContent, composeId);
 
-    await this.checkAndFomatSubComposeYaml(composeYaml, description, environmentVariables);
+    await this.checkAndFomatSubComposeYaml(composeYaml, config);
 
     // Copy all files from source directory (except docker-compose.yml)
     // and generate docker-compose.yml from composeYaml
@@ -231,8 +226,7 @@ export class DockerComposeService {
 
   private async checkAndFomatSubComposeYaml(
     composeYaml: DockerComposeYaml,
-    description: string,
-    environmentVariables: DockerEnvironmentVariables
+    config: RegisterComposeConfig
   ): Promise<void> {
     const brickName = composeYaml.getBrickName();
     const uniqueName = composeYaml.getUniqueName();
@@ -262,7 +256,10 @@ export class DockerComposeService {
     }
 
     // Set description
-    composeYaml.setDescription(description);
+    composeYaml.setDescription(config.description);
+
+    // Set auto start
+    composeYaml.setAutoStart(config.autoStart ?? true);
 
     // Parse variables in the compose file based on the context
     const hostVolume = this.getHostVolumeVariable(composeYaml.getComposeId());
@@ -271,7 +268,7 @@ export class DockerComposeService {
       {
         labDomain: this.configService.getVirtualHost(),
       },
-      environmentVariables
+      config.env
     );
 
     // Check if file exists and content differs
@@ -320,6 +317,7 @@ export class DockerComposeService {
       description: 'Main compose for the lab services',
       isSubCompose: false,
       env: DockerComposeService.MAIN_COMPOSE_ID.env,
+      autoStart: true,
     };
 
     const systemComposeInfo: ComposeInfo = {
@@ -329,6 +327,7 @@ export class DockerComposeService {
       description: 'System compose for the reverse proxy and lab manager',
       isSubCompose: false,
       env: DockerComposeService.SYSTEM_COMPOSE_ID.env,
+      autoStart: true,
     };
 
     const subComposes = this.subComposeManager.getAllSubComposes();
@@ -352,7 +351,7 @@ export class DockerComposeService {
     return [reversePrxyInspect, labManagerInspect];
   }
 
-  private get subComposeManager(): SubComposeManager {
+  public get subComposeManager(): SubComposeManager {
     return new SubComposeManager(this.getSubComposeFolderPath());
   }
 }

@@ -24,3 +24,8 @@ export interface ConfigFileBrick {
 export interface BrickConfigsDTO {
   brickVersions: ConfigFileBrick[];
 }
+
+export interface LabManagerCleanDTO {
+  removeErrorSubComposes: boolean;
+  pruneSystem: boolean;
+}

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { execSync } from 'child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
@@ -6,6 +6,7 @@ import { join } from 'path';
 import { ConfigFileService } from '../../core/services/config-file/config-file.service';
 import { FileService } from '../../core/services/file/file.service';
 import { TaskService } from '../../core/services/task/task.service';
+import { Command } from '../../core/utils/command';
 import { ComposeRestartOptions, ComposeUpOptions, DockerInspect } from '../docker.class';
 import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
 import {
@@ -18,7 +19,8 @@ import { DockerComposeService } from './docker-compose.service';
 import { ComposeList, DockerComposeUniqueId } from './docker-compose.types';
 
 @Injectable()
-export class DockerComposeAggregateService {
+export class DockerComposeAggregateService implements OnModuleInit {
+  private readonly logger = new Logger(DockerComposeAggregateService.name);
   private static readonly MARIADB_IMAGE = 'mariadb:10.7.4';
 
   constructor(
@@ -27,6 +29,11 @@ export class DockerComposeAggregateService {
     private configFileService: ConfigFileService,
     private fileService: FileService
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    await this.removeErrorSubComposes();
+    await this.initializeSubComposesWithAutoStart();
+  }
 
   public getAllComposes(): ComposeList {
     return this.dockerComposeService.getAllComposes();
@@ -187,10 +194,19 @@ export class DockerComposeAggregateService {
     composeRequest: RegisterComposeRequestDTO,
     composeId: DockerComposeUniqueId
   ): Promise<void> {
-    if (!composeRequest.composeContent) {
+    if (!composeRequest.compose_yaml_content) {
       throw new Error('The compose content is required');
     }
-    return this.dockerComposeService.registerAndStartSubCompose(composeId, composeRequest, true);
+    return this.dockerComposeService.registerAndStartSubCompose(
+      composeId,
+      composeRequest.compose_yaml_content,
+      {
+        description: composeRequest.description,
+        autoStart: composeRequest.auto_start,
+        env: composeRequest.env,
+      },
+      true
+    );
   }
 
   public async unregisterSubCompose(composeId: DockerComposeUniqueId): Promise<DockerComposeStatusInfo> {
@@ -242,12 +258,11 @@ export class DockerComposeAggregateService {
       });
 
       // Register the sub-compose from the extracted directory
-      await this.dockerComposeService.registerSubComposeFromDirectory(
-        composeId,
-        extractDir,
-        body.description,
-        body.env
-      );
+      await this.dockerComposeService.registerSubComposeFromDirectory(composeId, extractDir, {
+        description: body.description,
+        autoStart: body.auto_start,
+        env: body.env,
+      });
     } finally {
       // Clean up temporary directory
       if (tempDir) {
@@ -283,9 +298,9 @@ services:
       - \${LAB_VOLUME_HOST}:/var/lib/mysql
 `;
 
-    await this.dockerComposeService.registerAndStartSubCompose(composeId, {
-      composeContent: composeYamlContent,
+    await this.dockerComposeService.registerAndStartSubCompose(composeId, composeYamlContent, {
       description: request.description,
+      autoStart: request.auto_start,
       env: {},
     });
 
@@ -298,5 +313,79 @@ services:
       dbHost: dockerCompose.getComposeYaml().getContainerNameFromService('mariadb'),
       status,
     };
+  }
+
+  ///////////////////////////////// ON START //////////////////////////////////////
+  private async initializeSubComposesWithAutoStart(): Promise<void> {
+    this.logger.log('Checking for sub-composes with autoStart enabled');
+    const subComposes = this.dockerComposeService.getAllSubComposes();
+
+    for (const composeInfo of subComposes.composes) {
+      try {
+        const composeId: DockerComposeUniqueId = {
+          brickName: composeInfo.brickName,
+          uniqueName: composeInfo.uniqueName,
+          env: composeInfo.env,
+        };
+
+        const dockerCompose = this.dockerComposeService.getDockerCompose(composeId);
+        if (!dockerCompose) {
+          this.logger.warn(
+            `Sub-compose ${composeInfo.brickName}:${composeInfo.uniqueName}:${composeInfo.env} not found`
+          );
+          continue;
+        }
+
+        const autoStart = dockerCompose.getComposeYaml().getAutoStart();
+        if (autoStart) {
+          this.logger.log(
+            `Auto-starting sub-compose ${composeInfo.brickName}:${composeInfo.uniqueName}:${composeInfo.env}`
+          );
+
+          // Start compose in background
+          await dockerCompose.composeUp();
+
+          this.logger.log(
+            `Sub-compose ${composeInfo.brickName}:${composeInfo.uniqueName}:${composeInfo.env} started`
+          );
+        }
+      } catch (e) {
+        this.logger.error('Error while initializing sub-composes with autoStart', e);
+      }
+    }
+  }
+
+  public async removeErrorSubComposes(): Promise<void> {
+    const subComposeFolders = this.dockerComposeService.subComposeManager.getAllSubFolders();
+
+    const command = new Command();
+    for (const composeInfo of subComposeFolders) {
+      try {
+        if (!composeInfo.dockerComposeFileExists()) {
+          // if the docker-compose.yml file doesn't exist, remove the folder
+          this.logger.warn(
+            `Removing sub-compose folder ${composeInfo.path} ` +
+              `because it doesn't contain a docker-compose.yml file`
+          );
+          // use a sudo because it might have some sub folder created with root permissions (like volumes)
+          await command.execCommand(`sudo rm -rf "${composeInfo.path}"`);
+          continue;
+        }
+
+        if (!composeInfo.composeYamlIsValid()) {
+          // if the docker-compose.yml file is not valid, remove the folder
+          this.logger.warn(
+            `Removing sub-compose folder ${composeInfo.path} ` +
+              `because its docker-compose.yml file is not valid`
+          );
+          // use a sudo because it might have some sub folder created with root permissions (like volumes)
+          await command.execCommand(`docker compose -f "${composeInfo.getDockerComposePath()}" down`);
+          await command.execCommand(`sudo rm -rf "${composeInfo.path}"`);
+          continue;
+        }
+      } catch (e) {
+        this.logger.error(`Error while removing error sub-composes '${composeInfo.path}'`, e);
+      }
+    }
   }
 }

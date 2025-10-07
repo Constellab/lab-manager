@@ -81,10 +81,10 @@ export class LabDesktopComposeService implements OnModuleInit {
         `http://localhost:${this.coreConfigService.getPort()}`
       );
 
-      const dockerCompose = await this.dockerComposeService.registerSubCompose(
-        dockerYaml,
-        'Lab Manager Desktop - Standalone version of Lab Manager'
-      );
+      const dockerCompose = await this.dockerComposeService.registerSubCompose(dockerYaml, {
+        description: 'Lab Manager Desktop - Standalone version of Lab Manager',
+        autoStart: false, // this is handled by the onModuleInit
+      });
 
       // We force recreate to ensure the latest image is used
       const wasStarted = await dockerCompose.composeUp(['--pull always']);

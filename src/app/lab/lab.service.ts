@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { BrickConfigsDTO, ConfigFile } from '../core/models/config-file.class';
+import { BrickConfigsDTO, ConfigFile, LabManagerCleanDTO } from '../core/models/config-file.class';
 import { TaskStatusInfo } from '../core/models/task.class';
 import { ConfigFileService } from '../core/services/config-file/config-file.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
@@ -14,6 +14,7 @@ import { AdminerComposeService } from '../docker/adminer/adminer-compose.service
 import { DockerComposeAggregateService } from '../docker/compose/docker-compose-aggregate.service';
 import { MainComposeService } from '../docker/compose/main-compose.service';
 import { MainComposeServiceName } from '../docker/compose/main-docker-compose.class';
+import { DockerContainerService } from '../docker/container/docker-container.service';
 import { ErrorLogs, PullBiotaDbOptions } from '../docker/docker.class';
 import { BiotaService } from './biota/biota.service';
 import { EnvVariableService } from './env-variable/env-variable.service';
@@ -37,7 +38,8 @@ export class LabService implements OnModuleInit {
     private externalLabService: ExternalLabApiService,
     private spaceService: ExternalSpaceApiService,
     private adminerService: AdminerComposeService,
-    private composeAggregateService: DockerComposeAggregateService
+    private composeAggregateService: DockerComposeAggregateService,
+    private dockerContainerService: DockerContainerService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -267,5 +269,16 @@ export class LabService implements OnModuleInit {
     }
 
     return this.spaceService.getUpdateLabManagerCommand();
+  }
+
+  //////////////////////////// SYSTEM ////////////////////////////
+
+  public async cleanLabManager(requestDTO: LabManagerCleanDTO): Promise<void> {
+    if (requestDTO.removeErrorSubComposes) {
+      await this.composeAggregateService.removeErrorSubComposes();
+    }
+    if (requestDTO.pruneSystem) {
+      await this.dockerContainerService.systemPrune();
+    }
   }
 }

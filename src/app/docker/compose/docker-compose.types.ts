@@ -45,6 +45,7 @@ export interface ComposeInfo {
   composeFilePath: string;
   isSubCompose: boolean;
   description?: string;
+  autoStart: boolean;
 }
 
 export interface ComposeList {

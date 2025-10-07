@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Put } from '@nestjs/common';
-import { BrickConfigsDTO, ConfigFile } from '../core/models/config-file.class';
+import { BrickConfigsDTO, ConfigFile, LabManagerCleanDTO } from '../core/models/config-file.class';
 import { TaskStatusInfo } from '../core/models/task.class';
 import { UpdateLabManagerCommand } from '../core/services/external/external-space.class';
 import { ErrorLogs, PullBiotaDbOptions } from '../docker/docker.class';
@@ -89,5 +89,11 @@ export class LabController {
   @Get('desktop/update-lab-manager-command')
   async getUpdateLabManagerCommand(): Promise<UpdateLabManagerCommand> {
     return this.labService.getDesktopUpdateLabManagerCommand();
+  }
+
+  ///////////////////////// SYSTEM /////////////////////////
+  @Post('system/clean')
+  async cleanLabManager(@Body() requestDTO: LabManagerCleanDTO): Promise<void> {
+    return this.labService.cleanLabManager(requestDTO);
   }
 }

@@ -8,6 +8,7 @@ import { MainComposeService } from './compose/main-compose.service';
 import { DockerContainerService } from './container/docker-container.service';
 import { DockerComposeController } from './docker-compose-controller';
 import { DockerContainersController } from './docker-containers.controller';
+import { DockerSubComposeController } from './docker-sub-compose-controller';
 
 /**
  * Module that contains services related to manager docker containers
@@ -28,6 +29,11 @@ import { DockerContainersController } from './docker-containers.controller';
     MainComposeService,
   ],
   imports: [CoreModule],
-  controllers: [DockerComposeController, DockerContainersController, AdminerController],
+  controllers: [
+    DockerComposeController,
+    DockerSubComposeController,
+    DockerContainersController,
+    AdminerController,
+  ],
 })
 export class DockerModule {}

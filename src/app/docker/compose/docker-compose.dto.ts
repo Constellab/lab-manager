@@ -3,8 +3,9 @@ import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
 export type DockerEnvironmentVariables = { [key: string]: string };
 
 export interface RegisterComposeRequestDTO {
-  composeContent: string;
+  compose_yaml_content: string;
   description: string;
+  auto_start?: boolean;
   env?: DockerEnvironmentVariables;
 }
 
@@ -13,6 +14,7 @@ export interface RegisterSQLDBComposeRequestDTO {
   password: string;
   database: string;
   description: string;
+  auto_start?: boolean;
 }
 
 export interface RegisterSQLDBComposeResponseDTO {
@@ -22,5 +24,12 @@ export interface RegisterSQLDBComposeResponseDTO {
 
 export interface RegisterComposeFromZipRequestDTO {
   description: string;
+  auto_start?: boolean;
+  env?: DockerEnvironmentVariables;
+}
+
+export interface RegisterComposeConfig {
+  description: string;
+  autoStart?: boolean;
   env?: DockerEnvironmentVariables;
 }

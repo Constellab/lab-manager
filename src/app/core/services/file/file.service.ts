@@ -18,7 +18,6 @@ import { CoreConfigService } from '../config/core-config.service';
 
 @Injectable()
 export class FileService {
-
   private readonly privateFileName = 'private.json';
 
   private readonly envFileName = 'lab-manager.env';

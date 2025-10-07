@@ -4,6 +4,50 @@ import { DockerComposeYaml } from './docker-compose-yaml';
 import { DockerCompose } from './docker-compose.class';
 import { ComposeInfo, ComposeList, DockerComposeUniqueId } from './docker-compose.types';
 
+export class SubComposeFolder {
+  constructor(public path: string) {}
+
+  public getDockerComposePath(): string {
+    return join(this.path, 'docker-compose.yml');
+  }
+
+  public dockerComposeFileExists(): boolean {
+    return existsSync(this.getDockerComposePath());
+  }
+
+  public getComposeYaml(): DockerComposeYaml {
+    if (!this.dockerComposeFileExists()) {
+      throw new Error(`docker-compose.yml does not exist in folder: ${this.path}`);
+    }
+    return DockerComposeYaml.fromFile(this.getDockerComposePath());
+  }
+
+  public composeYamlIsValid(): boolean {
+    if (!this.dockerComposeFileExists()) {
+      return false;
+    }
+    try {
+      this.getComposeYaml();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  public getComposeInfo(): ComposeInfo {
+    const composeYaml = this.getComposeYaml();
+    return {
+      brickName: composeYaml.getBrickName(),
+      uniqueName: composeYaml.getUniqueName(),
+      env: composeYaml.getEnv(),
+      composeFilePath: this.getDockerComposePath(),
+      isSubCompose: true,
+      description: composeYaml.getDescription(),
+      autoStart: composeYaml.getAutoStart(),
+    };
+  }
+}
+
 export class SubComposeManager {
   private subComposeFolderPath: string;
 
@@ -16,26 +60,12 @@ export class SubComposeManager {
     const subFolders = this.getAllSubFolders();
     const composes: ComposeInfo[] = [];
 
-    for (const folderName of subFolders) {
-      const folderPath = join(this.subComposeFolderPath, folderName);
-      const composeFilePath = join(folderPath, 'docker-compose.yml');
-
-      if (existsSync(composeFilePath)) {
-        try {
-          const composeYaml = DockerComposeYaml.fromFile(composeFilePath);
-          composes.push({
-            brickName: composeYaml.getBrickName(),
-            uniqueName: composeYaml.getUniqueName(),
-            env: composeYaml.getEnv(),
-            composeFilePath,
-            isSubCompose: true,
-            description: composeYaml.getDescription(),
-          });
-        } catch (error) {
-          // Skip invalid docker-compose files
-          console.warn(`Failed to parse docker-compose.yml in ${folderPath}:`, error.message);
-        }
+    for (const folder of subFolders) {
+      if (!folder.composeYamlIsValid()) {
+        continue;
       }
+      const composeInfo = folder.getComposeInfo();
+      composes.push(composeInfo);
     }
 
     return { composes };
@@ -170,12 +200,14 @@ export class SubComposeManager {
     return new DockerCompose(composeFilePath, composeYaml);
   }
 
-  private getAllSubFolders(): string[] {
+  public getAllSubFolders(): SubComposeFolder[] {
     if (!existsSync(this.subComposeFolderPath)) {
       return [];
     }
-    return readdirSync(this.subComposeFolderPath, { withFileTypes: true })
+    const folders = readdirSync(this.subComposeFolderPath, { withFileTypes: true })
       .filter((dirent) => dirent.isDirectory())
       .map((dirent) => dirent.name);
+
+    return folders.map((folderName) => new SubComposeFolder(join(this.subComposeFolderPath, folderName)));
   }
 }

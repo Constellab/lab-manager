@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Put, StreamableFile } from '@nestjs/common';
+import { Controller, Get, Param, Put, StreamableFile } from '@nestjs/common';
 import { createReadStream } from 'fs';
 import { DockerContainerService } from './container/docker-container.service';
 import { DockerLogs, DockerPsFull } from './docker.class';
@@ -52,10 +52,5 @@ export class DockerContainersController {
   @Put(':containerName/delete')
   deleteContainer(@Param('containerName') containerName: string): Promise<boolean> {
     return this.dockerContainerService.deleteContainer(containerName);
-  }
-
-  @Post('system-prune')
-  async systemPrune(): Promise<void> {
-    return this.dockerContainerService.systemPrune();
   }
 }

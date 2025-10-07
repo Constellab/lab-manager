@@ -20,12 +20,12 @@ import { JsonParsePipe } from './pipes/json-parse.pipe';
  */
 @Controller('sub-compose')
 @LabGuard()
-export class DockerComposeController {
+export class DockerSubComposeController {
   constructor(private readonly dockerComposeAggregateService: DockerComposeAggregateService) {}
 
   //////////////////////////// ONLY FOR SUB COMPOSES ////////////////////////////
 
-  @Post(':brickName/:uniqueName/:env/register')
+  @Post(':brickName/:uniqueName/register')
   async registerSubComposeFromString(
     @Body() body: RegisterComposeRequestDTO,
     @Param('brickName', DockerNameValidationPipe) brickName: string,
@@ -35,7 +35,7 @@ export class DockerComposeController {
     return await this.dockerComposeAggregateService.registerAndStartSubCompose(body, composeId);
   }
 
-  @Post(':brickName/:uniqueName/:env/register/sqldb')
+  @Post(':brickName/:uniqueName/register/sqldb')
   async registerSQLDBCompose(
     @Body() body: RegisterSQLDBComposeRequestDTO,
     @Param('brickName', DockerNameValidationPipe) brickName: string,
@@ -45,7 +45,7 @@ export class DockerComposeController {
     return await this.dockerComposeAggregateService.registerSQLDBCompose(composeId, body);
   }
 
-  @Post(':brickName/:uniqueName/:env/register-from-zip')
+  @Post(':brickName/:uniqueName/register-from-zip')
   @UseInterceptors(FileInterceptor('file'))
   async registerSubComposeFromZip(
     @UploadedFile() file: Express.Multer.File,
@@ -72,7 +72,7 @@ export class DockerComposeController {
     );
   }
 
-  @Delete(':brickName/:uniqueName/:env/unregister')
+  @Delete(':brickName/:uniqueName/unregister')
   async unregisterSubCompose(
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
@@ -84,7 +84,7 @@ export class DockerComposeController {
     });
   }
 
-  @Get(':brickName/:uniqueName/:env/status')
+  @Get(':brickName/:uniqueName/status')
   async getSubComposeStatus(
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
