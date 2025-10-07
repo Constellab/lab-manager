@@ -36,17 +36,11 @@ export class BiotaService {
 
     const zipFilePath = join(biotaDbFolder, 'mariadb.zip');
 
-    this.fileService.createDirIfNotExists(biotaDbFolder, true);
-
     // Check if the biota db is already downloaded in the right version
-    if (!forceUpdate && !this.biotaDbNeedsToBePulled()) {
+    if (!forceUpdate && !this.biotaDbNeedsToBePulled(biotaDbUrl)) {
       this.logger.log(`Biota db already downloaded in the right version : ${biotaDbUrl}. Skipping download`);
       return;
     }
-
-    // stop the biota container because the volume will be deleted
-    const mainCompose = this.dockerComposeService.createMainComposeObject();
-    await mainCompose.deleteBiotaService();
 
     this.taskService.newTask(
       this.pullBiotaTaskName,
@@ -54,6 +48,11 @@ export class BiotaService {
     );
 
     try {
+      this.fileService.createDirIfNotExists(biotaDbFolder, true);
+      // stop the biota container because the volume will be deleted
+      const mainCompose = this.dockerComposeService.createMainComposeObject();
+      await mainCompose.deleteBiotaService();
+
       // delete existing zip if exists
       this.fileService.deleteFileIfExist(zipFilePath);
       await this.downloadFile(biotaDbUrl, zipFilePath);
@@ -157,9 +156,8 @@ export class BiotaService {
     return join(this.getBiotaDbFolder(), 'mariadb');
   }
 
-  private biotaDbNeedsToBePulled(): boolean {
+  private biotaDbNeedsToBePulled(biotaDbUrl: string): boolean {
     const currentBiotaUrl = this.getCurrentVersionUrl();
-    const biotaDbUrl = this.configFileService.readConfigFile().biota_maria_db_url;
     return !this.biotaDbExists() || currentBiotaUrl !== biotaDbUrl;
   }
 

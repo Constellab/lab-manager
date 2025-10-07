@@ -45,12 +45,12 @@ export class DockerContainersController {
   }
 
   @Put(':containerName/stop')
-  stopContainer(@Param('containerName') containerName: string): Promise<boolean> {
+  stopContainer(@Param('containerName') containerName: string): Promise<void> {
     return this.dockerContainerService.stopContainer(containerName);
   }
 
   @Put(':containerName/delete')
-  deleteContainer(@Param('containerName') containerName: string): Promise<boolean> {
+  deleteContainer(@Param('containerName') containerName: string): Promise<void> {
     return this.dockerContainerService.deleteContainer(containerName);
   }
 }

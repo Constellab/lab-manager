@@ -138,6 +138,11 @@ export class DockerCommand {
     return containers;
   }
 
+  public async containerExists(containerName: string): Promise<boolean> {
+    const inspect = await this.dockerInspect(containerName);
+    return inspect.status !== 'none';
+  }
+
   public async containerIsRunning(containerName: string): Promise<boolean> {
     const inspect = await this.dockerInspect(containerName);
     return inspect.isRunning();
