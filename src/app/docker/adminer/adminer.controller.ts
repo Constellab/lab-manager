@@ -7,12 +7,12 @@ export class AdminerController {
   constructor(private adminerService: AdminerComposeService) {}
 
   @Put('start')
-  startAdminer(): Promise<boolean> {
+  startAdminer(): Promise<void> {
     return this.adminerService.startAdminerContainer();
   }
 
   @Put('stop')
-  stopAdminer(): Promise<boolean> {
+  stopAdminer(): Promise<void> {
     return this.adminerService.deleteAdminerContainer();
   }
 

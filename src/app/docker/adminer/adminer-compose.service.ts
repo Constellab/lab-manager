@@ -41,7 +41,7 @@ export class AdminerComposeService {
     return dockerCompose.oneServiceIsRunning();
   }
 
-  public async startAdminerContainer(): Promise<boolean> {
+  public async startAdminerContainer(): Promise<void> {
     const taskName = 'Start adminer service';
     this.taskService.newTask(taskName);
 
@@ -66,33 +66,33 @@ export class AdminerComposeService {
         );
       }
 
-      const dockerCompose = await this.dockerComposeService.registerSubCompose(dockerYaml, {
-        description: 'Adminer - Database management tool',
-      });
-      const wasStarted = await dockerCompose.composeUp();
+      await this.dockerComposeService.registerAndStartSubCompose(
+        dockerYaml,
+        {
+          description: 'Adminer - Database management tool',
+          autoStart: false,
+        },
+        false
+      );
 
       this.taskService.markTaskAsSuccess(taskName, 'Ok');
-      return wasStarted != null;
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
       throw e;
     }
   }
 
-  public async deleteAdminerContainer(): Promise<boolean> {
+  public async deleteAdminerContainer(): Promise<void> {
     const dockerCompose = this.getExistingAdminerCompose();
-    if (!dockerCompose) {
-      return false;
-    }
+    if (!dockerCompose) return;
 
     const taskName = 'Stop adminer service';
     this.taskService.newTask(taskName);
 
     try {
-      const wasStopped = await dockerCompose.composeDown();
+      await dockerCompose.composeDown();
 
       this.taskService.markTaskAsSuccess(taskName, 'Ok');
-      return wasStopped != null;
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
       throw e;

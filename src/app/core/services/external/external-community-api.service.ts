@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { ApiService } from '../api/api.service';
 import { lastValueFrom } from 'rxjs';
-import { FileService } from '../file/file.service';
 import { ApiHttpOption } from '../api/api.class';
+import { ApiService } from '../api/api.service';
+import { FileService } from '../file/file.service';
 import { BrickVersionDTO } from './external-community.class';
 
 @Injectable()
@@ -39,7 +39,11 @@ export class ExternalCommunityApiService {
     return lastValueFrom(
       this.apiService.post(
         this.constructRoute(`${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/filters`),
-        filters,
+        {
+          spacesFilter: filters.spacesFilter,
+          titleFilter: filters.titleFilter,
+          sorts: [],
+        },
         {
           params: {
             page: page,

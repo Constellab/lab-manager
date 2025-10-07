@@ -9,6 +9,7 @@ import { TaskService } from '../../core/services/task/task.service';
 import { Command } from '../../core/utils/command';
 import { ComposeRestartOptions, ComposeUpOptions, DockerInspect } from '../docker.class';
 import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
+import { DockerComposeYaml } from './docker-compose-yaml';
 import {
   RegisterComposeFromZipRequestDTO,
   RegisterComposeRequestDTO,
@@ -197,13 +198,14 @@ export class DockerComposeAggregateService implements OnModuleInit {
     if (!composeRequest.compose_yaml_content) {
       throw new Error('The compose content is required');
     }
+
+    const composeYaml = new DockerComposeYaml(composeRequest.compose_yaml_content, composeId);
     return this.dockerComposeService.registerAndStartSubCompose(
-      composeId,
-      composeRequest.compose_yaml_content,
+      composeYaml,
       {
         description: composeRequest.description,
         autoStart: composeRequest.auto_start,
-        env: composeRequest.env,
+        envVariables: composeRequest.env,
       },
       true
     );
@@ -261,7 +263,7 @@ export class DockerComposeAggregateService implements OnModuleInit {
       await this.dockerComposeService.registerSubComposeFromDirectory(composeId, extractDir, {
         description: body.description,
         autoStart: body.auto_start,
-        env: body.env,
+        envVariables: body.env,
       });
     } finally {
       // Clean up temporary directory
@@ -298,10 +300,11 @@ services:
       - \${LAB_VOLUME_HOST}:/var/lib/mysql
 `;
 
-    await this.dockerComposeService.registerAndStartSubCompose(composeId, composeYamlContent, {
+    const dockerYaml = new DockerComposeYaml(composeYamlContent, composeId);
+    await this.dockerComposeService.registerAndStartSubCompose(dockerYaml, {
       description: request.description,
       autoStart: request.auto_start,
-      env: {},
+      envVariables: {},
     });
 
     // wait for the mariadb service to be ready

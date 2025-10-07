@@ -31,5 +31,5 @@ export interface RegisterComposeFromZipRequestDTO {
 export interface RegisterComposeConfig {
   description: string;
   autoStart?: boolean;
-  env?: DockerEnvironmentVariables;
+  envVariables?: DockerEnvironmentVariables;
 }

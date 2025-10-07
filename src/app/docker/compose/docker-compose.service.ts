@@ -155,18 +155,15 @@ export class DockerComposeService {
 
   /**
    * Register and start a sub compose.
-   * @param composeId The unique identifier for the compose.
-   * @param composeRequest The compose request containing content and configuration
+   * @param composeYaml The ComposeYaml instance.
    * @param async If true, the compose up will be done in background and errors will be logged but not thrown.
    * @returns
    */
   public async registerAndStartSubCompose(
-    composeId: DockerComposeUniqueId,
-    composeContent: string,
+    composeYaml: DockerComposeYaml,
     config: RegisterComposeConfig,
     async: boolean = true
   ): Promise<void> {
-    const composeYaml = new DockerComposeYaml(composeContent, composeId);
     const dockerCompose = await this.registerSubCompose(composeYaml, config);
 
     if (async) {
@@ -268,7 +265,7 @@ export class DockerComposeService {
       {
         labDomain: this.configService.getVirtualHost(),
       },
-      config.env
+      config.envVariables
     );
 
     // Check if file exists and content differs
