@@ -71,4 +71,11 @@ export interface XHttpsLabel {
   name: string;
   subDomain: string;
   internalPort: number;
+
+  /**
+   * If set, when the lab domain is localhost, this port will be opened on the host
+   * and mapped to the internalPort of the container
+   * Default: internalPort
+   */
+  localhostHostPort?: number;
 }

@@ -4,3 +4,9 @@ services:
     container_name: ${CONTAINER_PREFIX}-adminer
     networks:
       - ${LAB_NETWORK}
+    x-gws-config:
+      - https:
+          name: adminer
+          subDomain: adminer
+          internalPort: 8080
+          localhostHostPort: 8081

@@ -4,13 +4,3 @@ services:
     container_name: lab_desktop
     ports:
       - '82:80'
-    x-gws-config:
-      - https:
-          name: ragflow-web
-          internalPort: 80
-          subDomain: ragflow
-      - https:
-          name: ragflow-web1
-          internalPort: 804
-          subDomain: ragflowlk
-    

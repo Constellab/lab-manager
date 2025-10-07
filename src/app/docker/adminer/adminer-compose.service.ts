@@ -17,8 +17,6 @@ export class AdminerComposeService {
   };
 
   public static readonly ADMINER_SERVICE_NAME = 'adminer';
-  private static readonly ADMINER_DESKTOP_PORT = 8081;
-  private static readonly ADMINER_INNTER_PORT = 8080;
 
   private static readonly ADMINER_TEMPLATE_FILE = 'docker-compose-adminer.yml';
 
@@ -48,23 +46,6 @@ export class AdminerComposeService {
     try {
       const templatePath = this.coreConfigService.getAssetPath(AdminerComposeService.ADMINER_TEMPLATE_FILE);
       const dockerYaml = DockerComposeYaml.fromTemplateFile(templatePath, AdminerComposeService.ADMINER_ID);
-
-      // in local we add a port mapping, in prod we add traefik labels
-      if (this.coreConfigService.isLocal()) {
-        dockerYaml.addPortMapping(
-          AdminerComposeService.ADMINER_SERVICE_NAME,
-          AdminerComposeService.ADMINER_DESKTOP_PORT,
-          AdminerComposeService.ADMINER_INNTER_PORT
-        );
-      } else {
-        const host =
-          AdminerComposeService.ADMINER_SERVICE_NAME + '.' + this.coreConfigService.getVirtualHost();
-        dockerYaml.addTraefikLabels(
-          AdminerComposeService.ADMINER_SERVICE_NAME,
-          host,
-          AdminerComposeService.ADMINER_INNTER_PORT
-        );
-      }
 
       await this.dockerComposeService.registerAndStartSubCompose(
         dockerYaml,

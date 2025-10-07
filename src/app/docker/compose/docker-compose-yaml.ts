@@ -330,10 +330,10 @@ export class DockerComposeYaml {
   /**
    * In the x-gws-config section, replace the following custom label to traefik labels
    * x-gws-config:
-   *   https:
-   *     name: ragflow
-   *     subDomain: ragflow
-   *     internalPort: 80
+   *   - https:
+   *       name: ragflow
+   *       subDomain: ragflow
+   *       internalPort: 80
    * @param labDomain
    */
   private replaceXGwsConfig(labDomain: string): void {
@@ -360,9 +360,20 @@ export class DockerComposeYaml {
       for (const configItem of gwsConfig) {
         if (typeof configItem === 'object' && configItem !== null) {
           if (DockerComposeYaml.X_HTTPS_LABELS in configItem) {
-            const httpsLabel = configItem[DockerComposeYaml.X_HTTPS_LABELS] as XHttpsLabel;
-            const host = `${httpsLabel.subDomain}.${labDomain}`;
-            traefikLabels.addTraefikDomainLabels(host, httpsLabel.internalPort, httpsLabel.name);
+            // in localhost we do not add traefik labels
+            // but we open the port mapping to the host
+            if (labDomain === 'localhost') {
+              const httpsLabel = configItem[DockerComposeYaml.X_HTTPS_LABELS] as XHttpsLabel;
+              this.addPortMapping(
+                httpsLabel.name,
+                httpsLabel.localhostHostPort ?? httpsLabel.internalPort,
+                httpsLabel.internalPort
+              );
+            } else {
+              const httpsLabel = configItem[DockerComposeYaml.X_HTTPS_LABELS] as XHttpsLabel;
+              const host = `${httpsLabel.subDomain}.${labDomain}`;
+              traefikLabels.addTraefikDomainLabels(host, httpsLabel.internalPort, httpsLabel.name);
+            }
           }
         }
       }

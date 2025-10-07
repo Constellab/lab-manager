@@ -1,6 +1,11 @@
 export class TraefikLabels {
   private labels: string[] = [];
 
+  public addTraefikDomainLabels(hostRule: string, servicePort: number, serviceName: string): TraefikLabels {
+    this.addTraefikRouterLabels(`Host(\`${hostRule}\`)`, servicePort, serviceName);
+    return this;
+  }
+
   /**
    * Get the list of labels to enable new https route with traefik
    * @param hostRule
@@ -21,11 +26,6 @@ export class TraefikLabels {
       `traefik.http.routers.${router}.tls=true`
     );
 
-    return this;
-  }
-
-  public addTraefikDomainLabels(hostRule: string, servicePort: number, serviceName: string): TraefikLabels {
-    this.addTraefikRouterLabels(`Host(\`${hostRule}\`)`, servicePort, serviceName);
     return this;
   }
 
