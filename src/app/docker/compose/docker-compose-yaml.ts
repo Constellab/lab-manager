@@ -24,7 +24,7 @@ export class DockerComposeYaml {
   public static readonly LAB_VOLUME_HOST_VAR_NAME = '${LAB_VOLUME_HOST}';
   public static readonly CONTAINER_PREFIX = 'CONTAINER_PREFIX';
   public static readonly LAB_DOMAIN_VAR_NAME = 'LAB_DOMAIN';
-  public static readonly X_HTTPS_LABELS = 'x-gws-https';
+  public static readonly X_HTTPS_LABELS = 'https';
   public static readonly X_GWS_CONFIG = 'x-gws-config';
 
   constructor(strYaml: string, composeId?: DockerComposeUniqueId | null) {
@@ -32,30 +32,43 @@ export class DockerComposeYaml {
       throw new Error('The docker-compose.yml content is empty');
     }
     const yamlJson = load(strYaml);
+
+    // Initialize x-gws-config if it doesn't exist
+    if (!yamlJson['x-gws-config']) {
+      yamlJson['x-gws-config'] = {};
+    }
+
     if (composeId?.brickName) {
-      yamlJson['x-gws-brick-name'] = composeId.brickName;
+      yamlJson['x-gws-config'].brickName = composeId.brickName;
     }
 
     if (composeId?.uniqueName) {
-      yamlJson['x-gws-unique-name'] = composeId.uniqueName;
+      yamlJson['x-gws-config'].uniqueName = composeId.uniqueName;
     }
 
     if (composeId?.env) {
-      yamlJson['x-gws-env'] = composeId.env;
+      yamlJson['x-gws-config'].env = composeId.env;
     }
     this.content = this.checkYaml(yamlJson as DockerComposeJson);
   }
 
   private checkYaml(content: DockerComposeJson): DockerComposeJson {
-    // check that the brickName and uniqueName match the ones in the file if provided
-    if (!content['x-gws-brick-name'] || content['x-gws-brick-name'].trim().length === 0) {
-      throw new Error('The docker-compose file is missing the x-gws-brick-name property');
+    // check that the x-gws-config exists
+    if (!content['x-gws-config']) {
+      throw new Error('The docker-compose file is missing the x-gws-config property');
     }
-    if (!content['x-gws-unique-name'] || content['x-gws-unique-name'].trim().length === 0) {
-      throw new Error('The docker-compose file is missing the x-gws-unique-name property');
+
+    const config = content['x-gws-config'];
+
+    // check that the brickName and uniqueName are in the config
+    if (!config.brickName || config.brickName.trim().length === 0) {
+      throw new Error('The docker-compose file is missing the x-gws-config.brickName property');
     }
-    if (!content['x-gws-env']) {
-      throw new Error('The docker-compose file is missing the x-gws-env property');
+    if (!config.uniqueName || config.uniqueName.trim().length === 0) {
+      throw new Error('The docker-compose file is missing the x-gws-config.uniqueName property');
+    }
+    if (!config.env) {
+      throw new Error('The docker-compose file is missing the x-gws-config.env property');
     }
 
     if (!content.services || Object.keys(content.services).length === 0) {
@@ -317,10 +330,10 @@ export class DockerComposeYaml {
   /**
    * In the x-gws-config section, replace the following custom label to traefik labels
    * x-gws-config:
-   *   - x-gws-https:
-   *       name: ragflow
-   *       subDomain: ragflow
-   *       internalPort: 80
+   *   https:
+   *     name: ragflow
+   *     subDomain: ragflow
+   *     internalPort: 80
    * @param labDomain
    */
   private replaceXGwsConfig(labDomain: string): void {
@@ -394,15 +407,15 @@ export class DockerComposeYaml {
   }
 
   getBrickName(): string {
-    return this.content['x-gws-brick-name'];
+    return this.content['x-gws-config'].brickName;
   }
 
   getUniqueName(): string {
-    return this.content['x-gws-unique-name'];
+    return this.content['x-gws-config'].uniqueName;
   }
 
   getDescription(): string | undefined {
-    return this.content['x-gws-description'];
+    return this.content['x-gws-config'].description;
   }
 
   getComposeId(): DockerComposeUniqueId {
@@ -414,23 +427,23 @@ export class DockerComposeYaml {
   }
 
   setDescription(description: string): void {
-    this.content['x-gws-description'] = description;
+    this.content['x-gws-config'].description = description;
   }
 
   getAutoStart(): boolean | undefined {
-    return this.content['x-gws-auto-start'];
+    return this.content['x-gws-config'].autoStart;
   }
 
   setAutoStart(autoStart: boolean): void {
-    this.content['x-gws-auto-start'] = autoStart;
+    this.content['x-gws-config'].autoStart = autoStart;
   }
 
   getEnv(): DockerComposeYamlEnv {
-    return this.content['x-gws-env'];
+    return this.content['x-gws-config'].env;
   }
 
   setEnv(env: DockerComposeYamlEnv): void {
-    this.content['x-gws-env'] = env;
+    this.content['x-gws-config'].env = env;
   }
 
   public static fromTemplateFile(filePath: string, composeId: DockerComposeUniqueId): DockerComposeYaml {

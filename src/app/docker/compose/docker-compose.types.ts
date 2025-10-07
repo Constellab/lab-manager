@@ -22,11 +22,19 @@ export interface DockerComposeServiceJson {
   'x-gws-config'?: Record<string, unknown>[];
 }
 
+/**
+ * Main configuration for the compose file (top-level x-gws-config)
+ */
+export interface XGwsMainConfig {
+  brickName: string;
+  uniqueName: string;
+  env: DockerComposeYamlEnv;
+  description?: string;
+  autoStart?: boolean;
+}
+
 export interface DockerComposeJson {
-  'x-brick-name': string;
-  'x-unique-name': string;
-  'x-env': DockerComposeYamlEnv;
-  'x-description'?: string;
+  'x-gws-config': XGwsMainConfig;
   services: Record<string, DockerComposeServiceJson>;
   networks: Record<string, unknown>;
   volumes: Record<string, unknown>;
