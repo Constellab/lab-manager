@@ -24,8 +24,14 @@ export class MainComposeService {
     if (!this.fileService.dockerComposeFileExists()) {
       return new DockerComposeInspect();
     }
-    const mainCompose = this.dockerComposeService.createMainComposeObject();
-    return await mainCompose.composeInspect();
+
+    try{
+      const mainCompose = this.dockerComposeService.createMainComposeObject();
+      return await mainCompose.composeInspect();
+    } catch (e) {
+      this.logger.error('Error inspecting main docker compose', e);
+      return new DockerComposeInspect();
+    }
   }
 
   /**

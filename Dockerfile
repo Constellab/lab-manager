@@ -82,7 +82,9 @@ ARG DOCKER_GID=999
 RUN groupadd -g ${DOCKER_GID} docker_host || true && \
     groupadd -g ${GROUP_ID} labuser && \
     useradd -m -u ${USER_ID} -g ${GROUP_ID} -G ${DOCKER_GID} -s /bin/bash labuser && \
-    chown -R labuser:labuser /lab-manager
+    chown -R labuser:labuser /lab-manager && \
+    # enable sudo for labuser without password
+    echo "labuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 USER labuser
 

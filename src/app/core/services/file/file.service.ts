@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import {
   copyFileSync,
   existsSync,
@@ -21,6 +21,8 @@ export class FileService {
   private readonly privateFileName = 'private.json';
 
   private readonly envFileName = 'lab-manager.env';
+
+  private readonly logger = new Logger(FileService.name);
 
   constructor(private configService: CoreConfigService) {}
 
@@ -71,8 +73,13 @@ export class FileService {
       return null;
     }
 
-    const content = this.readFile(logFilePath);
-    return JSON.parse(content);
+    try{
+      const content = this.readFile(logFilePath);
+      return JSON.parse(content);
+    } catch (e) {
+      this.logger.error(`Error reading/parsing start log file for mode ${mode}`, e);
+      return null;
+    }
   }
 
   //////////////////////// DOCKER COMPOSE //////////////////////

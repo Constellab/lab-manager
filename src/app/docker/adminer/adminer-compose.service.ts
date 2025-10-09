@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
 import { FileService } from 'src/app/core/services/file/file.service';
 import { TaskService } from 'src/app/core/services/task/task.service';
@@ -18,6 +18,9 @@ export class AdminerComposeService {
 
   public static readonly ADMINER_SERVICE_NAME = 'adminer';
 
+  private readonly logger = new Logger(AdminerComposeService.name);
+  
+
   private static readonly ADMINER_TEMPLATE_FILE = 'docker-compose-adminer.yml';
 
   constructor(
@@ -32,11 +35,18 @@ export class AdminerComposeService {
   }
 
   public async adminerIsRunning(): Promise<boolean> {
-    const dockerCompose = this.getExistingAdminerCompose();
-    if (!dockerCompose) {
+    try{
+
+      const dockerCompose = this.getExistingAdminerCompose();
+      if (!dockerCompose) {
+        return false;
+      }
+      return dockerCompose.oneServiceIsRunning();
+    } catch (e) {
+      this.logger.error('Error checking if adminer is running', e);
       return false;
     }
-    return dockerCompose.oneServiceIsRunning();
+
   }
 
   public async startAdminerContainer(): Promise<void> {
