@@ -138,6 +138,23 @@ export class LabService implements OnModuleInit {
     });
   }
 
+  public async stopLabAsync(): Promise<void> {
+    const taskName = 'Stop lab';
+    this.taskService.newTask(taskName);
+
+    this.mainComposeService.stopServices().then(() => {
+      this.taskService.markTaskAsSuccess(taskName, 'Lab stopped successfully');
+    }).catch((e) => {
+      this.logger.error('Error while stopping the lab', e);
+      this.taskService.markTaskAsError(taskName, e.toString());
+    });
+
+    // wait for 2 seconds before returning response
+    // this is to prevent the 'Lab is starting' status to be shown
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  }
+
   public async configureLabManager(labInitConfig: LabInitConfig): Promise<void> {
     this.checkInitConfig(labInitConfig);
     this.initService.configureLabManager(labInitConfig);

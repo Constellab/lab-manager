@@ -75,6 +75,17 @@ export class InitService {
     // UP CONTAINERS
     await this.aggregateComposeService.restartMainServices({});
 
+    // wait for 10 seconds to let the containers start
+    // so the progress of the glab is updated before the lab is marked as idle
+    // because is not waiting, there is a small gap where we can't detect the lab
+    // is starting
+    // + there is not problem in waiting because the lab takes more time to be ready
+    // and this is running in background
+    const taskName = 'Starting lab';
+    this.taskService.newTask(taskName);
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+    this.taskService.markTaskAsSuccess(taskName, 'Lab started');
+
     // save the init version
     this.fileService.updatePrivateFileData({
       last_init_manager_version: this.configService.getLabManagerVersion(),

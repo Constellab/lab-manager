@@ -50,6 +50,11 @@ export class LabController {
     this.labService.initLab();
   }
 
+  @Post('stop')
+  stopLab(): Promise<void> {
+    return this.labService.stopLabAsync();
+  }
+
   /**
    * Route to fully configure the lab manager
    * Main configuration and docker configuration

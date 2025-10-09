@@ -87,6 +87,8 @@ export class DockerComposeAggregateService implements OnModuleInit {
     try {
       const mainCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
       const result = await mainCompose.composeUp([], services);
+
+      // const inspect = await mainCompose.composeInspect();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());

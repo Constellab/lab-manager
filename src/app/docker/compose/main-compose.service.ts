@@ -127,4 +127,9 @@ export class MainComposeService {
   private buildFrontUrls(subDomains: string[]): string {
     return subDomains.map((subDomain) => 'https://' + subDomain + '.${VIRTUAL_HOST}').join(',');
   }
+
+  public async stopServices(): Promise<void> {
+    const mainCompose = this.dockerComposeService.createMainComposeObject();
+    await mainCompose.composeStop();
+  }
 }
