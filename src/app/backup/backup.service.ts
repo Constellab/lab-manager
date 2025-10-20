@@ -11,6 +11,7 @@ import { RcloneService } from '../core/services/rclone/rclone.service';
 import { TaskService } from '../core/services/task/task.service';
 import { SpawnResult } from '../core/utils/command';
 import { DockerComposeService } from '../docker/compose/docker-compose.service';
+import { MainDockerCompose } from '../docker/compose/main-docker-compose.class';
 import { LabBackupHistory } from './backup-history.class';
 import {
   BackupBucketDTO,
@@ -29,11 +30,6 @@ export class BackupService implements OnModuleInit {
   // destination folder for the backup is s3
   private readonly dataS3FolderDestination = 'data';
   private readonly dbS3FolderDestination = 'db';
-  // path of the DB dump inside mariadb container
-  private readonly dbDumpName = 'dump.sql';
-  // path of the database inside mariadb container, which is shared with volume of this container
-  private readonly dbDumpMariaDbPath = '/var/lib/mysql';
-  private readonly dbDumpFolder = '.dumps';
 
   private static readonly MAX_BACKUP_HISTORY = 30;
   // min idle time required (no activity on lab) before doing a backup
@@ -198,9 +194,6 @@ export class BackupService implements OnModuleInit {
       this.logError(`Error while getting the lab activity: ${e.message}. Running the backup anyway`, e);
     }
 
-    // delete the DB dump if it exists
-    this.fileService.deleteFolderIfExist(this.getDbDumpPathInCurrentContainer());
-
     const backupHistory = this.getBackupHistory();
 
     // get the list of backup to trigger
@@ -268,19 +261,16 @@ export class BackupService implements OnModuleInit {
     // retrieve the path of the dump in the current container volume
     const dumpPathInCurrentContainer = this.getDbDumpPathInCurrentContainer();
 
-    if (!this.fileService.exists(dumpPathInCurrentContainer)) {
-      // dump the db
-      this.fileService.createDirIfNotExists(this.getDbDumpFolderInCurrentContainer());
-      const mainCompose = this.dockerComposeService.createMainComposeObject();
-      const result = await mainCompose.dumpProdDb(this.getDumpMariaDbPathInMariaDbContainer());
-      if (result !== '') {
-        this.updateCurrentStatusStorageErrorMessage(
-          `Error while dumping the DB. Error : ${result}`,
-          'DB',
-          backup
-        );
-        return;
-      }
+    // dump the db
+    const mainCompose = this.dockerComposeService.createMainComposeObject();
+    const result = await mainCompose.dumpProdDb();
+    if (result !== '') {
+      this.updateCurrentStatusStorageErrorMessage(
+        `Error while dumping the DB. Error : ${result}`,
+        'DB',
+        backup
+      );
+      return;
     }
 
     // get the dump size
@@ -291,22 +281,18 @@ export class BackupService implements OnModuleInit {
     this.callSyncToS3(backup, this.getDbDumpFolderInCurrentContainer(), this.dbS3FolderDestination, 'DB');
   }
 
-  /**
-   * @returns Get the path of the DB dump inside the mariadb container
-   */
-  private getDumpMariaDbPathInMariaDbContainer(): string {
-    return join(this.dbDumpMariaDbPath, this.dbDumpFolder, this.dbDumpName);
-  }
-
   private getDbDumpFolderInCurrentContainer(): string {
-    return join(this.configService.getGwsCoreDbProdMariaDbFolder(), this.dbDumpFolder);
+    return join(
+      this.configService.getGwsCoreDbProdMariaDbFolder(),
+      MainDockerCompose.MARIA_DB_DUMP_FOLDER_NAME
+    );
   }
 
   /**
    * @returns Get the path of the DB dump inside the current container
    */
   private getDbDumpPathInCurrentContainer(): string {
-    return join(this.getDbDumpFolderInCurrentContainer(), this.dbDumpName);
+    return join(this.getDbDumpFolderInCurrentContainer(), MainDockerCompose.MARIA_DB_DUMP_NAME);
   }
 
   private async syncData(backup: LabBackupStorage): Promise<void> {
@@ -386,7 +372,8 @@ export class BackupService implements OnModuleInit {
 
     // if there is no running backup, delete the DB dump
     if (!this.hasRunningBackup()) {
-      this.fileService.deleteFolderIfExist(this.getDbDumpFolderInCurrentContainer());
+      const mainCompose = this.dockerComposeService.createMainComposeObject();
+      mainCompose.deleteDumpFolder();
     }
   }
 
@@ -558,7 +545,8 @@ export class BackupService implements OnModuleInit {
     const dumpFolderInCurrentContainer = this.getDbDumpFolderInCurrentContainer();
 
     // delete the DB dump if it exists
-    this.fileService.deleteFolderIfExist(dumpFolderInCurrentContainer);
+    const mainCompose = this.dockerComposeService.createMainComposeObject();
+    await mainCompose.deleteDumpFolder();
 
     this.taskService.updateTaskInfo(
       BackupService.RESTORE_BACKUP_TASK,
@@ -572,9 +560,7 @@ export class BackupService implements OnModuleInit {
     this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Applying the DB dump');
 
     // restore the DB
-    const dbPathInMariaDb = this.getDumpMariaDbPathInMariaDbContainer();
-    const mainCompose = this.dockerComposeService.createMainComposeObject();
-    await mainCompose.restoreProdDb(dbPathInMariaDb);
+    await mainCompose.restoreProdDb();
 
     this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'DB Restored');
   }

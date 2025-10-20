@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import { Command, ExecCommandMode } from '../../core/utils/command';
-import { DockerCommand } from '../docker-command.class';
+import { DockerCommand, DockerExecOptions } from '../docker-command.class';
 import { DockerComposeInspect, DockerComposeStatusInfo } from './docker-compose-inspect.class';
 import { DockerComposeYaml } from './docker-compose-yaml';
 
@@ -149,7 +149,11 @@ export class DockerCompose {
    * @param command
    * @returns
    */
-  protected async execCommandInService(serviceName: string, command: string): Promise<string> {
+  public async execCommandInService(
+    serviceName: string,
+    command: string,
+    options?: DockerExecOptions
+  ): Promise<string> {
     this.checkServiceExists(serviceName);
     const wasStarted = await this.startService(serviceName);
     const containerName = this.composeYaml.getContainerNameFromService(serviceName);
@@ -157,7 +161,7 @@ export class DockerCompose {
     let result: string;
     try {
       const dockerCommand = new DockerCommand();
-      result = await dockerCommand.dockerExec(containerName, command);
+      result = await dockerCommand.dockerExec(containerName, command, options);
     } finally {
       if (wasStarted) {
         await this.downService(serviceName);
@@ -228,6 +232,7 @@ export class DockerCompose {
         await dockerCommand.dockerExec(
           containerName,
           `sh -c "mysqladmin ping --host='localhost' --user='root' --password=\\$MYSQL_ROOT_PASSWORD"`,
+          null,
           ExecCommandMode.NO_LOG
         );
       } catch (e) {

@@ -9,6 +9,10 @@ export interface DockerFormatKey {
   hasQuotes?: boolean; // if the value already has quotes
 }
 
+export interface DockerExecOptions {
+  user?: string;
+}
+
 export class DockerFormatKeys {
   public static readonly NAMES: DockerFormatKey = { key: 'names', dockerKey: 'Names' };
   public static readonly IMAGE: DockerFormatKey = { key: 'image', dockerKey: 'Image' };
@@ -277,8 +281,17 @@ export class DockerCommand {
     }
   }
 
-  public async dockerExec(containerName: string, command: string, mode?: ExecCommandMode): Promise<string> {
-    return this.getCommand().execCommand(`docker exec ${containerName} ${command}`, mode);
+  public async dockerExec(
+    containerName: string,
+    command: string,
+    options?: DockerExecOptions,
+    mode?: ExecCommandMode
+  ): Promise<string> {
+    let optionsStr = '';
+    if (options?.user) {
+      optionsStr += ` -u ${options.user} `;
+    }
+    return this.getCommand().execCommand(`docker exec ${optionsStr}${containerName} ${command}`, mode);
   }
 
   private getCommand(): Command {
