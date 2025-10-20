@@ -104,6 +104,7 @@ export class DockerSubComposeController {
   private getDockerComposeEnv(): DockerComposeYamlEnv {
     // Determine the context based on the authentication
     const authContext = AuthContextService.getContext();
+    if (authContext?.type === 'local') return 'dev'; // Local can access all for testing purposes
     if (!authContext || authContext.type !== 'lab') {
       throw new Error('This endpoint can only be called by a lab');
     }

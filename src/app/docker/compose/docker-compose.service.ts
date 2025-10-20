@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { CoreConfigService } from '../../core/services/config/core-config.service';
@@ -37,6 +37,8 @@ export class DockerComposeService {
   public static readonly SYSTEM_LAB_MANAGER_NAME = 'lab_manager';
 
   public static readonly SUB_COMPOSE_FOLDER = 'sub-composes';
+
+  private readonly logger = new Logger(DockerComposeService.name);
 
   constructor(
     private fileService: FileService,
@@ -272,6 +274,7 @@ export class DockerComposeService {
     const existingCompose = this.getDockerCompose({ brickName, uniqueName, env });
     if (existingCompose && !existingCompose.isEqualToComposeYaml(composeYaml)) {
       if (await existingCompose.oneServiceIsRunning()) {
+        this.logger.log(`Change detected in compose ${brickName}:${uniqueName}:${env}. Unregistring old compose...`);
         await this.unregisterDockerCompose({ brickName, uniqueName, env });
       }
     }

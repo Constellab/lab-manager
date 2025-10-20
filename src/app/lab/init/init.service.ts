@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { hashSync } from 'bcrypt';
-import { join } from 'path';
 import { TaskService } from 'src/app/core/services/task/task.service';
 import { PrivateFile } from '../../core/models/private-file.class';
 import { ConfigFileService } from '../../core/services/config-file/config-file.service';
@@ -69,11 +68,8 @@ export class InitService {
     // PULL BIOTA DB
     await this.biotaService.pullBiota();
 
-    // PULL IMAGES
-    await this.aggregateComposeService.pullMainServices();
-
     // UP CONTAINERS
-    await this.aggregateComposeService.restartMainServices({});
+    await this.aggregateComposeService.restartMainServices({ updateContainers: true });
 
     // wait for 10 seconds to let the containers start
     // so the progress of the glab is updated before the lab is marked as idle

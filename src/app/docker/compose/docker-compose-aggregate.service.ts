@@ -68,9 +68,18 @@ export class DockerComposeAggregateService implements OnModuleInit {
     }
   }
 
+  public async pullServicesTaskWithCatch(composeId: DockerComposeUniqueId): Promise<void> {
+    try {
+      await this.pullServicesTask(composeId);
+    } catch (e) {
+      this.logger.error('Error while pulling images: ' + e.message);
+      this.logger.error(e.stack);
+    }
+  }
+
   public async upServicesTask(composeId: DockerComposeUniqueId, options: ComposeUpOptions): Promise<void> {
     if (options.updateContainers) {
-      await this.pullServicesTask(composeId);
+      await this.pullServicesTaskWithCatch(composeId);
     }
 
     await this.upServicesTaskCommand(composeId);
@@ -132,19 +141,17 @@ export class DockerComposeAggregateService implements OnModuleInit {
   ): Promise<void> {
     await this.checkLabIsConfigured();
     if (options.updateContainers) {
-      await this.pullServicesTask(composeId);
+      await this.pullServicesTaskWithCatch(composeId);
     }
 
     if (options.destroyContainers) {
       await this.deleteServicesTask(composeId);
-
-      await this.upServicesTaskCommand(composeId);
     } else {
       // do a stop and a up because if a new image is available
       // with same tag, restart doesn't update it. Stop and up does.
       await this.stopServicesTask(composeId);
-      await this.upServicesTaskCommand(composeId);
     }
+    await this.upServicesTaskCommand(composeId);
   }
 
   public async checkLabIsConfigured(): Promise<void> {
@@ -174,10 +181,6 @@ export class DockerComposeAggregateService implements OnModuleInit {
   }
 
   ///////////////////////////////// MAIN FILE //////////////////////////////////////
-
-  public async pullMainServices(): Promise<void> {
-    return this.pullServicesTask(DockerComposeService.MAIN_COMPOSE_ID);
-  }
 
   public async restartMainServices(options: ComposeRestartOptions): Promise<void> {
     return this.restartServicesTask(DockerComposeService.MAIN_COMPOSE_ID, options);
