@@ -1,3 +1,5 @@
+import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
+
 export type DockerComposeYamlEnv = 'prod' | 'dev' | 'all' | 'none';
 
 /*
@@ -33,11 +35,17 @@ export interface XGwsMainConfig {
   autoStart?: boolean;
 }
 
+export interface DockerComposeVolumeDefinition {
+  name?: string;
+  driver?: string;
+  driver_opts?: Record<string, unknown>;
+}
+
 export interface DockerComposeJson {
   'x-gws-config': XGwsMainConfig;
   services: Record<string, DockerComposeServiceJson>;
   networks: Record<string, unknown>;
-  volumes: Record<string, unknown>;
+  volumes: Record<string, DockerComposeVolumeDefinition>;
 }
 
 export interface DockerComposeVolume {
@@ -58,6 +66,35 @@ export interface ComposeInfo {
 
 export interface ComposeList {
   composes: ComposeInfo[];
+}
+
+/**
+ * Status for sub compose registration/unregistration processes
+ */
+export type SubComposeProcessStatus = 'RUNNING' | 'SUCCESS' | 'ERROR';
+
+/**
+ * Type of process being performed on a sub compose
+ */
+export type SubComposeProcessType = 'REGISTER' | 'UNREGISTER';
+
+/**
+ * Information about a running/finished process on a sub compose
+ */
+export interface SubComposeProcessInfo {
+  processType: SubComposeProcessType;
+  status: SubComposeProcessStatus;
+  message: string;
+  startedAt: Date;
+  completedAt?: Date;
+}
+
+/**
+ * Overall status of a sub compose, including any running process and the docker-compose status
+ */
+export interface ComposeStatus {
+  subComposeProcess?: SubComposeProcessInfo;
+  composeStatus: DockerComposeStatusInfo;
 }
 
 /////////////////// VARIABLES IN docker-compose.yml ///////////////////

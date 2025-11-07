@@ -4,6 +4,7 @@ import { Command, ExecCommandMode } from '../../core/utils/command';
 import { DockerCommand, DockerExecOptions } from '../docker-command.class';
 import { DockerComposeInspect, DockerComposeStatusInfo } from './docker-compose-inspect.class';
 import { DockerComposeYaml } from './docker-compose-yaml';
+import { DockerComposeUniqueId } from './docker-compose.types';
 
 export class DockerCompose {
   private readonly logger = new Logger(DockerCompose.name);
@@ -257,5 +258,9 @@ export class DockerCompose {
     if (existsSync(this.envFilePath)) {
       unlinkSync(this.envFilePath);
     }
+  }
+
+  public getComposeId(): DockerComposeUniqueId {
+    return this.composeYaml.getComposeId();
   }
 }

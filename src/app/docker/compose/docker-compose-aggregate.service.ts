@@ -8,7 +8,6 @@ import { FileService } from '../../core/services/file/file.service';
 import { TaskService } from '../../core/services/task/task.service';
 import { Command } from '../../core/utils/command';
 import { ComposeRestartOptions, ComposeUpOptions, DockerInspect } from '../docker.class';
-import { DockerComposeStatusInfo } from './docker-compose-inspect.class';
 import { DockerComposeYaml } from './docker-compose-yaml';
 import {
   RegisterComposeFromZipRequestDTO,
@@ -17,7 +16,7 @@ import {
   RegisterSQLDBComposeResponseDTO,
 } from './docker-compose.dto';
 import { DockerComposeService } from './docker-compose.service';
-import { ComposeList, DockerComposeUniqueId } from './docker-compose.types';
+import { ComposeList, ComposeStatus, DockerComposeUniqueId } from './docker-compose.types';
 
 @Injectable()
 export class DockerComposeAggregateService implements OnModuleInit {
@@ -216,12 +215,25 @@ export class DockerComposeAggregateService implements OnModuleInit {
     );
   }
 
-  public async unregisterSubCompose(composeId: DockerComposeUniqueId): Promise<DockerComposeStatusInfo> {
-    return await this.dockerComposeService.unregisterDockerCompose(composeId);
+  public async unregisterSubCompose(composeId: DockerComposeUniqueId): Promise<ComposeStatus> {
+    await this.dockerComposeService.unregisterDockerCompose(composeId);
+
+    return await this.getComposeStatus(composeId);
   }
 
-  public async getSubComposeStatus(composeId: DockerComposeUniqueId): Promise<DockerComposeStatusInfo> {
-    return await this.dockerComposeService.getComposeStatus(composeId);
+  public async getComposeStatus(composeId: DockerComposeUniqueId): Promise<ComposeStatus> {
+    const composeStatus = await this.dockerComposeService.getComposeStatus(composeId);
+    const process = this.dockerComposeService.getSubComposeProcess(composeId);
+
+    return {
+      composeStatus,
+      subComposeProcess: process,
+    };
+  }
+
+  public async stopSubComposeProcess(composeId: DockerComposeUniqueId): Promise<ComposeStatus> {
+    this.dockerComposeService.stopSubComposeProcess(composeId);
+    return await this.getComposeStatus(composeId);
   }
 
   public getAllSubComposes(): ComposeList {

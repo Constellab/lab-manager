@@ -50,7 +50,7 @@ export class Command {
           case ExecCommandMode.STDERR_AS_WARNING:
             if (stderr) {
               this.logger.warn(
-                `Warning during the execution of the command '${command}'. Error : '${stderr}'`
+                `Warning during the execution of the command '${command}'. Warning : '${stderr}'`
               );
             }
             resolve(stdout);

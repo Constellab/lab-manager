@@ -3,14 +3,18 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { LabGuard } from 'src/app/core/decorators/lab-guard.decorator';
 import { AuthContextService } from '../core/auth/auth-context.service';
 import { DockerComposeAggregateService } from './compose/docker-compose-aggregate.service';
-import { DockerComposeStatusInfo } from './compose/docker-compose-inspect.class';
 import {
   RegisterComposeFromZipRequestDTO,
   RegisterComposeRequestDTO,
   RegisterSQLDBComposeRequestDTO,
   RegisterSQLDBComposeResponseDTO,
 } from './compose/docker-compose.dto';
-import { ComposeList, DockerComposeUniqueId, DockerComposeYamlEnv } from './compose/docker-compose.types';
+import {
+  ComposeList,
+  ComposeStatus,
+  DockerComposeUniqueId,
+  DockerComposeYamlEnv,
+} from './compose/docker-compose.types';
 import { DockerNameValidationPipe } from './pipes/docker-name-validation.pipe';
 import { JsonParsePipe } from './pipes/json-parse.pipe';
 
@@ -76,7 +80,7 @@ export class DockerSubComposeController {
   async unregisterSubCompose(
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
-  ): Promise<DockerComposeStatusInfo> {
+  ): Promise<ComposeStatus> {
     return await this.dockerComposeAggregateService.unregisterSubCompose({
       brickName,
       uniqueName,
@@ -88,8 +92,8 @@ export class DockerSubComposeController {
   async getSubComposeStatus(
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
-  ): Promise<DockerComposeStatusInfo> {
-    return await this.dockerComposeAggregateService.getSubComposeStatus({
+  ): Promise<ComposeStatus> {
+    return await this.dockerComposeAggregateService.getComposeStatus({
       brickName,
       uniqueName,
       env: this.getDockerComposeEnv(),

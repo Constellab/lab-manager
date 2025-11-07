@@ -260,7 +260,9 @@ export class DockerComposeYaml {
     }
 
     if (!this.content.volumes[volumeName]) {
-      this.content.volumes[volumeName] = {};
+      this.content.volumes[volumeName] = {
+        name: volumeName,
+      };
     }
   }
 
@@ -299,8 +301,23 @@ export class DockerComposeYaml {
           if (volume.isNamed) {
             // replace the left part until the colon with the named volume
             const parts = volumes[i].split(':');
-            volumes[i] = `${volume.hostVolume}:${parts[1].trim()}`;
-            this.addNamedVolume(volume.hostVolume);
+            const leftPart = parts[0].trim();
+
+            // Extract subfolder(s) after ${LAB_VOLUME_HOST}
+            // Example: ${LAB_VOLUME_HOST}/esdata01 -> esdata01
+            // Example: ${LAB_VOLUME_HOST}/path/to/data -> path-to-data
+            // Example: ${LAB_VOLUME_HOST} -> (no subfolder)
+            let volumeName = volume.hostVolume;
+            const subfolderPath = leftPart.substring(DockerComposeYaml.LAB_VOLUME_HOST_VAR_NAME.length);
+
+            if (subfolderPath && subfolderPath.length > 0) {
+              // Remove leading slash and replace remaining slashes with hyphens
+              const subfolder = subfolderPath.replace(/^\//, '').replace(/\//g, '-');
+              volumeName = `${volume.hostVolume}-${subfolder}`;
+            }
+
+            volumes[i] = `${volumeName}:${parts[1].trim()}`;
+            this.addNamedVolume(volumeName);
           } else {
             // determine which volume path to use based on context
             volumes[i] = volumes[i].replace(DockerComposeYaml.LAB_VOLUME_HOST_VAR_NAME, volume.hostVolume);
@@ -365,7 +382,7 @@ export class DockerComposeYaml {
             if (labDomain === 'localhost') {
               const httpsLabel = configItem[DockerComposeYaml.X_HTTPS_LABELS] as XHttpsLabel;
               this.addPortMapping(
-                httpsLabel.name,
+                serviceName,
                 httpsLabel.localhostHostPort ?? httpsLabel.internalPort,
                 httpsLabel.internalPort
               );

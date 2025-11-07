@@ -30,6 +30,22 @@ export class DockerContainerService {
     }
   }
 
+  public async startContainer(containerName: string): Promise<void> {
+    await this.checkContainerExists(containerName);
+
+    const taskName = `Start service ${containerName}`;
+    this.taskService.newTask(taskName);
+
+    try {
+      const dockerCommand = new DockerCommand();
+      await dockerCommand.startContainer(containerName);
+      this.taskService.markTaskAsSuccess(taskName, 'Ok');
+    } catch (e) {
+      this.taskService.markTaskAsError(taskName, e.toString());
+      throw e;
+    }
+  }
+
   public async stopContainer(containerName: string): Promise<void> {
     await this.checkContainerExists(containerName);
 

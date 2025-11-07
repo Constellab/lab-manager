@@ -44,6 +44,11 @@ export class DockerContainersController {
     return new StreamableFile(fileStream);
   }
 
+  @Put(':containerName/start')
+  startContainer(@Param('containerName') containerName: string): Promise<void> {
+    return this.dockerContainerService.startContainer(containerName);
+  }
+
   @Put(':containerName/stop')
   stopContainer(@Param('containerName') containerName: string): Promise<void> {
     return this.dockerContainerService.stopContainer(containerName);

@@ -1,8 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 import { LabGuard } from 'src/app/core/decorators/lab-guard.decorator';
 import { DockerComposeAggregateService } from './compose/docker-compose-aggregate.service';
-import { DockerComposeStatusInfo } from './compose/docker-compose-inspect.class';
-import { ComposeList, DockerComposeUniqueId, DockerComposeYamlEnv } from './compose/docker-compose.types';
+import {
+  ComposeList,
+  ComposeStatus,
+  DockerComposeUniqueId,
+  DockerComposeYamlEnv,
+} from './compose/docker-compose.types';
 import { ComposeRestartOptions, ComposeUpOptions, DockerInspect } from './docker.class';
 import { DockerNameValidationPipe } from './pipes/docker-name-validation.pipe';
 
@@ -30,20 +34,14 @@ export class DockerComposeController {
     return this.dockerComposeAggregateService.listServices(composeId);
   }
 
-  /**
-   * Start a container service from docker-compose file
-   * @param serviceName
-   * @returns
-   */
-  @Put(':brickName/:uniqueName/:env/services/:serviceName/start')
-  startComposeService(
-    @Param('serviceName') serviceName: string,
+  @Get(':brickName/:uniqueName/:env/status')
+  async getSubComposeStatus(
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string,
     @Param('env') env: DockerComposeYamlEnv
-  ): Promise<void> {
+  ): Promise<ComposeStatus> {
     const composeId: DockerComposeUniqueId = { brickName, uniqueName, env };
-    return this.dockerComposeAggregateService.upServicesTaskCommand(composeId, [serviceName]);
+    return await this.dockerComposeAggregateService.getComposeStatus(composeId);
   }
 
   @Post(':brickName/:uniqueName/:env/up-services')
@@ -114,8 +112,18 @@ export class DockerComposeController {
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string,
     @Param('env') env: DockerComposeYamlEnv
-  ): Promise<DockerComposeStatusInfo> {
+  ): Promise<ComposeStatus> {
     const composeId: DockerComposeUniqueId = { brickName, uniqueName, env };
     return await this.dockerComposeAggregateService.unregisterSubCompose(composeId);
+  }
+
+  @Put(':brickName/:uniqueName/:env/stop-sub-compose-process')
+  async stopSubComposeProcess(
+    @Param('brickName', DockerNameValidationPipe) brickName: string,
+    @Param('uniqueName', DockerNameValidationPipe) uniqueName: string,
+    @Param('env') env: DockerComposeYamlEnv
+  ): Promise<ComposeStatus> {
+    const composeId: DockerComposeUniqueId = { brickName, uniqueName, env };
+    return await this.dockerComposeAggregateService.stopSubComposeProcess(composeId);
   }
 }

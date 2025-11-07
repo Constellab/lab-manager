@@ -14,6 +14,9 @@ import {
   ComposeList,
   DockerComposeUniqueId,
   DockerComposeVolumeVariable,
+  SubComposeProcessInfo,
+  SubComposeProcessStatus,
+  SubComposeProcessType,
 } from './docker-compose.types';
 import { MainDockerCompose } from './main-docker-compose.class';
 import { SubComposeManager } from './sub-compose-manager';
@@ -39,6 +42,9 @@ export class DockerComposeService {
   public static readonly SUB_COMPOSE_FOLDER = 'sub-composes';
 
   private readonly logger = new Logger(DockerComposeService.name);
+
+  // Track running processes for each compose by ComposeId
+  private readonly subComposeProcess: Map<string, SubComposeProcessInfo> = new Map();
 
   constructor(
     private fileService: FileService,
@@ -81,10 +87,9 @@ export class DockerComposeService {
    */
   private getHostVolumeVariable(composeId: DockerComposeUniqueId): DockerComposeVolumeVariable {
     if (this.configService.isLocal()) {
-      // TODO TO improve as this will not work with multiple volumes
       // In local mode we use named volumes
       return {
-        hostVolume: `${composeId.brickName}_${composeId.uniqueName}`,
+        hostVolume: `${composeId.brickName}-${composeId.uniqueName}-${composeId.env}`,
         isNamed: true,
       };
     }
@@ -132,27 +137,44 @@ export class DockerComposeService {
 
   public async unregisterDockerCompose(composeId: DockerComposeUniqueId): Promise<DockerComposeStatusInfo> {
     const { brickName, uniqueName } = composeId;
+    const composeKey = this.getComposeKey(composeId);
+
     if (
       brickName === DockerComposeService.MAIN_COMPOSE_ID.brickName &&
       uniqueName === DockerComposeService.MAIN_COMPOSE_ID.uniqueName
     ) {
       throw new Error('Cannot unregister the main compose');
     }
+
     const dockerCompose = this.getDockerCompose(composeId);
 
     if (!dockerCompose) {
-      throw new Error(`Docker compose not found for ${brickName}:${uniqueName}:${composeId.env}`);
+      throw new Error(`Docker compose not found for ${composeKey}`);
     }
 
-    // Call compose down to stop and remove containers
-    await dockerCompose.composeDown();
-    // Remove compose files
-    dockerCompose.deleteFiles();
+    try {
+      // Start unregistering process (will throw if a process is already running)
+      this.startSubComposeProcess(composeId, 'UNREGISTER', `Unregistering compose ${composeKey}`);
 
-    // Remove entry from config using SubComposeManager
-    this.subComposeManager.deleteSubCompose(composeId);
+      // Call compose down to stop and remove containers
+      await dockerCompose.composeDown();
 
-    return dockerCompose.getStatus();
+      // Remove compose files
+      dockerCompose.deleteFiles();
+
+      // Remove entry from config using SubComposeManager
+      this.subComposeManager.deleteSubCompose(composeId);
+
+      // Mark as success
+      this.updateSubComposeProcess(composeId, 'SUCCESS', `Compose ${composeKey} unregistered successfully`);
+
+      return dockerCompose.getStatus();
+    } catch (error) {
+      // Mark as error
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.updateSubComposeProcess(composeId, 'ERROR', `Failed to unregister: ${errorMsg}`);
+      throw error;
+    }
   }
 
   /**
@@ -168,15 +190,13 @@ export class DockerComposeService {
   ): Promise<void> {
     const dockerCompose = await this.registerSubCompose(composeYaml, config);
 
+    const composeId = dockerCompose.getComposeId();
+    // Start registering process (will throw if a process is already running)
+    this.startSubComposeProcess(composeId, 'REGISTER', `Starting compose ${this.getComposeKey(composeId)}`);
     if (async) {
-      dockerCompose.composeUp().catch((err) => {
-        // Log the error but don't throw as we are in an async call
-        console.error(
-          `Error starting the compose ${composeYaml.getBrickName()}:${composeYaml.getUniqueName()} : ${err}`
-        );
-      });
+      this.startSubCompose(dockerCompose).catch(() => {});
     } else {
-      await dockerCompose.composeUp();
+      await this.startSubCompose(dockerCompose);
     }
   }
 
@@ -210,16 +230,41 @@ export class DockerComposeService {
     // Create DockerCompose instance and start it
     const dockerCompose = new DockerCompose(composeFileFinalPath, composeYaml);
 
+    this.logger.log(`Starting compose ${composeId.brickName}:${composeId.uniqueName}:${composeId.env}...`);
+
+    // Start registering process (will throw if a process is already running)
+    this.startSubComposeProcess(composeId, 'REGISTER', `Starting compose ${this.getComposeKey(composeId)}`);
     if (async) {
-      dockerCompose.composeUp().catch((err) => {
-        // Log the error but don't throw as we are in an async call
-        console.error(
-          `Error starting the compose ${composeId.brickName}:${composeId.uniqueName}:${composeId.env}` +
-            ` : ${err}`
-        );
-      });
+      this.startSubCompose(dockerCompose).catch(() => {});
     } else {
-      await dockerCompose.composeUp();
+      await this.startSubCompose(dockerCompose);
+    }
+  }
+
+  private async startSubCompose(dockerCompose: DockerCompose): Promise<void> {
+    const composeId = dockerCompose.getComposeId();
+    const composeKey = this.getComposeKey(composeId);
+
+    try {
+      // Pull images
+      this.updateSubComposeProcess(composeId, 'RUNNING', 'Pulling Docker images');
+      await dockerCompose.composePull().catch((err) => {
+        throw new Error(`Error pulling images for the compose ${composeKey} : ${err}`);
+      });
+
+      // Start containers
+      this.updateSubComposeProcess(composeId, 'RUNNING', 'Starting containers');
+      await dockerCompose.composeUp().catch((err) => {
+        throw new Error(`Error starting containers for the compose ${composeKey} : ${err}`);
+      });
+
+      // Mark as success
+      this.updateSubComposeProcess(composeId, 'SUCCESS', `Compose ${composeKey} started successfully`);
+    } catch (error) {
+      // Mark as error
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.updateSubComposeProcess(composeId, 'ERROR', errorMsg);
+      throw error;
     }
   }
 
@@ -274,7 +319,9 @@ export class DockerComposeService {
     const existingCompose = this.getDockerCompose({ brickName, uniqueName, env });
     if (existingCompose && !existingCompose.isEqualToComposeYaml(composeYaml)) {
       if (await existingCompose.oneServiceIsRunning()) {
-        this.logger.log(`Change detected in compose ${brickName}:${uniqueName}:${env}. Unregistring old compose...`);
+        this.logger.log(
+          `Change detected in compose ${brickName}:${uniqueName}:${env}. Unregistring old compose...`
+        );
         await this.unregisterDockerCompose({ brickName, uniqueName, env });
       }
     }
@@ -353,5 +400,104 @@ export class DockerComposeService {
 
   public get subComposeManager(): SubComposeManager {
     return new SubComposeManager(this.getSubComposeFolderPath());
+  }
+
+  /////////////////////////////////////////// Processes ///////////////////////////////////////////
+
+  /**
+   * Get the current process info for a compose
+   */
+  public getSubComposeProcess(composeId: DockerComposeUniqueId): SubComposeProcessInfo | null {
+    return this.subComposeProcess.get(this.getComposeKey(composeId));
+  }
+
+  /**
+   * Start a new process for a compose
+   * If there's already a running process, throws an error
+   * If there's a completed process (SUCCESS or ERROR), it will be replaced
+   */
+  private startSubComposeProcess(
+    composeId: DockerComposeUniqueId,
+    processType: SubComposeProcessType,
+    message: string
+  ): void {
+    const key = this.getComposeKey(composeId);
+    const existingProcess = this.subComposeProcess.get(key);
+
+    // Check if there's a running process
+    if (existingProcess && existingProcess.status === 'RUNNING') {
+      throw new Error(
+        `Cannot start ${processType} for ${key}: already ${existingProcess.processType}` +
+          ` (status: ${existingProcess.status})`
+      );
+    }
+
+    // Create or replace the process
+    this.subComposeProcess.set(key, {
+      processType,
+      status: 'RUNNING',
+      message,
+      startedAt: new Date(),
+    });
+
+    // Log the start
+    this.logger.log(`[Process] ${key} - ${processType} started: ${message}`);
+  }
+
+  /**
+   * Update the process info for a compose
+   */
+  private updateSubComposeProcess(
+    composeId: DockerComposeUniqueId,
+    status: SubComposeProcessStatus,
+    message: string
+  ): void {
+    const key = this.getComposeKey(composeId);
+    const existingProcess = this.subComposeProcess.get(key);
+
+    if (!existingProcess) {
+      this.logger.warn(`Cannot update process for ${key}: no process found`);
+      return;
+    }
+
+    this.subComposeProcess.set(key, {
+      ...existingProcess,
+      status,
+      message,
+      completedAt: status !== 'RUNNING' ? new Date() : undefined,
+    });
+
+    // Log based on status
+    if (status === 'ERROR') {
+      this.logger.error(`[Process] ${key} - ${existingProcess.processType} - ${status}: ${message}`);
+    } else {
+      this.logger.log(`[Process] ${key} - ${existingProcess.processType} - ${status}: ${message}`);
+    }
+  }
+
+  /**
+   * Clear the process status for a compose
+   */
+  public stopSubComposeProcess(composeId: DockerComposeUniqueId): void {
+    const key = this.getComposeKey(composeId);
+
+    const existingProcess = this.subComposeProcess.get(key);
+    if (existingProcess && existingProcess.status === 'RUNNING') {
+      this.updateSubComposeProcess(composeId, 'ERROR', 'Process was forcefully stopped');
+    }
+  }
+
+  /**
+   * Generate a unique string key from a ComposeId
+   */
+  private getComposeKey(composeId: DockerComposeUniqueId): string {
+    return `${composeId.brickName}:${composeId.uniqueName}:${composeId.env}`;
+  }
+
+  /**
+   * Get all running sub-compose processes
+   */
+  public getRunningSubComposeProcesses(): SubComposeProcessInfo[] {
+    return Array.from(this.subComposeProcess.values());
   }
 }
