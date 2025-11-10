@@ -51,7 +51,7 @@ export class CoreConfigService {
   }
 
   public getVirtualHost(): string {
-    return this.configService.get('VIRTUAL_HOST');
+    return this.configService.get('VIRTUAL_HOST', 'localhost');
   }
 
   public getAutoStartLab(): boolean {

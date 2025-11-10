@@ -86,6 +86,17 @@ RUN groupadd -g ${DOCKER_GID} docker_host || true && \
     # enable sudo for labuser without password
     echo "labuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
+# Create volume mount point directories with proper permissions
+RUN mkdir -p /app/conf \
+    /app/gws_db/gws_biota/mariadb \
+    /app/gws_db/gws_core/prod/mariadb \
+    /app/gws_db/gws_core/dev/mariadb \
+    /app/prod/lab \
+    /app/prod/data \
+    /app/dev/lab \
+    /app/dev/data && \
+    chown -R labuser:labuser /app
+
 USER labuser
 
 EXPOSE 3010
