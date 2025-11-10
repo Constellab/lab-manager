@@ -104,6 +104,7 @@ export class LabService implements OnModuleInit {
       isInitialized: this.fileService.privateFileExists(),
       lastInitVersion: lastInitManagerVersion,
       labFrontUrl: this.getLabFrontUrl(),
+      codelabFrontUrl: this.getCodeLabFrontUrl(),
       labStatus: labStatus,
       glabStatus: {
         status: containers.getContainer(MainComposeServiceName.GLAB)?.status ?? 'none',
@@ -124,6 +125,13 @@ export class LabService implements OnModuleInit {
     return `https://lab.${this.coreConfigService.getVirtualHost()}`;
   }
 
+  public getCodeLabFrontUrl(): string {
+    if (this.coreConfigService.isLocal()) {
+      return 'http://localhost:8083';
+    }
+    return `https://codelab.${this.coreConfigService.getVirtualHost()}`;
+  }
+
   public configureAndInitLab(labInitConfig: LabInitConfig): void {
     this.checkInitConfig(labInitConfig);
 
@@ -142,17 +150,19 @@ export class LabService implements OnModuleInit {
     const taskName = 'Stop lab';
     this.taskService.newTask(taskName);
 
-    this.mainComposeService.stopServices().then(() => {
-      this.taskService.markTaskAsSuccess(taskName, 'Lab stopped successfully');
-    }).catch((e) => {
-      this.logger.error('Error while stopping the lab', e);
-      this.taskService.markTaskAsError(taskName, e.toString());
-    });
+    this.mainComposeService
+      .stopServices()
+      .then(() => {
+        this.taskService.markTaskAsSuccess(taskName, 'Lab stopped successfully');
+      })
+      .catch((e) => {
+        this.logger.error('Error while stopping the lab', e);
+        this.taskService.markTaskAsError(taskName, e.toString());
+      });
 
     // wait for 2 seconds before returning response
     // this is to prevent the 'Lab is starting' status to be shown
     await new Promise((resolve) => setTimeout(resolve, 2000));
-
   }
 
   public async configureLabManager(labInitConfig: LabInitConfig): Promise<void> {

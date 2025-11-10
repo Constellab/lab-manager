@@ -50,6 +50,8 @@ services:
       - lab-manager-prod-data:/data
     networks:
       - gencovery-network-prod
+      # also set it in the dev environment to allow codelab to access it with http://glab:3000
+      - gencovery-network-dev
     container_name: glab
     ports:
       - 3100:3000
@@ -115,8 +117,7 @@ services:
     container_name: codelab
     ports:
       - 8083:8080
-      # enable ssh server on this port
-      - 2222:2222
+      - 3101:3000
     #GPU_CONFIG#
 
   # Front
@@ -125,7 +126,7 @@ services:
     environment:
       - API_URL=http://localhost:3100
       - LAB_PROD_API_URL=http://localhost:3100
-      - LAB_DEV_API_URL=http://localhost:3100
+      - LAB_DEV_API_URL=http://localhost:3101
       - CODELAB_URL=http://localhost:8083
       - VIRTUAL_HOST=
       - SPACE_FRONT_URL=${SPACE_FRONT_URL}
