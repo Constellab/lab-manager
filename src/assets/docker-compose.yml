@@ -59,7 +59,7 @@ services:
       - traefik.http.routers.glab-router.entrypoints=websecure
       - traefik.http.routers.glab-router.tls=true
       # Config for app-* subdomains to port 8510
-      - traefik.http.routers.glab-app-router.rule=HostRegexp(`app-{subdomain:[a-zA-Z0-9-]+}.${VIRTUAL_HOST}`)
+      - traefik.http.routers.glab-app-router.rule=HostRegexp(`^app-.+\.${VIRTUAL_HOST}$$`)
       - traefik.http.routers.glab-app-router.service=glab-app-service
       - traefik.http.services.glab-app-service.loadbalancer.server.port=8510
       - traefik.http.routers.glab-app-router.entrypoints=websecure
@@ -135,7 +135,7 @@ services:
     labels:
       - traefik.enable=true
       # Config for the HTTPS codelab domain to port 8080
-      - traefik.http.routers.codelab-router.rule=host(`codelab.${VIRTUAL_HOST}`)
+      - traefik.http.routers.codelab-router.rule=Host(`codelab.${VIRTUAL_HOST}`)
       - traefik.http.routers.codelab-router.service=codelab-service
       - traefik.http.services.codelab-service.loadbalancer.server.port=8080
       # Enable HTTPS
@@ -146,7 +146,7 @@ services:
       - traefik.http.middlewares.basic-auth.basicauth.users=${HT_PASSWD}
 
       # Config for the HTTPS gws run inside the CODELAB domain to port 3000
-      - traefik.http.routers.glab-dev-router.rule=host(`glab-dev.${VIRTUAL_HOST}`)
+      - traefik.http.routers.glab-dev-router.rule=Host(`glab-dev.${VIRTUAL_HOST}`)
       - traefik.http.routers.glab-dev-router.service=glab-dev-service
       - traefik.http.services.glab-dev-service.loadbalancer.server.port=3000
       # Enable HTTPS
@@ -154,7 +154,7 @@ services:
       - traefik.http.routers.glab-dev-router.tls=true
 
       # Config for appdev* subdomains to port 8510
-      - traefik.http.routers.codelab-app-router.rule=HostRegexp(`appdev-{subdomain:[a-zA-Z0-9-]+}.${VIRTUAL_HOST}`)
+      - traefik.http.routers.codelab-app-router.rule=HostRegexp(`^appdev-.+\.${VIRTUAL_HOST}$$`)
       - traefik.http.routers.codelab-app-router.service=codelab-app-service
       - traefik.http.services.codelab-app-service.loadbalancer.server.port=8510
       - traefik.http.routers.codelab-app-router.entrypoints=websecure
@@ -195,9 +195,6 @@ services:
       #Enable HTTPS
       - traefik.http.routers.lab-router.entrypoints=websecure
       - traefik.http.routers.lab-router.tls=true
-
-      # Redirect http to https
-      - traefik.frontend.redirect.entryPoint=https
     networks:
       - gencovery-network-prod
     container_name: front

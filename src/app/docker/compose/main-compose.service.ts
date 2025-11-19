@@ -105,18 +105,18 @@ export class MainComposeService {
   }
 
   private buildHostString(subDomains: string[]): string {
-    // build the standard host string like : host(`glab.${VIRTUAL_HOST}`)
+    // build the standard host string like : Host(`glab.${VIRTUAL_HOST}`)
     const hosts: string[] = [];
 
     for (const subDomain of subDomains) {
-      hosts.push('host(`' + subDomain + '.${VIRTUAL_HOST}`)');
+      hosts.push('Host(`' + subDomain + '.${VIRTUAL_HOST}`)');
 
       const additionalDomains = this.configService.getAddtionalDomains();
       // if there are additional hosts, add them to the host string
       if (additionalDomains && additionalDomains.length > 0) {
         for (const additionalHost of additionalDomains) {
           // add an host for each additional host, keep the same sub domain
-          hosts.push(`host(\`${subDomain}.${additionalHost}\`)`);
+          hosts.push(`Host(\`${subDomain}.${additionalHost}\`)`);
         }
       }
     }
