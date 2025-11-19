@@ -19,4 +19,8 @@
       "source.organizeImports": "always"
     }
   },
+  // Jest extension configuration
+  "jest.autoRun": "off",
+  "jest.showCoverageOnLoad": false,
+  "jest.rootPath": "src"
 }

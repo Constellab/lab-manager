@@ -118,7 +118,7 @@ services:
       - GWS_BIOTA_DB_NAME=gws_biota
       - GWS_BIOTA_DB_PORT=3306
       - APP_EXTERNAL_PORT=8510
-      - APP_SUB_DOMAIN=app-dev
+      - APP_SUB_DOMAIN=appdev
     depends_on:
       - gws_core_dev_db
     volumes:
@@ -153,8 +153,8 @@ services:
       - traefik.http.routers.glab-dev-router.entrypoints=websecure
       - traefik.http.routers.glab-dev-router.tls=true
 
-      # Config for app-dev* subdomains to port 8510
-      - traefik.http.routers.codelab-app-router.rule=HostRegexp(`app-dev-{subdomain:[a-zA-Z0-9-]+}.${VIRTUAL_HOST}`)
+      # Config for appdev* subdomains to port 8510
+      - traefik.http.routers.codelab-app-router.rule=HostRegexp(`appdev-{subdomain:[a-zA-Z0-9-]+}.${VIRTUAL_HOST}`)
       - traefik.http.routers.codelab-app-router.service=codelab-app-service
       - traefik.http.services.codelab-app-service.loadbalancer.server.port=8510
       - traefik.http.routers.codelab-app-router.entrypoints=websecure
