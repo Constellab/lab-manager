@@ -37,7 +37,7 @@ services:
       - GWS_BIOTA_DB_PASSWORD=gencovery
       - GWS_BIOTA_DB_NAME=gws_biota
       - GWS_BIOTA_DB_PORT=3306
-      - APP_EXTERNAL_PORT=8510
+      - APP_EXTERNAL_PORT=8511
       - APP_SUB_DOMAIN=app
     depends_on:
       - gws_core_prod_db
@@ -55,6 +55,8 @@ services:
     container_name: glab
     ports:
       - 3100:3000
+      # Open app port
+      - 8511:8511
     #GPU_CONFIG#
 
   # Codelab
@@ -103,7 +105,7 @@ services:
       - GWS_BIOTA_DB_PASSWORD=gencovery
       - GWS_BIOTA_DB_NAME=gws_biota
       - GWS_BIOTA_DB_PORT=3306
-      - APP_EXTERNAL_PORT=8510
+      - APP_EXTERNAL_PORT=8512
       - APP_SUB_DOMAIN=app-dev
     volumes:
       - lab-manager-config:/conf
@@ -118,6 +120,8 @@ services:
     ports:
       - 8083:8080
       - 3101:3000
+      # Open app port
+      - 8512:8512
     #GPU_CONFIG#
 
   # Front

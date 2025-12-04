@@ -20,7 +20,7 @@ Here are the steps to setup the docker container:
 - clone this repository in `/home` folder of the container
 - install the dependencies `npm install`
 
-To test the dockerfile run : `docker build -t lab_manager_test .`
+To test the dockerfile run : `docker build -t lab-manager-test .`
 
 ## Run in local
 
