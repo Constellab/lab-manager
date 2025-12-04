@@ -72,7 +72,7 @@ services:
       - LAB_MODE=dev
       - LAB_ENVIRONMENT=${LAB_ENVIRONMENT}
       - LAB_PROD_API_URL=http://glab:3000
-      - LAB_DEV_API_URL=http://localhost:3100
+      - LAB_DEV_API_URL=http://localhost:3101
       - LAB_MANAGER_API_URL=http://lab_manager:3080
       - SPACE_API_KEY=${SPACE_DEV_API_KEY}
       - SPACE_API_URL=${SPACE_API_URL}
