@@ -14,6 +14,7 @@ import { getPrivateFileTemplate, PrivateFile, PrivateFileData } from '../../mode
 
 import { dirname, join } from 'path';
 import { StartLog } from 'src/app/docker/docker.class';
+import { Command, ExecCommandMode } from '../../utils/command';
 import { CoreConfigService } from '../config/core-config.service';
 
 @Injectable()
@@ -224,5 +225,55 @@ export class FileService {
     });
 
     return (await Promise.all(paths)).flat(Infinity).reduce((i, size) => i + size, 0);
+  }
+
+  //////////////////////// OWNERSHIP MANIFEST //////////////////////
+
+  /**
+   * Generate an ownership manifest file for a directory.
+   * The manifest contains file paths with their UID, GID, and permissions.
+   *
+   * @param dirPath - Directory to scan for ownership information
+   * @param manifestPath - Path where to save the manifest file
+   * @returns Promise that resolves when manifest is created
+   */
+  public async generateOwnershipManifest(dirPath: string, manifestPath: string): Promise<void> {
+    // Use sudo find to get ownership info for all files
+    // Format: path|uid|gid|mode
+    const command = `sudo find "${dirPath}" -printf '%p|%U|%G|%m\\n' > "${manifestPath}"`;
+
+    await new Command().execCommand(command, ExecCommandMode.STDERR_AS_WARNING);
+
+    this.logger.log(`Ownership manifest generated at ${manifestPath}`);
+  }
+
+  /**
+   * Apply ownership from a manifest file to restore file ownership.
+   * This is used during backup restoration to preserve original file ownership.
+   *
+   * @param manifestPath - Path to the ownership manifest file
+   * @returns Promise that resolves when ownership is applied
+   */
+  public async applyOwnershipFromManifest(manifestPath: string): Promise<void> {
+    if (!this.exists(manifestPath)) {
+      throw new Error(`Ownership manifest not found at ${manifestPath}`);
+    }
+
+    this.logger.log(`Applying ownership from manifest: ${manifestPath}`);
+
+    // Read and apply ownership line by line
+    // Format expected: path|uid|gid|mode
+    const script = `
+while IFS='|' read -r path user group mode; do
+  if [ -e "$path" ]; then
+    sudo chown "$user:$group" "$path" 2>/dev/null || true
+    sudo chmod "$mode" "$path" 2>/dev/null || true
+  fi
+done < "${manifestPath}"
+`;
+
+    await new Command().execCommand(script, ExecCommandMode.STDERR_AS_WARNING);
+
+    this.logger.log('Ownership applied successfully from manifest');
   }
 }

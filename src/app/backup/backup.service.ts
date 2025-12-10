@@ -9,7 +9,7 @@ import { FileService } from '../core/services/file/file.service';
 import { RCloneResult } from '../core/services/rclone/rclone.class';
 import { RcloneService } from '../core/services/rclone/rclone.service';
 import { TaskService } from '../core/services/task/task.service';
-import { SpawnResult } from '../core/utils/command';
+import { Command, SpawnResult } from '../core/utils/command';
 import { DockerComposeService } from '../docker/compose/docker-compose.service';
 import { LabBackupHistory } from './backup-history.class';
 import {
@@ -29,6 +29,8 @@ export class BackupService implements OnModuleInit {
   // destination folder for the backup is s3
   private readonly dataS3FolderDestination = 'data';
   private readonly dbS3FolderDestination = 'db';
+  private readonly ownershipManifestS3Destination = 'ownership-manifest.txt';
+  private readonly ownershipManifestFilename = 'ownership-manifest.txt';
 
   private static readonly MAX_BACKUP_HISTORY = 30;
   // min idle time required (no activity on lab) before doing a backup
@@ -259,11 +261,10 @@ export class BackupService implements OnModuleInit {
    * Sync the DB with the bucket. It creates a dump of the DB and sync the file with the bucket
    */
   private async syncDb(backup: LabBackupStorage): Promise<void> {
-    // Use a temporary directory for the dump
-    const tempDumpFolder = this.getTempDbDumpFolder();
-    const dumpFilePath = join(tempDumpFolder, BackupService.MARIA_DB_DUMP_NAME);
+    // Use a temporary file for the dump
+    const dumpFilePath = this.getTempDbDumpPath();
 
-    // dump the db to the temporary folder
+    // dump the db to the temporary file
     const mainCompose = this.dockerComposeService.createMainComposeObject();
     const result = await mainCompose.dumpProdDb(dumpFilePath);
     if (result !== '') {
@@ -279,15 +280,38 @@ export class BackupService implements OnModuleInit {
     const dumpSize = this.fileService.getFileSize(dumpFilePath);
     backup.setDbTotalSize(dumpSize);
 
-    // sync the dump folder with the bucket
-    this.callSyncToS3(backup, tempDumpFolder, this.dbS3FolderDestination, 'DB');
+    // sync the dump file with the bucket
+    this.callSyncToS3(backup, dumpFilePath, this.dbS3FolderDestination, 'DB');
   }
 
   /**
-   * Get the temporary folder path for DB dumps in the lab-manager container
+   * Get the temporary file path for DB dump in the lab-manager container
    */
-  private getTempDbDumpFolder(): string {
-    return '/tmp/db-dumps';
+  private getTempDbDumpPath(): string {
+    return join('/tmp', BackupService.MARIA_DB_DUMP_NAME);
+  }
+
+  /**
+   * Get the path for the ownership manifest file
+   */
+  private getOwnershipManifestPath(): string {
+    return join('/tmp', this.ownershipManifestFilename);
+  }
+
+  /**
+   * Upload the ownership manifest to S3
+   */
+  private async uploadOwnershipManifest(backup: LabBackupStorage, manifestPath: string): Promise<void> {
+    const response = this.rcloneService.syncFolderToS3(
+      backup.getBucketConfig(),
+      manifestPath,
+      backup.s3Prefix + '/' + this.ownershipManifestS3Destination
+    );
+
+    // Wait for the upload to complete
+    await lastValueFrom(response.observable);
+
+    this.logger.log(`Ownership manifest uploaded to S3`);
   }
 
   private async syncData(backup: LabBackupStorage): Promise<void> {
@@ -295,26 +319,43 @@ export class BackupService implements OnModuleInit {
     const dataFolder = this.configService.getProdDataFolder();
 
     try {
-      // get folder size
-      const dataSize = await this.fileService.getFolderSize(dataFolder);
+      // get folder size (using sudo to access all files)
+      const sizeCommand = `sudo du -sb "${dataFolder}" | cut -f1`;
+      const sizeResult = await new Command().execCommand(sizeCommand);
+      const dataSize = parseInt(sizeResult.trim(), 10);
       backup.setDataTotalSize(dataSize);
     } catch (e) {
       this.logError(`Error while getting the data folder size. Error : ${e.message}`, e);
     }
 
-    this.callSyncToS3(backup, dataFolder, this.dataS3FolderDestination, 'DATA');
+    // Generate ownership manifest before syncing data
+    try {
+      const manifestPath = this.getOwnershipManifestPath();
+      await this.fileService.generateOwnershipManifest(dataFolder, manifestPath);
+
+      // Upload the manifest to S3
+      await this.uploadOwnershipManifest(backup, manifestPath);
+    } catch (e) {
+      this.logError(`Error while generating ownership manifest. Error : ${e.message}`, e);
+      // Continue with backup even if manifest generation fails
+    }
+
+    // Sync the data folder with sudo to access all files
+    this.callSyncToS3(backup, dataFolder, this.dataS3FolderDestination, 'DATA', true);
   }
 
   private callSyncToS3(
     backup: LabBackupStorage,
     pathToSync: string,
     destinationFolder: string,
-    backupType: BackupType
+    backupType: BackupType,
+    useSudo: boolean = false
   ): void {
     const response = this.rcloneService.syncFolderToS3(
       backup.getBucketConfig(),
       pathToSync,
-      backup.s3Prefix + '/' + destinationFolder
+      backup.s3Prefix + '/' + destinationFolder,
+      useSudo
     );
     // store process
     backup.setProcess(backupType, response.childProcess);
@@ -365,9 +406,9 @@ export class BackupService implements OnModuleInit {
       );
     }
 
-    // if there is no running backup, clean up the temporary dump folder
+    // if there is no running backup, clean up the temporary dump file
     if (!this.hasRunningBackup()) {
-      this.fileService.deleteFolderIfExist(this.getTempDbDumpFolder());
+      this.fileService.deleteFileIfExist(this.getTempDbDumpPath());
     }
   }
 
@@ -522,34 +563,82 @@ export class BackupService implements OnModuleInit {
   }
 
   private restoreData(restoreDTO: BackupRestoreDTO): Observable<RCloneResult> {
-    this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Starting restore of the DB');
+    this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Starting restore of data');
     const dataFolder = this.configService.getProdDataFolder();
 
-    // sync the data folder with the bucket
-    return this.callSyncFromS3(restoreDTO, this.dataS3FolderDestination, dataFolder).pipe(
+    // sync the data folder with the bucket (use sudo to ensure all files can be written)
+    return this.callSyncFromS3(restoreDTO, this.dataS3FolderDestination, dataFolder, true).pipe(
       tap({
-        complete: () => this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Data Restored'),
+        complete: async () => {
+          this.taskService.updateTaskInfo(
+            BackupService.RESTORE_BACKUP_TASK,
+            'Data downloaded, applying ownership'
+          );
+
+          // Download and apply ownership manifest
+          try {
+            await this.downloadAndApplyOwnershipManifest(restoreDTO);
+            this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Data Restored');
+          } catch (e) {
+            this.logger.warn(
+              `Warning: Could not apply ownership from manifest. Error: ${e.message}. ` +
+                `Files may have incorrect ownership.`
+            );
+            this.taskService.updateTaskInfo(
+              BackupService.RESTORE_BACKUP_TASK,
+              'Data Restored (ownership may be incorrect)'
+            );
+          }
+        },
       })
     );
+  }
+
+  /**
+   * Download the ownership manifest from S3 and apply it to restore file ownership
+   */
+  private async downloadAndApplyOwnershipManifest(restoreDTO: BackupRestoreDTO): Promise<void> {
+    const manifestPath = this.getOwnershipManifestPath();
+
+    this.logger.log('Downloading ownership manifest from S3');
+
+    // Download the manifest file from S3
+    const response = this.rcloneService.syncFolderFromS3(
+      restoreDTO.bucketConfig,
+      restoreDTO.s3Prefix + '/' + this.ownershipManifestS3Destination,
+      manifestPath
+    );
+
+    // Wait for download to complete
+    await lastValueFrom(response.observable);
+
+    this.logger.log('Applying ownership from manifest');
+
+    // Apply ownership from the manifest
+    await this.fileService.applyOwnershipFromManifest(manifestPath);
+
+    // Clean up the manifest file
+    this.fileService.deleteFileIfExist(manifestPath);
+
+    this.logger.log('Ownership applied successfully');
   }
 
   private async restoreDb(restoreDTO: BackupRestoreDTO): Promise<void> {
     this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Starting restore of the DB');
 
-    // Use a temporary directory for the dump
-    const tempDumpFolder = this.getTempDbDumpFolder();
-    const dumpFilePath = join(tempDumpFolder, BackupService.MARIA_DB_DUMP_NAME);
+    // Use a temporary file for the dump
+    const dumpFilePath = this.getTempDbDumpPath();
 
-    // Clean up any existing temp dump files
-    this.fileService.deleteFolderIfExist(tempDumpFolder);
+    // Clean up any existing temp dump file
+    this.fileService.deleteFileIfExist(dumpFilePath);
 
     this.taskService.updateTaskInfo(
       BackupService.RESTORE_BACKUP_TASK,
-      `Downloading DB dump from S3 into ${tempDumpFolder}`
+      `Downloading DB dump from S3 to ${dumpFilePath}`
     );
 
-    // sync db file from S3 to temporary folder
-    const obs = this.callSyncFromS3(restoreDTO, this.dbS3FolderDestination, tempDumpFolder);
+    // sync db file from S3 to temporary file
+    const obs = this.callSyncFromS3(restoreDTO, this.dbS3FolderDestination, dumpFilePath);
     // wait for the download to complete
     await lastValueFrom(obs);
 
@@ -564,7 +653,7 @@ export class BackupService implements OnModuleInit {
     }
 
     // Clean up the temporary dump file
-    this.fileService.deleteFolderIfExist(tempDumpFolder);
+    this.fileService.deleteFileIfExist(dumpFilePath);
 
     this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'DB Restored');
   }
@@ -572,12 +661,14 @@ export class BackupService implements OnModuleInit {
   private callSyncFromS3(
     restoreDTO: BackupRestoreDTO,
     s3SourceFolder: string,
-    localDestinationPath: string
+    localDestinationPath: string,
+    useSudo: boolean = false
   ): Observable<RCloneResult> {
     const response = this.rcloneService.syncFolderFromS3(
       restoreDTO.bucketConfig,
       restoreDTO.s3Prefix + '/' + s3SourceFolder,
-      localDestinationPath
+      localDestinationPath,
+      useSudo
     );
 
     // listen to progress

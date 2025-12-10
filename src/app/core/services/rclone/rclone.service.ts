@@ -11,7 +11,8 @@ export class RcloneService {
   public syncFolderToS3(
     config: BucketConfig,
     localSourcePath: string,
-    s3DestinationPath: string
+    s3DestinationPath: string,
+    useSudo: boolean = false
   ): RCloneRespsonse {
     if (!s3DestinationPath.startsWith('/')) s3DestinationPath = '/' + s3DestinationPath;
 
@@ -19,13 +20,19 @@ export class RcloneService {
     const bucketName = this.getBucketName(config);
     const bucketType = this.getBucketType(config);
 
-    return this.runSyncRCloneCommand(options, localSourcePath, bucketType + bucketName + s3DestinationPath);
+    return this.runSyncRCloneCommand(
+      options,
+      localSourcePath,
+      bucketType + bucketName + s3DestinationPath,
+      useSudo
+    );
   }
 
   public syncFolderFromS3(
     config: BucketConfig,
     s3SourcePath: string,
-    localDestinationPath: string
+    localDestinationPath: string,
+    useSudo: boolean = false
   ): RCloneRespsonse {
     if (!s3SourcePath.startsWith('/')) s3SourcePath = '/' + s3SourcePath;
 
@@ -33,7 +40,12 @@ export class RcloneService {
     const bucketName = this.getBucketName(config);
     const bucketType = this.getBucketType(config);
 
-    return this.runSyncRCloneCommand(options, bucketType + bucketName + s3SourcePath, localDestinationPath);
+    return this.runSyncRCloneCommand(
+      options,
+      bucketType + bucketName + s3SourcePath,
+      localDestinationPath,
+      useSudo
+    );
   }
 
   private getOptions(config: BucketConfig): string[] {
@@ -69,8 +81,13 @@ export class RcloneService {
     }
   }
 
-  private runSyncRCloneCommand(options: string[], source: string, destination: string): RCloneRespsonse {
-    const spanwResult = new Command().spawn('rclone', [
+  private runSyncRCloneCommand(
+    options: string[],
+    source: string,
+    destination: string,
+    useSudo: boolean = false
+  ): RCloneRespsonse {
+    const rcloneArgs = [
       '-P',
       '--stats',
       '5s', // update log every 5 seconds
@@ -86,7 +103,11 @@ export class RcloneService {
       'sync',
       source,
       destination,
-    ]);
+    ];
+
+    const spanwResult = useSudo
+      ? new Command().spawn('sudo', ['rclone', ...rcloneArgs])
+      : new Command().spawn('rclone', rcloneArgs);
 
     return {
       childProcess: spanwResult.childProcess,
