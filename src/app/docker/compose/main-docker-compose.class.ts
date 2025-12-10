@@ -151,8 +151,8 @@ export class MainDockerCompose extends DockerCompose {
       // Use execCommandInService with -i flag and stdin redirection via shellSuffix
       await this.execCommandInService(
         MainComposeServiceName.GWS_CORE_PROD_DB,
-        `sh -c "mysql --user='root' --password=\$MYSQL_ROOT_PASSWORD ` +
-          `--max_allowed_packet=256M \$MYSQL_DATABASE"`,
+        `sh -c "mysql --user='root' --password=\\$MYSQL_ROOT_PASSWORD ` +
+          `--max_allowed_packet=256M \\$MYSQL_DATABASE"`,
         {
           user: MainDockerCompose.MARIA_DB_USERNAME,
           interactive: true,
