@@ -11,6 +11,7 @@ export interface DockerFormatKey {
 
 export interface DockerExecOptions {
   user?: string;
+  interactive?: boolean; // -i flag for stdin support
 }
 
 export class DockerFormatKeys {
@@ -281,17 +282,36 @@ export class DockerCommand {
     }
   }
 
+  /**
+   * Execute a command in a Docker container via docker exec.
+   *
+   * @param containerName - The container name
+   * @param command - The command to execute inside the container
+   * @param options - Docker exec options (user, interactive flags)
+   * @param mode - How to handle stderr output
+   * @param shellSuffix - Optional shell operators to append after the docker exec command
+   *                      (e.g., "< /tmp/dump.sql" for stdin redirection)
+   * @returns The command output
+   */
   public async dockerExec(
     containerName: string,
     command: string,
     options?: DockerExecOptions,
-    mode?: ExecCommandMode
+    mode?: ExecCommandMode,
+    shellSuffix?: string
   ): Promise<string> {
     let optionsStr = '';
-    if (options?.user) {
-      optionsStr += ` -u ${options.user} `;
+    if (options?.interactive) {
+      optionsStr += ' -i';
     }
-    return this.getCommand().execCommand(`docker exec ${optionsStr}${containerName} ${command}`, mode);
+    if (options?.user) {
+      optionsStr += ` -u ${options.user}`;
+    }
+
+    const dockerExecCommand = `docker exec${optionsStr} ${containerName} ${command}`;
+    const fullCommand = shellSuffix ? `${dockerExecCommand} ${shellSuffix}` : dockerExecCommand;
+
+    return this.getCommand().execCommand(fullCommand, mode);
   }
 
   private getCommand(): Command {

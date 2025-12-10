@@ -150,10 +150,21 @@ export class DockerCompose {
    * @param command
    * @returns
    */
+  /**
+   * Execute a command in a service container with automatic lifecycle management.
+   *
+   * @param serviceName - The docker-compose service name
+   * @param command - The command to execute inside the container
+   * @param options - Docker exec options (user, interactive flags)
+   * @param shellSuffix - Optional shell operators to append after the docker exec command
+   *                      (e.g., "< /tmp/dump.sql" for stdin redirection)
+   * @returns The command output
+   */
   public async execCommandInService(
     serviceName: string,
     command: string,
-    options?: DockerExecOptions
+    options?: DockerExecOptions,
+    shellSuffix?: string
   ): Promise<string> {
     this.checkServiceExists(serviceName);
     const wasStarted = await this.startService(serviceName);
@@ -162,7 +173,7 @@ export class DockerCompose {
     let result: string;
     try {
       const dockerCommand = new DockerCommand();
-      result = await dockerCommand.dockerExec(containerName, command, options);
+      result = await dockerCommand.dockerExec(containerName, command, options, undefined, shellSuffix);
     } finally {
       if (wasStarted) {
         await this.downService(serviceName);

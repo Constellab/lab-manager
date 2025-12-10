@@ -1,4 +1,5 @@
-import { join } from 'path';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { dirname } from 'path';
 import { DockerCompose } from './docker-compose.class';
 
 export enum MainComposeServiceName {
@@ -11,12 +12,31 @@ export enum MainComposeServiceName {
   GWS_BIOTA_DB = 'gws_biota_db',
 }
 
+/**
+ * Main Docker Compose manager for lab services.
+ *
+ * This class manages the main docker-compose.yml file that contains core lab services
+ * including the MariaDB production database.
+ *
+ * ## Docker-in-Docker Architecture
+ *
+ * This code runs inside the lab-manager container as a non-root user (labuser) and
+ * uses Docker-in-Docker to manage other containers including the MariaDB container.
+ * The lab-manager has access to the Docker socket to run docker commands.
+ *
+ * ## Database Backup/Restore Strategy
+ *
+ * - **Dump**: Executes mysqldump inside the MariaDB container and captures output to
+ *   a file in the lab-manager container's temporary directory (/tmp/db-dumps)
+ * - **Restore**: Pipes the dump file from the lab-manager container into mysql running
+ *   inside the MariaDB container using stdin redirection
+ *
+ * This approach avoids permission issues that would occur if we tried to write directly
+ * to the MariaDB container's /var/lib/mysql directory (owned by root).
+ */
 export class MainDockerCompose extends DockerCompose {
   public static readonly GLAB_INTERNAL_PORT = 3000;
 
-  public static readonly MARIA_DB_FOLDER = '/var/lib/mysql';
-  public static readonly MARIA_DB_DUMP_FOLDER_NAME = '.dumps';
-  public static readonly MARIA_DB_DUMP_NAME = 'dump.sql';
   public static readonly MARIA_DB_USERNAME = 'mysql';
 
   /////////////////////////////// BIOTA ///////////////////////////////
@@ -30,43 +50,117 @@ export class MainDockerCompose extends DockerCompose {
   }
 
   //////////////////////// PROD DB MANAGEMENT ////////////////////////
-  public async dumpProdDb(): Promise<string> {
-    // create dump folder if not exists
-    // use the db container to create the folder with the right permissions
-    await this.execProdDbCommand(`sh -c "mkdir -p ${this.getDumpFolderPath()}"`);
+  /**
+   * Dump the production database to a file in the lab-manager container.
+   *
+   * ## How it works:
+   * 1. Executes `mysqldump` inside the MariaDB container via `docker exec`
+   * 2. Captures the SQL dump output to stdout
+   * 3. Writes the output to a file in the lab-manager container's filesystem
+   *
+   * ## Why use docker exec:
+   * - Runs mysqldump as the 'mysql' user inside the MariaDB container
+   * - Avoids permission issues (no need to write to MariaDB's /var/lib/mysql)
+   * - The dump file is stored in lab-manager's filesystem (e.g., /tmp/db-dumps)
+   *   where the labuser has write permissions
+   *
+   * ## Command executed:
+   * ```
+   * docker exec -u mysql gws_core_prod_db sh -c "mysqldump --user='root' \
+   *   --password=$MYSQL_ROOT_PASSWORD --max_allowed_packet=256M $MYSQL_DATABASE"
+   * ```
+   *
+   * @param dumpFilePath - Path where to save the dump file in the lab-manager container
+   *                       (e.g., /tmp/db-dumps/dump.sql)
+   * @returns Error message if any, empty string on success
+   */
+  public async dumpProdDb(dumpFilePath: string): Promise<string> {
+    try {
+      // Execute mysqldump and capture output
+      const dumpContent = await this.execCommandInService(
+        MainComposeServiceName.GWS_CORE_PROD_DB,
+        `sh -c "mysqldump --user='root' --password=\\$MYSQL_ROOT_PASSWORD ` +
+          `--max_allowed_packet=256M \\$MYSQL_DATABASE"`,
+        { user: MainDockerCompose.MARIA_DB_USERNAME }
+      );
 
-    // delete previous dump if exists
-    await this.execProdDbCommand(`sh -c "rm -f ${this.getDumpFilePath()}"`);
+      // Write the dump content to the file
+      // Ensure directory exists
+      const dir = dirname(dumpFilePath);
+      if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+      }
 
-    return await this.execProdDbCommand(
-      `sh -c "mysqldump --user='root' --password=\\$MYSQL_ROOT_PASSWORD` +
-        ` --max_allowed_packet=256M \\$MYSQL_DATABASE > ${this.getDumpFilePath()}"`
-    );
+      writeFileSync(dumpFilePath, dumpContent);
+      return '';
+    } catch (error) {
+      return error.message || error.toString();
+    }
   }
 
-  public async restoreProdDb(): Promise<string> {
-    return await this.execProdDbCommand(
-      `sh -c "mysql --user='root' --password=\\$MYSQL_ROOT_PASSWORD` +
-        ` --max_allowed_packet=256M \\$MYSQL_DATABASE < ${this.getDumpFilePath()}"`
-    );
-  }
-
-  public async deleteDumpFolder(): Promise<string> {
-    return await this.execProdDbCommand(`sh -c "rm -rf ${this.getDumpFolderPath()}"`);
-  }
-
-  private execProdDbCommand(command: string): Promise<string> {
-    return this.execCommandInService(MainComposeServiceName.GWS_CORE_PROD_DB, command, {
-      user: MainDockerCompose.MARIA_DB_USERNAME,
-    });
-  }
-
-  private getDumpFolderPath(): string {
-    return join(MainDockerCompose.MARIA_DB_FOLDER, MainDockerCompose.MARIA_DB_DUMP_FOLDER_NAME);
-  }
-
-  private getDumpFilePath(): string {
-    return join(this.getDumpFolderPath(), MainDockerCompose.MARIA_DB_DUMP_NAME);
+  /**
+   * Restore the production database from a dump file in the lab-manager container.
+   *
+   * ## How it works:
+   * 1. Ensures the MariaDB container is running (starts it if needed)
+   * 2. Reads the dump file from the lab-manager container's filesystem
+   * 3. Pipes the file content via stdin to mysql running inside the MariaDB container
+   * 4. Stops the container if we started it (maintains previous state)
+   *
+   * ## Using execCommandInService with shellSuffix:
+   * - Uses the `-i` flag for interactive mode (accepts stdin)
+   * - The stdin redirection (`< dumpFilePath`) is passed as `shellSuffix`
+   * - The redirection happens at the **outer shell level** (lab-manager container's shell)
+   * - This pipes the file content as stdin to the mysql process inside the MariaDB container
+   *
+   * ## Command executed:
+   * ```
+   * docker exec -i -u mysql gws_core_prod_db sh -c "mysql --user='root' \
+   *   --password=$MYSQL_ROOT_PASSWORD --max_allowed_packet=256M $MYSQL_DATABASE" \
+   *   < /tmp/db-dumps/dump.sql
+   * ```
+   *
+   * ## Architecture:
+   * ```
+   * ┌─────────────────────────────────────────┐
+   * │  Lab-Manager Container (as labuser)     │
+   * │                                         │
+   * │  /tmp/db-dumps/dump.sql  ← File here    │
+   * │                                         │
+   * │  Shell redirection reads from here ─────┼─┐
+   * └─────────────────────────────────────────┘ │
+   *                                             │
+   *   stdin piped to ───────────────────────────┘
+   *                                             │
+   * ┌────────────────────────────────────────┐  │
+   * │  MariaDB Container (gws_core_prod_db)  │  │
+   * │                                        │  │
+   * │  mysql process receives data via stdin ◄──┘
+   * │                                         │
+   * └─────────────────────────────────────────┘
+   * ```
+   *
+   * @param dumpFilePath - Path to the dump file in the lab-manager container
+   *                       (e.g., /tmp/db-dumps/dump.sql)
+   * @returns Error message if any, empty string on success
+   */
+  public async restoreProdDb(dumpFilePath: string): Promise<string> {
+    try {
+      // Use execCommandInService with -i flag and stdin redirection via shellSuffix
+      await this.execCommandInService(
+        MainComposeServiceName.GWS_CORE_PROD_DB,
+        `sh -c "mysql --user='root' --password=\\$MYSQL_ROOT_PASSWORD ` +
+          `--max_allowed_packet=256M \\$MYSQL_DATABASE"`,
+        {
+          user: MainDockerCompose.MARIA_DB_USERNAME,
+          interactive: true,
+        },
+        `< ${dumpFilePath}` // Shell redirection happens at outer shell level
+      );
+      return '';
+    } catch (error) {
+      return error.message || error.toString();
+    }
   }
 
   public async prodDbIsRunning(): Promise<boolean> {

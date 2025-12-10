@@ -11,7 +11,6 @@ import { RcloneService } from '../core/services/rclone/rclone.service';
 import { TaskService } from '../core/services/task/task.service';
 import { SpawnResult } from '../core/utils/command';
 import { DockerComposeService } from '../docker/compose/docker-compose.service';
-import { MainDockerCompose } from '../docker/compose/main-docker-compose.class';
 import { LabBackupHistory } from './backup-history.class';
 import {
   BackupBucketDTO,
@@ -39,6 +38,8 @@ export class BackupService implements OnModuleInit {
   private static readonly SUPPORTED_BACKUP_INFO_VERSION = 1;
 
   private static readonly RESTORE_BACKUP_TASK = 'Restore backup';
+
+  private static readonly MARIA_DB_DUMP_NAME = 'dump.sql';
 
   private readonly logger = new Logger(BackupService.name);
 
@@ -258,12 +259,13 @@ export class BackupService implements OnModuleInit {
    * Sync the DB with the bucket. It creates a dump of the DB and sync the file with the bucket
    */
   private async syncDb(backup: LabBackupStorage): Promise<void> {
-    // retrieve the path of the dump in the current container volume
-    const dumpPathInCurrentContainer = this.getDbDumpPathInCurrentContainer();
+    // Use a temporary directory for the dump
+    const tempDumpFolder = this.getTempDbDumpFolder();
+    const dumpFilePath = join(tempDumpFolder, BackupService.MARIA_DB_DUMP_NAME);
 
-    // dump the db
+    // dump the db to the temporary folder
     const mainCompose = this.dockerComposeService.createMainComposeObject();
-    const result = await mainCompose.dumpProdDb();
+    const result = await mainCompose.dumpProdDb(dumpFilePath);
     if (result !== '') {
       this.updateCurrentStatusStorageErrorMessage(
         `Error while dumping the DB. Error : ${result}`,
@@ -274,25 +276,18 @@ export class BackupService implements OnModuleInit {
     }
 
     // get the dump size
-    const dumpSize = this.fileService.getFileSize(dumpPathInCurrentContainer);
+    const dumpSize = this.fileService.getFileSize(dumpFilePath);
     backup.setDbTotalSize(dumpSize);
 
     // sync the dump folder with the bucket
-    this.callSyncToS3(backup, this.getDbDumpFolderInCurrentContainer(), this.dbS3FolderDestination, 'DB');
-  }
-
-  private getDbDumpFolderInCurrentContainer(): string {
-    return join(
-      this.configService.getGwsCoreDbProdMariaDbFolder(),
-      MainDockerCompose.MARIA_DB_DUMP_FOLDER_NAME
-    );
+    this.callSyncToS3(backup, tempDumpFolder, this.dbS3FolderDestination, 'DB');
   }
 
   /**
-   * @returns Get the path of the DB dump inside the current container
+   * Get the temporary folder path for DB dumps in the lab-manager container
    */
-  private getDbDumpPathInCurrentContainer(): string {
-    return join(this.getDbDumpFolderInCurrentContainer(), MainDockerCompose.MARIA_DB_DUMP_NAME);
+  private getTempDbDumpFolder(): string {
+    return '/tmp/db-dumps';
   }
 
   private async syncData(backup: LabBackupStorage): Promise<void> {
@@ -370,10 +365,9 @@ export class BackupService implements OnModuleInit {
       );
     }
 
-    // if there is no running backup, delete the DB dump
+    // if there is no running backup, clean up the temporary dump folder
     if (!this.hasRunningBackup()) {
-      const mainCompose = this.dockerComposeService.createMainComposeObject();
-      mainCompose.deleteDumpFolder();
+      this.fileService.deleteFolderIfExist(this.getTempDbDumpFolder());
     }
   }
 
@@ -541,26 +535,36 @@ export class BackupService implements OnModuleInit {
 
   private async restoreDb(restoreDTO: BackupRestoreDTO): Promise<void> {
     this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Starting restore of the DB');
-    // retrieve the path of the dump in the current container volume
-    const dumpFolderInCurrentContainer = this.getDbDumpFolderInCurrentContainer();
 
-    // delete the DB dump if it exists
-    const mainCompose = this.dockerComposeService.createMainComposeObject();
-    await mainCompose.deleteDumpFolder();
+    // Use a temporary directory for the dump
+    const tempDumpFolder = this.getTempDbDumpFolder();
+    const dumpFilePath = join(tempDumpFolder, BackupService.MARIA_DB_DUMP_NAME);
+
+    // Clean up any existing temp dump files
+    this.fileService.deleteFolderIfExist(tempDumpFolder);
 
     this.taskService.updateTaskInfo(
       BackupService.RESTORE_BACKUP_TASK,
-      `Downloading DB dump from S3 into ${dumpFolderInCurrentContainer}`
+      `Downloading DB dump from S3 into ${tempDumpFolder}`
     );
-    // sync db file into the container
-    const obs = this.callSyncFromS3(restoreDTO, this.dbS3FolderDestination, dumpFolderInCurrentContainer);
+
+    // sync db file from S3 to temporary folder
+    const obs = this.callSyncFromS3(restoreDTO, this.dbS3FolderDestination, tempDumpFolder);
     // wait for the download to complete
     await lastValueFrom(obs);
 
     this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Applying the DB dump');
 
-    // restore the DB
-    await mainCompose.restoreProdDb();
+    // restore the DB from the temporary file
+    const mainCompose = this.dockerComposeService.createMainComposeObject();
+    const result = await mainCompose.restoreProdDb(dumpFilePath);
+
+    if (result !== '') {
+      throw new Error(`Error while restoring the DB: ${result}`);
+    }
+
+    // Clean up the temporary dump file
+    this.fileService.deleteFolderIfExist(tempDumpFolder);
 
     this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'DB Restored');
   }
