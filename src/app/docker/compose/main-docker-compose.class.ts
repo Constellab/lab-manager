@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 import { dirname } from 'path';
 import { DockerCompose } from './docker-compose.class';
 
@@ -55,19 +55,21 @@ export class MainDockerCompose extends DockerCompose {
    *
    * ## How it works:
    * 1. Executes `mysqldump` inside the MariaDB container via `docker exec`
-   * 2. Captures the SQL dump output to stdout
-   * 3. Writes the output to a file in the lab-manager container's filesystem
+   * 2. Streams the SQL dump output directly to a file (avoids memory buffer limits)
+   * 3. The dump file is stored in the lab-manager container's filesystem
    *
-   * ## Why use docker exec:
+   * ## Why use docker exec with output redirection:
    * - Runs mysqldump as the 'mysql' user inside the MariaDB container
    * - Avoids permission issues (no need to write to MariaDB's /var/lib/mysql)
+   * - Streams directly to file to avoid Node.js maxBuffer limits for large databases
    * - The dump file is stored in lab-manager's filesystem (e.g., /tmp/db-dumps)
    *   where the labuser has write permissions
    *
    * ## Command executed:
    * ```
    * docker exec -u mysql gws_core_prod_db sh -c "mysqldump --user='root' \
-   *   --password=$MYSQL_ROOT_PASSWORD --max_allowed_packet=256M $MYSQL_DATABASE"
+   *   --password=$MYSQL_ROOT_PASSWORD --max_allowed_packet=256M $MYSQL_DATABASE" \
+   *   > /tmp/db-dumps/dump.sql
    * ```
    *
    * @param dumpFilePath - Path where to save the dump file in the lab-manager container
@@ -76,22 +78,22 @@ export class MainDockerCompose extends DockerCompose {
    */
   public async dumpProdDb(dumpFilePath: string): Promise<string> {
     try {
-      // Execute mysqldump and capture output
-      const dumpContent = await this.execCommandInService(
-        MainComposeServiceName.GWS_CORE_PROD_DB,
-        `sh -c "mysqldump --user='root' --password=\\$MYSQL_ROOT_PASSWORD ` +
-          `--max_allowed_packet=256M \\$MYSQL_DATABASE"`,
-        { user: MainDockerCompose.MARIA_DB_USERNAME }
-      );
-
-      // Write the dump content to the file
       // Ensure directory exists
       const dir = dirname(dumpFilePath);
       if (!existsSync(dir)) {
         mkdirSync(dir, { recursive: true });
       }
 
-      writeFileSync(dumpFilePath, dumpContent);
+      // Stream mysqldump output directly to file using shell redirection
+      // This avoids Node.js maxBuffer limits for large databases
+      await this.execCommandInService(
+        MainComposeServiceName.GWS_CORE_PROD_DB,
+        `sh -c "mysqldump --user='root' --password=\\$MYSQL_ROOT_PASSWORD ` +
+          `--max_allowed_packet=256M \\$MYSQL_DATABASE"`,
+        { user: MainDockerCompose.MARIA_DB_USERNAME },
+        `> ${dumpFilePath}` // Redirect output to file
+      );
+
       return '';
     } catch (error) {
       return error.message || error.toString();
@@ -149,8 +151,8 @@ export class MainDockerCompose extends DockerCompose {
       // Use execCommandInService with -i flag and stdin redirection via shellSuffix
       await this.execCommandInService(
         MainComposeServiceName.GWS_CORE_PROD_DB,
-        `sh -c "mysql --user='root' --password=\\$MYSQL_ROOT_PASSWORD ` +
-          `--max_allowed_packet=256M \\$MYSQL_DATABASE"`,
+        `sh -c "mysql --user='root' --password=\$MYSQL_ROOT_PASSWORD ` +
+          `--max_allowed_packet=256M \$MYSQL_DATABASE"`,
         {
           user: MainDockerCompose.MARIA_DB_USERNAME,
           interactive: true,
