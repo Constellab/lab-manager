@@ -84,6 +84,7 @@ export class DockerInspect {
 
 export interface ComposeUpOptions {
   updateContainers?: boolean;
+  services?: string[];
 }
 
 export interface ComposeRestartOptions extends ComposeUpOptions {

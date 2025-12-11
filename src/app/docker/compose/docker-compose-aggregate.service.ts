@@ -81,7 +81,7 @@ export class DockerComposeAggregateService implements OnModuleInit {
       await this.pullServicesTaskWithCatch(composeId);
     }
 
-    await this.upServicesTaskCommand(composeId);
+    await this.upServicesTaskCommand(composeId, options.services || []);
   }
 
   public async upServicesTaskCommand(
