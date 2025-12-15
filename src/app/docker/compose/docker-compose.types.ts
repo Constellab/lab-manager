@@ -101,6 +101,7 @@ export interface ComposeStatus {
 
 export interface DockerComposeVolumeVariable {
   hostVolume: string;
+  hostVolumeNoBackup: string;
   isNamed: boolean;
 }
 

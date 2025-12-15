@@ -21,7 +21,9 @@ export class DockerComposeYaml {
   public static readonly NETWORK_PROD = 'gencovery-network-prod';
 
   public static readonly LAB_NETWORK_VAR_NAME = '${LAB_NETWORK}';
+  public static readonly LAB_NETWORK_ALL_VAR_NAME = '${LAB_NETWORK_ALL}';
   public static readonly LAB_VOLUME_HOST_VAR_NAME = '${LAB_VOLUME_HOST}';
+  public static readonly LAB_VOLUME_HOST_NO_BACKUP_VAR_NAME = '${LAB_VOLUME_HOST_NO_BACKUP}';
   public static readonly CONTAINER_PREFIX = 'CONTAINER_PREFIX';
   public static readonly LAB_DOMAIN_VAR_NAME = 'LAB_DOMAIN';
   public static readonly X_HTTPS_LABELS = 'https';
@@ -91,7 +93,7 @@ export class DockerComposeYaml {
     systemEnv: {
       labDomain: string;
     },
-    env: DockerEnvironmentVariables | null
+    envVariables: DockerEnvironmentVariables | null
   ): void {
     this.replaceNetworkVariable();
     this.replaceVolumeVariable(volume);
@@ -108,8 +110,8 @@ export class DockerComposeYaml {
       [DockerComposeYaml.LAB_DOMAIN_VAR_NAME]: systemEnv.labDomain,
       [DockerComposeYaml.CONTAINER_PREFIX]: containerPrefix,
     });
-    if (env) {
-      this.replaceEnvVariables(env);
+    if (envVariables) {
+      this.replaceEnvVariables(envVariables);
     }
   }
 
@@ -227,6 +229,12 @@ export class DockerComposeYaml {
           if (this.getEnv() === 'dev' || this.getEnv() === 'all') {
             this.addDevNetwork(serviceName);
           }
+        } else if (net === DockerComposeYaml.LAB_NETWORK_ALL_VAR_NAME) {
+          // remove the variable network
+          this.removeServiceNetwork(serviceName, net);
+          // add both prod and dev networks
+          this.addProdNetwork(serviceName);
+          this.addDevNetwork(serviceName);
         }
       }
     }
@@ -286,42 +294,84 @@ export class DockerComposeYaml {
   }
 
   /**
+   * Helper method to replace a volume variable in a volume string
+   * @param volumeString The volume string to process (e.g., "${LAB_VOLUME_HOST}/data:/app/data")
+   * @param varName The variable name to replace (e.g., "${LAB_VOLUME_HOST}")
+   * @param hostVolumePath The host volume path to use for replacement
+   * @param isNamed Whether to use named volumes
+   * @returns The processed volume string, or null if no replacement was made
+   */
+  private replaceVolumeVariableInString(
+    volumeString: string,
+    varName: string,
+    hostVolumePath: string,
+    isNamed: boolean
+  ): string | null {
+    if (!volumeString.startsWith(varName)) {
+      return null;
+    }
+
+    if (isNamed) {
+      // replace the left part until the colon with the named volume
+      const parts = volumeString.split(':');
+      const leftPart = parts[0].trim();
+
+      // Extract subfolder(s) after variable
+      // Example: ${VAR}/esdata01 -> esdata01
+      // Example: ${VAR}/path/to/data -> path-to-data
+      // Example: ${VAR} -> (no subfolder)
+      let volumeName = hostVolumePath;
+      const subfolderPath = leftPart.substring(varName.length);
+
+      if (subfolderPath && subfolderPath.length > 0) {
+        // Remove leading slash and replace remaining slashes with hyphens
+        const subfolder = subfolderPath.replace(/^\//, '').replace(/\//g, '-');
+        volumeName = `${hostVolumePath}-${subfolder}`;
+      }
+
+      this.addNamedVolume(volumeName);
+      return `${volumeName}:${parts[1].trim()}`;
+    } else {
+      // determine which volume path to use based on context
+      return volumeString.replace(varName, hostVolumePath);
+    }
+  }
+
+  /**
    * Replace the volume variable in the compose file
    * @param volume The volume variable to replace in the compose file
    */
   private replaceVolumeVariable(volume: DockerComposeVolumeVariable): void {
-    // replace the networks variable names with actual network names
+    // replace the volume variable names with actual volume paths
     // replace based on the context
     for (const serviceName of Object.keys(this.content.services)) {
       // replace the volume host path variable with actual path based on context
       const volumes = this.getServiceVolumes(serviceName);
 
       for (let i = 0; i < volumes.length; i++) {
-        if (volumes[i].startsWith(DockerComposeYaml.LAB_VOLUME_HOST_VAR_NAME)) {
-          if (volume.isNamed) {
-            // replace the left part until the colon with the named volume
-            const parts = volumes[i].split(':');
-            const leftPart = parts[0].trim();
+        // Handle LAB_VOLUME_HOST_NO_BACKUP first (more specific)
+        let replacedVolume = this.replaceVolumeVariableInString(
+          volumes[i],
+          DockerComposeYaml.LAB_VOLUME_HOST_NO_BACKUP_VAR_NAME,
+          volume.hostVolumeNoBackup,
+          volume.isNamed
+        );
 
-            // Extract subfolder(s) after ${LAB_VOLUME_HOST}
-            // Example: ${LAB_VOLUME_HOST}/esdata01 -> esdata01
-            // Example: ${LAB_VOLUME_HOST}/path/to/data -> path-to-data
-            // Example: ${LAB_VOLUME_HOST} -> (no subfolder)
-            let volumeName = volume.hostVolume;
-            const subfolderPath = leftPart.substring(DockerComposeYaml.LAB_VOLUME_HOST_VAR_NAME.length);
+        if (replacedVolume) {
+          volumes[i] = replacedVolume;
+          continue;
+        }
 
-            if (subfolderPath && subfolderPath.length > 0) {
-              // Remove leading slash and replace remaining slashes with hyphens
-              const subfolder = subfolderPath.replace(/^\//, '').replace(/\//g, '-');
-              volumeName = `${volume.hostVolume}-${subfolder}`;
-            }
+        // Handle standard LAB_VOLUME_HOST
+        replacedVolume = this.replaceVolumeVariableInString(
+          volumes[i],
+          DockerComposeYaml.LAB_VOLUME_HOST_VAR_NAME,
+          volume.hostVolume,
+          volume.isNamed
+        );
 
-            volumes[i] = `${volumeName}:${parts[1].trim()}`;
-            this.addNamedVolume(volumeName);
-          } else {
-            // determine which volume path to use based on context
-            volumes[i] = volumes[i].replace(DockerComposeYaml.LAB_VOLUME_HOST_VAR_NAME, volume.hostVolume);
-          }
+        if (replacedVolume) {
+          volumes[i] = replacedVolume;
         }
       }
     }

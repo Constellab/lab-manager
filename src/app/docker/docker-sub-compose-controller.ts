@@ -4,8 +4,8 @@ import { LabGuard } from 'src/app/core/decorators/lab-guard.decorator';
 import { AuthContextService } from '../core/auth/auth-context.service';
 import { DockerComposeAggregateService } from './compose/docker-compose-aggregate.service';
 import {
-  RegisterComposeFromZipRequestDTO,
   RegisterComposeRequestDTO,
+  RegisterComposeRequestOptionsDTO,
   RegisterSQLDBComposeRequestDTO,
   RegisterSQLDBComposeResponseDTO,
 } from './compose/docker-compose.dto';
@@ -35,7 +35,7 @@ export class DockerSubComposeController {
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
   ): Promise<void> {
-    const composeId: DockerComposeUniqueId = { brickName, uniqueName, env: this.getDockerComposeEnv() };
+    const composeId: DockerComposeUniqueId = this.getComposeId(brickName, uniqueName);
     return await this.dockerComposeAggregateService.registerAndStartSubCompose(body, composeId);
   }
 
@@ -45,7 +45,7 @@ export class DockerSubComposeController {
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
   ): Promise<RegisterSQLDBComposeResponseDTO> {
-    const composeId: DockerComposeUniqueId = { brickName, uniqueName, env: this.getDockerComposeEnv() };
+    const composeId: DockerComposeUniqueId = this.getComposeId(brickName, uniqueName);
     return await this.dockerComposeAggregateService.registerSQLDBCompose(composeId, body);
   }
 
@@ -53,7 +53,7 @@ export class DockerSubComposeController {
   @UseInterceptors(FileInterceptor('file'))
   async registerSubComposeFromZip(
     @UploadedFile() file: Express.Multer.File,
-    @Body('body', JsonParsePipe) body: RegisterComposeFromZipRequestDTO,
+    @Body('body', JsonParsePipe) body: RegisterComposeRequestOptionsDTO,
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
   ): Promise<void> {
@@ -61,19 +61,9 @@ export class DockerSubComposeController {
       throw new Error('No file uploaded');
     }
 
-    if (!body.description) {
-      throw new Error('Description is required');
-    }
+    const composeId = this.getComposeId(brickName, uniqueName);
 
-    return await this.dockerComposeAggregateService.registerSubComposeFromZip(
-      {
-        brickName,
-        uniqueName,
-        env: this.getDockerComposeEnv(),
-      },
-      file.buffer,
-      body
-    );
+    return await this.dockerComposeAggregateService.registerSubComposeFromZip(composeId, file.buffer, body);
   }
 
   @Delete(':brickName/:uniqueName/unregister')
@@ -81,11 +71,8 @@ export class DockerSubComposeController {
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
   ): Promise<ComposeStatus> {
-    return await this.dockerComposeAggregateService.unregisterSubCompose({
-      brickName,
-      uniqueName,
-      env: this.getDockerComposeEnv(),
-    });
+    const composeId = this.getComposeId(brickName, uniqueName);
+    return await this.dockerComposeAggregateService.unregisterSubCompose(composeId);
   }
 
   @Get(':brickName/:uniqueName/status')
@@ -93,16 +80,28 @@ export class DockerSubComposeController {
     @Param('brickName', DockerNameValidationPipe) brickName: string,
     @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
   ): Promise<ComposeStatus> {
-    return await this.dockerComposeAggregateService.getComposeStatus({
-      brickName,
-      uniqueName,
-      env: this.getDockerComposeEnv(),
-    });
+    const composeId = this.getComposeId(brickName, uniqueName);
+    return await this.dockerComposeAggregateService.getComposeStatus(composeId);
   }
 
   @Get('list')
   async getAllSubComposes(): Promise<ComposeList> {
     return this.dockerComposeAggregateService.getAllSubComposes();
+  }
+
+  private getComposeId(
+    brickName: string,
+    uniqueName: string,
+    env?: DockerComposeYamlEnv
+  ): DockerComposeUniqueId {
+    if (env === 'none') {
+      env = null;
+    }
+    return {
+      brickName,
+      uniqueName,
+      env: env ?? this.getDockerComposeEnv(),
+    };
   }
 
   private getDockerComposeEnv(): DockerComposeYamlEnv {

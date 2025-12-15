@@ -10,8 +10,8 @@ import { Command } from '../../core/utils/command';
 import { ComposeRestartOptions, ComposeUpOptions, DockerInspect } from '../docker.class';
 import { DockerComposeYaml } from './docker-compose-yaml';
 import {
-  RegisterComposeFromZipRequestDTO,
   RegisterComposeRequestDTO,
+  RegisterComposeRequestOptionsDTO,
   RegisterSQLDBComposeRequestDTO,
   RegisterSQLDBComposeResponseDTO,
 } from './docker-compose.dto';
@@ -207,9 +207,9 @@ export class DockerComposeAggregateService implements OnModuleInit {
     return this.dockerComposeService.registerAndStartSubCompose(
       composeYaml,
       {
-        description: composeRequest.description,
-        autoStart: composeRequest.auto_start,
-        envVariables: composeRequest.env,
+        description: composeRequest.options.description,
+        autoStart: composeRequest.options.auto_start,
+        envVariables: composeRequest.options.environment_variables,
       },
       true
     );
@@ -256,7 +256,7 @@ export class DockerComposeAggregateService implements OnModuleInit {
   public async registerSubComposeFromZip(
     composeId: DockerComposeUniqueId,
     zipBuffer: Buffer,
-    body: RegisterComposeFromZipRequestDTO
+    body: RegisterComposeRequestOptionsDTO
   ): Promise<void> {
     let tempDir: string | null = null;
 
@@ -280,7 +280,7 @@ export class DockerComposeAggregateService implements OnModuleInit {
       await this.dockerComposeService.registerSubComposeFromDirectory(composeId, extractDir, {
         description: body.description,
         autoStart: body.auto_start,
-        envVariables: body.env,
+        envVariables: body.environment_variables,
       });
     } finally {
       // Clean up temporary directory
@@ -300,6 +300,19 @@ export class DockerComposeAggregateService implements OnModuleInit {
     composeId: DockerComposeUniqueId,
     request: RegisterSQLDBComposeRequestDTO
   ): Promise<RegisterSQLDBComposeResponseDTO> {
+    // if the backup is disabled, use the no-backup volume variable
+    // so the volume will be stored in .sys/brick-data
+    const volumeVar = request.options.disable_volume_backup
+      ? DockerComposeYaml.LAB_VOLUME_HOST_NO_BACKUP_VAR_NAME
+      : DockerComposeYaml.LAB_VOLUME_HOST_VAR_NAME;
+
+    const volumeSubPath = request.options.volume_sub_directory
+      ? `/${request.options.volume_sub_directory.replace(/^\/+/, '')}` // clean leading slashes
+      : '';
+
+    const networkVar = request.options.all_environments_networks
+      ? DockerComposeYaml.LAB_NETWORK_ALL_VAR_NAME
+      : DockerComposeYaml.LAB_NETWORK_VAR_NAME;
     const composeYamlContent = `
 services:
   mariadb:
@@ -312,16 +325,16 @@ services:
       - MYSQL_DATABASE=${request.database}
     container_name: \${CONTAINER_PREFIX}-db
     networks:
-      - \${LAB_NETWORK}
+      - ${networkVar}
     volumes:
-      - \${LAB_VOLUME_HOST}:/var/lib/mysql
+      - ${volumeVar}${volumeSubPath}:/var/lib/mysql
 `;
 
     const dockerYaml = new DockerComposeYaml(composeYamlContent, composeId);
     await this.dockerComposeService.registerAndStartSubCompose(dockerYaml, {
-      description: request.description,
-      autoStart: request.auto_start,
-      envVariables: {},
+      description: request.options.description,
+      autoStart: request.options.auto_start,
+      envVariables: request.options.environment_variables,
     });
 
     // wait for the mariadb service to be ready

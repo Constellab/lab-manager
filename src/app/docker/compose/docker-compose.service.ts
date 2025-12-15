@@ -90,20 +90,25 @@ export class DockerComposeService {
       // In local mode we use named volumes
       return {
         hostVolume: `${composeId.brickName}-${composeId.uniqueName}-${composeId.env}`,
+        hostVolumeNoBackup: `${composeId.brickName}-${composeId.uniqueName}-${composeId.env}-nobackup`,
         isNamed: true,
       };
     }
     let parentPath: string;
+    let parentPathNoBackup: string;
     // when the request is made from lab in dev mode, use the dev extensions folder
     // otherwise use the prod extensions folder
     if (composeId.env === 'dev') {
       parentPath = this.configService.getDataExtensionsFolder('dev');
+      parentPathNoBackup = this.configService.getLabBrickDataFolder('dev');
     } else {
       parentPath = this.configService.getDataExtensionsFolder('prod');
+      parentPathNoBackup = this.configService.getLabBrickDataFolder('prod');
     }
 
     return {
       hostVolume: join(parentPath, composeId.brickName, composeId.uniqueName),
+      hostVolumeNoBackup: join(parentPathNoBackup, composeId.brickName, composeId.uniqueName),
       isNamed: false,
     };
   }
@@ -297,6 +302,10 @@ export class DockerComposeService {
       throw new Error(
         'Invalid unique name. Only alphanumeric characters, dashes and underscores are allowed.'
       );
+    }
+
+    if (!config.description) {
+      throw new Error('Description is required for sub-composes');
     }
 
     // Set description
