@@ -1,7 +1,7 @@
 import { Inject, Injectable, LogLevel } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { join } from 'path';
-import { EnvironmentProfile } from '../../models/config.class';
+import { EnvironmentProfile, LabEnvironment } from '../../models/config.class';
 import { CORE_MODULE_PROVIDER, CoreModuleConfig } from '../../models/core-module-config.class';
 
 export const ENVIRONMENT_PROFILE_KEY = 'ENVIRONMENT_PROFILE';
@@ -153,82 +153,88 @@ export class CoreConfigService {
     return this.getDistPath(this.config.assetsFolderName, ...path);
   }
 
-  //////////////////////// PROD FOLDERS ////////////////////////
+  //////////////////////// ENVIRONMENT-BASED FOLDERS ////////////////////////
 
-  // app/prod/data
-  public getProdDataFolder(): string {
-    return join(this.getProdFolderPath(), 'data');
+  /**
+   * Get the environment-specific folder path (prod/dev)
+   * @param env Environment profile, defaults to current environment
+   */
+  public getEnvFolderPath(env: LabEnvironment): string {
+    // Desktop and test use dev folder structure
+    return join(this.getVolumePath(), env);
   }
 
-  // app/prod/settings/glab
-  public getProdSettingsFolder(): string {
-    return join(this.getProdFolderPath(), 'settings', 'glab');
+  /**
+   * Get the data folder for specified environment
+   * Path: app/{env}/data
+   */
+  public getDataFolder(env: LabEnvironment): string {
+    return join(this.getEnvFolderPath(env), 'data');
   }
 
-  // app/prod
-  public getProdFolderPath(): string {
-    return join(this.getVolumePath(), 'prod');
+  /**
+   * Get the lab folder for specified environment
+   * Path: app/{env}/lab
+   */
+  public getLabFolder(env: LabEnvironment): string {
+    return join(this.getEnvFolderPath(env), 'lab');
   }
 
-  // app/prod/lab
-  public getProdLabFolder(): string {
-    return join(this.getProdFolderPath(), 'lab');
+  /**
+   * Get the settings folder for specified environment
+   * Path: app/{env}/settings/glab
+   * TODO TO SEE IF THIS IS STILL NEEDED
+   */
+  public getSettingsFolder(env: LabEnvironment): string {
+    return join(this.getEnvFolderPath(env), 'settings', 'glab');
   }
 
-  // app/prod/lab/.sys/start-log.json
-  public getProdStartLogFile(): string {
-    return join(this.getProdLabFolder(), '.sys', 'start-log.json');
+  /**
+   * Get the lab system folder for specified environment
+   * Path: app/{env}/lab/.sys
+   */
+  public getLabSysFolder(env: LabEnvironment): string {
+    return join(this.getLabFolder(env), '.sys');
   }
 
-  // app/gws_db/gws_core/prod/mariadb
-  public getGwsCoreDbProdMariaDbFolder(): string {
-    return join(this.getGwsCoreDbFolder(), 'prod', 'mariadb');
+  /**
+   * Get the start log file path for specified environment
+   * Path: app/{env}/lab/.sys/start-log.json
+   */
+  public getStartLogFile(env: LabEnvironment): string {
+    return join(this.getLabSysFolder(env), 'start-log.json');
   }
 
-  // Folder for sub composes volumes
-  public getProdDataExtensionsFolder(): string {
-    return join(this.getProdDataFolder(), 'extensions');
+  /**
+   * Get the brick data folder for specified environment
+   * Path: app/{env}/lab/.sys/brick-data
+   */
+  public getLabBrickDataFolder(env: LabEnvironment): string {
+    return join(this.getLabSysFolder(env), 'brick-data');
   }
 
-  //////////////////////// DEV FOLDERS ////////////////////////
-
-  // app/dev
-  public getDevFolderPath(): string {
-    return join(this.getVolumePath(), 'dev');
+  /**
+   * Get the extensions folder for specified environment
+   * Path: app/{env}/data/extensions
+   */
+  public getDataExtensionsFolder(env: LabEnvironment): string {
+    return join(this.getDataFolder(env), 'extensions');
   }
 
-  // app/dev/lab
-  public getDevLabFolder(): string {
-    return join(this.getDevFolderPath(), 'lab');
+  /**
+   * Get the MariaDB folder for specified environment
+   * Path: app/gws_db/gws_core/{env}/mariadb
+   */
+  public getGwsCoreDbMariaDbFolder(env: LabEnvironment): string {
+    return join(this.getGwsCoreDbFolder(), env, 'mariadb');
   }
 
-  // app/dev/data
-  public getDevDataFolder(): string {
-    return join(this.getDevFolderPath(), 'data');
-  }
-
-  // app/dev/settings/glab
-  public getDevSettingsFolder(): string {
-    return join(this.getDevFolderPath(), 'settings', 'glab');
-  }
-
-  // app/dev/lab/.sys/start-log.json
-  public getDevStartLogFile(): string {
-    return join(this.getDevFolderPath(), 'lab', '.sys', 'start-log.json');
-  }
-
-  // app/dev/.ssh
+  /**
+   * Get the SSH folder (dev environment only)
+   * Path: app/dev/.ssh
+   */
   public getDevEnvSSHFolder(): string {
-    return join(this.getDevFolderPath(), '.ssh');
-  }
-
-  // app/gws_db/gws_core/dev/mariadb
-  public getGwsCoreDbDevMariaDbFolder(): string {
-    return join(this.getGwsCoreDbFolder(), 'dev', 'mariadb');
-  }
-
-  public getDevDataExtensionsFolder(): string {
-    return join(this.getDevDataFolder(), 'extensions');
+    return join(this.getEnvFolderPath('dev'), '.ssh');
   }
 
   public static getEnvVariable(name: string): string {

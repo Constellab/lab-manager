@@ -315,7 +315,7 @@ export class BackupService implements OnModuleInit {
 
   private async syncData(backup: LabBackupStorage): Promise<void> {
     // Synchronize the data
-    const dataFolder = this.configService.getProdDataFolder();
+    const dataFolder = this.configService.getDataFolder('prod');
 
     try {
       // get folder size (using sudo to access all files)
@@ -330,7 +330,7 @@ export class BackupService implements OnModuleInit {
     // Generate ownership manifest for extensions folder only
     // Extensions folder contains volumes from sub-compose containers which may have different users
     try {
-      const extensionsFolder = this.configService.getProdDataExtensionsFolder();
+      const extensionsFolder = this.configService.getDataExtensionsFolder('prod');
       const manifestPath = this.getOwnershipManifestPath();
       await this.fileService.generateOwnershipManifest(extensionsFolder, manifestPath);
 
@@ -515,7 +515,7 @@ export class BackupService implements OnModuleInit {
   }
 
   private backupHistoryPath(): string {
-    return this.configService.getProdSettingsFolder() + '/' + this.backupHistoryFilename;
+    return this.configService.getSettingsFolder('prod') + '/' + this.backupHistoryFilename;
   }
 
   public getBackupHistory(): LabBackupHistory {
@@ -545,7 +545,7 @@ export class BackupService implements OnModuleInit {
 
   public async restoreBackup(restoreDTO: BackupRestoreDTO): Promise<void> {
     // Synchronize the data
-    const dataFolder = this.configService.getProdDataFolder();
+    const dataFolder = this.configService.getDataFolder('prod');
 
     if (restoreDTO.options.force) {
       // force is set, delete the content of the data folder if it exists
@@ -607,7 +607,7 @@ export class BackupService implements OnModuleInit {
 
   private restoreData(restoreDTO: BackupRestoreDTO): Observable<RCloneResult> {
     this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Starting restore of data');
-    const dataFolder = this.configService.getProdDataFolder();
+    const dataFolder = this.configService.getDataFolder('prod');
 
     // sync the data folder with the bucket (use sudo to ensure all files can be written)
     return this.callSyncFromS3(restoreDTO, this.dataS3FolderDestination, dataFolder);

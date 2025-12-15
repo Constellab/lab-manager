@@ -97,9 +97,9 @@ export class DockerComposeService {
     // when the request is made from lab in dev mode, use the dev extensions folder
     // otherwise use the prod extensions folder
     if (composeId.env === 'dev') {
-      parentPath = this.configService.getDevDataExtensionsFolder();
+      parentPath = this.configService.getDataExtensionsFolder('dev');
     } else {
-      parentPath = this.configService.getProdDataExtensionsFolder();
+      parentPath = this.configService.getDataExtensionsFolder('prod');
     }
 
     return {

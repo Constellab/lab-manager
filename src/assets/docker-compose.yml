@@ -20,7 +20,6 @@ services:
       - FRONT_VERSION=${FRONT_VERSION}
       - GPU=${GPU}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
-      - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       # COMMUNITY
       - COMMUNITY_API_URL=${COMMUNITY_API_URL}
@@ -46,6 +45,7 @@ services:
     volumes:
       - /app/prod/lab:/lab
       - /app/prod/data:/data
+      # TODO from gws_core v 0.18.0 this to not useful. Remove in future version
       - /app/prod/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
     labels:
@@ -93,7 +93,6 @@ services:
       - FRONT_VERSION=${FRONT_VERSION}
       - GPU=${GPU}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
-      - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       # COMMUNITY
       - COMMUNITY_API_URL=${COMMUNITY_API_URL}
@@ -124,6 +123,7 @@ services:
     volumes:
       - /app/dev/lab:/lab
       - /app/dev/data:/data
+      # TODO from gws_core v 0.18.0 this to not useful. Remove in future version
       - /app/dev/settings/glab:/conf/settings
       - /app/conf/config.json:/conf/config.json:ro
       # store the SSH keys in a volume to keep them persistent

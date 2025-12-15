@@ -67,14 +67,13 @@ export class FileService {
   //////////////////////// LOG START FILE //////////////////////
 
   public readLogStartFileIfExists(mode: 'dev' | 'prod'): StartLog | null {
-    const logFilePath =
-      mode === 'prod' ? this.configService.getProdStartLogFile() : this.configService.getDevStartLogFile();
+    const logFilePath = this.configService.getStartLogFile(mode);
 
     if (!this.exists(logFilePath)) {
       return null;
     }
 
-    try{
+    try {
       const content = this.readFile(logFilePath);
       return JSON.parse(content);
     } catch (e) {
