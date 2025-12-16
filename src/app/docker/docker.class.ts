@@ -103,10 +103,6 @@ export interface DockerRunOptions {
   envs?: Record<string, string>;
 }
 
-export interface PullBiotaDbOptions {
-  forceUpdate?: boolean;
-}
-
 export interface DockerProgress {
   percent: number;
   message: string;

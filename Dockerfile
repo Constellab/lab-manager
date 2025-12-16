@@ -81,7 +81,6 @@ RUN groupadd -g ${DOCKER_GID} docker_host || true && \
 
 # Create volume mount point directories with proper permissions
 RUN mkdir -p /app/conf \
-    /app/gws_db/gws_biota/mariadb \
     /app/gws_db/gws_core/prod/mariadb \
     /app/gws_db/gws_core/dev/mariadb \
     /app/prod/lab \

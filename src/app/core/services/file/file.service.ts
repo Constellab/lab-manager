@@ -53,7 +53,6 @@ export class FileService {
     const privateFile = this.readPrivateFile();
 
     const dataTemplate: PrivateFileData = {
-      biota_current_db_url_version: null,
       last_init_manager_version: null,
     };
     privateFile.data = { ...dataTemplate, ...(privateFile.data ?? {}), ...data };

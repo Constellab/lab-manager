@@ -78,14 +78,6 @@ export class ConfigFileService {
     return this.fileService.readJsonFile(this.configFilePath);
   }
 
-  public biotaIsActive(): boolean {
-    // if the config file does not exist, we consider biota not active
-    if (!this.configFileExists()) {
-      return false;
-    }
-    return this.readConfigFile().biota_maria_db_url != null;
-  }
-
   private get configFilePath(): string {
     return this.fileService.getConfPath(this.configFileName);
   }

@@ -19,7 +19,6 @@ export class AdminerComposeService {
   public static readonly ADMINER_SERVICE_NAME = 'adminer';
 
   private readonly logger = new Logger(AdminerComposeService.name);
-  
 
   private static readonly ADMINER_TEMPLATE_FILE = 'docker-compose-adminer.yml';
 
@@ -35,8 +34,7 @@ export class AdminerComposeService {
   }
 
   public async adminerIsRunning(): Promise<boolean> {
-    try{
-
+    try {
       const dockerCompose = this.getExistingAdminerCompose();
       if (!dockerCompose) {
         return false;
@@ -46,7 +44,6 @@ export class AdminerComposeService {
       this.logger.error('Error checking if adminer is running', e);
       return false;
     }
-
   }
 
   public async startAdminerContainer(): Promise<void> {
@@ -115,13 +112,6 @@ export class AdminerComposeService {
         username: 'gws_core',
         dbName: 'gws_core',
         password: privateFile.db.gws_core_dev_password,
-      },
-
-      gwsBiota: {
-        host: 'gws_biota_db',
-        username: 'gws_biota',
-        dbName: 'gws_biota',
-        password: 'gencovery',
       },
     };
 

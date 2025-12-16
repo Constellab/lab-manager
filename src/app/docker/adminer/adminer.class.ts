@@ -10,5 +10,4 @@ export interface AdminerInfo {
 
   gwsCoreProd: AdminerDbInfo;
   gwsCoreDev: AdminerDbInfo;
-  gwsBiota: AdminerDbInfo;
 }

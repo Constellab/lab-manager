@@ -27,7 +27,6 @@ This container is one of the first container to be started on the lab. Its role 
   - `gws_core_prod_db` : database for the prod environment
   - `gws_core_dev_deb` : database for the dev envirnonment
   - `test_gws_dev_db` : database that is used when we run tests
-  - `gws_biota_db` : biota database
 - configure the bricks of the lab
 - manage the backup of the lab data
 
@@ -38,10 +37,10 @@ To view more information about the lab architecture [here](https://constellab.co
 🚀 To run a data lab locally you can use the desktop version. The lab manager can be installed to configure and starts the desktop data lab.
 
 Run the following command to start the lab manager for the desktop version:
-volumes: # map the named volume to the same path as prod environment - lab-manager-config:/app/conf - lab-manager-prod-db:/app/gws_db/gws_core/prod/mariadb - lab-manager-dev-db:/app/gws_db/gws_core/dev/mariadb - lab-manager-biota:/app/gws_db/gws_biota/mariadb - lab-manager-prod-lab:/app/prod/lab - lab-manager-prod-data:/app/prod/data - lab-manager-dev-lab:/app/dev/lab # share docker socket - /var/run/docker.sock:/var/run/docker.sock
+volumes: # map the named volume to the same path as prod environment - lab-manager-config:/app/conf - lab-manager-prod-db:/app/gws_db/gws_core/prod/mariadb - lab-manager-dev-db:/app/gws_db/gws_core/dev/mariadb - lab-manager-prod-lab:/app/prod/lab - lab-manager-prod-data:/app/prod/data - lab-manager-dev-lab:/app/dev/lab # share docker socket - /var/run/docker.sock:/var/run/docker.sock
 
 ```bash
-docker run -d --name lab-manager -e VIRTUAL_HOST=lab-manager.local -e ENVIRONMENT_PROFILE=desktop -e LAB_MANAGER_API_KEY=[SPACE_API_KEY] -e LAB_NAME=[LAB_NAME] -e LAB_ID=[LAB_ID] -v lab-manager-config:/app/conf -v lab-manager-prod-db:/app/gws_db/gws_core/prod/mariadb -v lab-manager-dev-db:/app/gws_db/gws_core/dev/mariadb -v lab-manager-biota:/app/gws_db/gws_biota/mariadb -v lab-manager-prod-lab:/app/prod/lab -v lab-manager-prod-data:/app/prod/data -v lab-manager-dev-lab:/app/dev/lab -v lab-manager-dev-data:/app/dev/data -v /var/run/docker.sock:/var/run/docker.sock -p 3080:3080 constellab/lab-manager:latest
+docker run -d --name lab-manager -e VIRTUAL_HOST=lab-manager.local -e ENVIRONMENT_PROFILE=desktop -e LAB_MANAGER_API_KEY=[SPACE_API_KEY] -e LAB_NAME=[LAB_NAME] -e LAB_ID=[LAB_ID] -v lab-manager-config:/app/conf -v lab-manager-prod-db:/app/gws_db/gws_core/prod/mariadb -v lab-manager-dev-db:/app/gws_db/gws_core/dev/mariadb -v lab-manager-prod-lab:/app/prod/lab -v lab-manager-prod-data:/app/prod/data -v lab-manager-dev-lab:/app/dev/lab -v lab-manager-dev-data:/app/dev/data -v /var/run/docker.sock:/var/run/docker.sock -p 3080:3080 constellab/lab-manager:latest
 ```
 
 ## 📄 Documentation

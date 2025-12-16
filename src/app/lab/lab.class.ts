@@ -15,10 +15,6 @@ export interface LabManagerStatus {
   currentTask?: TaskStatusInfo;
   adminerIsRunning: boolean;
   version: string;
-  biota: {
-    exists: boolean;
-    dbUrl?: string;
-  };
   isConfigured: boolean;
   isInitialized: boolean;
   // version of the lab manager that has been used to init the lab

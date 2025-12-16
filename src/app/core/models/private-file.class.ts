@@ -31,10 +31,6 @@ export interface PrivateFile {
 }
 
 export interface PrivateFileData {
-  // store the current version of the biota db
-  // can be different from the version of the biota version in config
-  biota_current_db_url_version: string;
-
   // version of the manager that has been used to init the lab
   last_init_manager_version: string;
 }
@@ -67,7 +63,6 @@ export function getPrivateFileTemplate(): PrivateFile {
       gws_core_dev_password: null,
     },
     data: {
-      biota_current_db_url_version: null,
       last_init_manager_version: null,
     },
     openai_api_key: null,

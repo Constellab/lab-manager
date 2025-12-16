@@ -32,7 +32,6 @@ Once in the docker container you can clone the repository in /home folder. then 
   "name": "On premise",
   "front_version": "0.5.6",
   "glab_tag": "latest",
-  "biota_maria_db_url": "https://storage.gra.cloud.ovh.net/v1/AUTH_a0286631d7b24afba3f3cdebed2992aa/gws_biota/db/0.4.3/mariadb.zip",
   "variables": {},
   "environment": {
     "bricks": [

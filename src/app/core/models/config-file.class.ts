@@ -3,7 +3,6 @@ export interface ConfigFile {
   name: string;
   front_version: string;
   glab_tag: 'latest' | 'beta' | string;
-  biota_maria_db_url?: string;
   variables: Record<string, string>;
   environment: ConfigFileEnv;
 }

@@ -19,7 +19,6 @@ services:
       - FRONT_VERSION=${FRONT_VERSION}
       - GPU=${GPU}
       - VIRTUAL_HOST=
-      - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       # COMMUNITY
       - COMMUNITY_API_URL=${COMMUNITY_API_URL}
@@ -31,17 +30,10 @@ services:
       - GWS_CORE_DB_PASSWORD=${GWS_CORE_PROD_DB_PASSWORD}
       - GWS_CORE_DB_NAME=gws_core
       - GWS_CORE_DB_PORT=3306
-      # GWS_BIOTA database
-      - GWS_BIOTA_DB_HOST=gws_biota_db
-      - GWS_BIOTA_DB_USER=gws_biota
-      - GWS_BIOTA_DB_PASSWORD=gencovery
-      - GWS_BIOTA_DB_NAME=gws_biota
-      - GWS_BIOTA_DB_PORT=3306
       - APP_EXTERNAL_PORT=8511
       - APP_SUB_DOMAIN=app
     depends_on:
       - gws_core_prod_db
-      - gws_biota_db
     volumes:
       # this volume include conf and settings
       - lab-manager-config:/conf
@@ -81,7 +73,6 @@ services:
       - FRONT_VERSION=${FRONT_VERSION}
       - GPU=${GPU}
       - VIRTUAL_HOST=
-      - BIOTA_BIODATA_DIR=/data/gws_biota/biodata/
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       # COMMUNITY
       - COMMUNITY_API_URL=${COMMUNITY_API_URL}
@@ -99,12 +90,6 @@ services:
       - GWS_TEST_DB_PASSWORD=gencovery
       - GWS_TEST_DB_NAME=test_gws
       - GWS_TEST_DB_PORT=3306
-      # GWS_BIOTA database
-      - GWS_BIOTA_DB_HOST=gws_biota_db
-      - GWS_BIOTA_DB_USER=gws_biota
-      - GWS_BIOTA_DB_PASSWORD=gencovery
-      - GWS_BIOTA_DB_NAME=gws_biota
-      - GWS_BIOTA_DB_PORT=3306
       - APP_EXTERNAL_PORT=8512
       - APP_SUB_DOMAIN=app-dev
     volumes:
@@ -113,7 +98,6 @@ services:
       - lab-manager-dev-data:/data
     depends_on:
       - gws_core_dev_db
-      - gws_biota_db
     networks:
       - gencovery-network-dev
     container_name: codelab
@@ -196,24 +180,6 @@ services:
     ports:
       - 3408:3306
 
-  # GWS Biota Production DB
-  gws_biota_db:
-    image: mariadb:10.7.4
-    command: --max_allowed_packet=256M
-    environment:
-      - MYSQL_ROOT_PASSWORD=gencovery
-      - MYSQL_USER=gws_biota
-      - MYSQL_PASSWORD=gencovery
-      - MYSQL_DATABASE=gws_biota
-    networks:
-      - gencovery-network-prod
-      - gencovery-network-dev
-    container_name: gws_biota_db
-    volumes:
-      - lab-manager-biota:/var/lib/mysql
-    ports:
-      - 3409:3306
-
 networks:
   gencovery-network-dev:
     external: true
@@ -228,8 +194,6 @@ volumes:
   lab-manager-prod-db:
     external: true
   lab-manager-dev-db:
-    external: true
-  lab-manager-biota:
     external: true
   lab-manager-prod-lab:
     external: true

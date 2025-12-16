@@ -131,11 +131,6 @@ export class CoreConfigService {
     return this.getVolumePath() + '/gws_db';
   }
 
-  // app/gws_db/gws_biota
-  public getBiotaDbFolder(): string {
-    return join(this.getGwsDbFolder(), 'gws_biota');
-  }
-
   // app/gws_db/gws_core
   public getGwsCoreDbFolder(): string {
     return join(this.getGwsDbFolder(), 'gws_core');

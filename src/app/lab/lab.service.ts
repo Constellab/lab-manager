@@ -15,8 +15,7 @@ import { DockerComposeAggregateService } from '../docker/compose/docker-compose-
 import { MainComposeService } from '../docker/compose/main-compose.service';
 import { MainComposeServiceName } from '../docker/compose/main-docker-compose.class';
 import { DockerContainerService } from '../docker/container/docker-container.service';
-import { ErrorLogs, PullBiotaDbOptions } from '../docker/docker.class';
-import { BiotaService } from './biota/biota.service';
+import { ErrorLogs } from '../docker/docker.class';
 import { EnvVariableService } from './env-variable/env-variable.service';
 import { InitService } from './init/init.service';
 import { LabInitConfig, LabManagerStatus, LabStatus } from './lab.class';
@@ -31,7 +30,6 @@ export class LabService implements OnModuleInit {
     private coreConfigService: CoreConfigService,
     private fileService: FileService,
     private configFileService: ConfigFileService,
-    private biotaService: BiotaService,
     private initService: InitService,
     private envVariableService: EnvVariableService,
     private communityService: ExternalCommunityApiService,
@@ -96,10 +94,6 @@ export class LabService implements OnModuleInit {
       currentTask: this.taskService.currentTask,
       adminerIsRunning: await this.adminerService.adminerIsRunning(),
       version: this.coreConfigService.getLabManagerVersion(),
-      biota: {
-        exists: this.biotaService.biotaDbExists(),
-        dbUrl: this.biotaService.getCurrentVersionUrl(),
-      },
       isConfigured: this.configFileService.configFileExists(),
       isInitialized: this.fileService.privateFileExists(),
       lastInitVersion: lastInitManagerVersion,
@@ -194,13 +188,6 @@ export class LabService implements OnModuleInit {
     this.taskService.forceStopCurrentTask();
   }
 
-  //////////////////////////// BIOTA ////////////////////////////
-
-  public async pullBiotaDb(options: PullBiotaDbOptions = {}): Promise<void> {
-    await this.composeAggregateService.checkLabIsConfigured();
-    return this.biotaService.pullBiota(options.forceUpdate, true);
-  }
-
   //////////////////////////// CONFIG ////////////////////////////
   public getConfig(): ConfigFile {
     return this.configFileService.getConfig();
@@ -270,20 +257,6 @@ export class LabService implements OnModuleInit {
     }
 
     configFile.glab_tag = glabTag;
-
-    // if biota is in the bricks, we add the db url
-    const biota = brickConfigs.brickVersions.find((brick) => brick.name === BrickGWS.GWS_BIOTA);
-
-    if (biota) {
-      const biotaInfo = await this.communityService.getBrickVersion(BrickGWS.GWS_BIOTA, biota.version);
-
-      const dbUrl = biotaInfo.technicalInfo[BrickGWSTechnicalInfo.GWS_BIOTA_DB_URL];
-      if (dbUrl == null) {
-        throw new BadRequestException('The db url is not set in the gws_biota brick technical info');
-      }
-
-      configFile.biota_maria_db_url = dbUrl;
-    }
 
     this.configFileService.updateConfig(configFile);
   }

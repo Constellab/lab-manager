@@ -7,7 +7,6 @@ import { CoreConfigService } from '../../core/services/config/core-config.servic
 import { FileService } from '../../core/services/file/file.service';
 import { DockerComposeAggregateService } from '../../docker/compose/docker-compose-aggregate.service';
 import { MainComposeService } from '../../docker/compose/main-compose.service';
-import { BiotaService } from '../biota/biota.service';
 import { EnvVariableService } from '../env-variable/env-variable.service';
 import { LabInitConfig } from '../lab.class';
 
@@ -20,7 +19,6 @@ export class InitService {
     private configFileService: ConfigFileService,
     private fileService: FileService,
     private mainComposeService: MainComposeService,
-    private biotaService: BiotaService,
     private envVariableService: EnvVariableService,
     private taskService: TaskService,
     private aggregateComposeService: DockerComposeAggregateService
@@ -64,9 +62,6 @@ export class InitService {
 
   private async init(): Promise<void> {
     await this.configureDockerCompose();
-
-    // PULL BIOTA DB
-    await this.biotaService.pullBiota();
 
     // UP CONTAINERS
     await this.aggregateComposeService.restartMainServices({ updateContainers: true });
