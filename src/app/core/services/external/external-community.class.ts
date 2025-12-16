@@ -1,5 +1,6 @@
 export enum BrickGWS {
   GWS_CORE = 'gws_core',
+  GWS_BIOTA = 'gws_biota',
 }
 
 export enum BrickGWSTechnicalInfo {

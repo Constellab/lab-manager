@@ -1,12 +1,13 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { lastValueFrom } from 'rxjs';
-import { ApiService } from 'src/app/core/services/api/api.service';
-import { ApiHttpOption } from 'src/app/core/services/api/api.class';
-import { FileService } from 'src/app/core/services/file/file.service';
-import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
-import { BackupInfoDTO } from 'src/app/backup/backup.class';
 import { LabBackupHistory } from 'src/app/backup/backup-history.class';
-import { LabManagerRecommendedVersion, UpdateLabManagerCommand } from './external-space.class';
+import { BackupInfoDTO } from 'src/app/backup/backup.class';
+import { ApiHttpOption } from 'src/app/core/services/api/api.class';
+import { ApiService } from 'src/app/core/services/api/api.service';
+import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
+import { FileService } from 'src/app/core/services/file/file.service';
+import { LabManagerMigrationPlanDTO } from 'src/app/lab/init/migration/migration.dto';
+import { UpdateLabManagerCommand } from './external-space.class';
 
 /**
  * Class to call route of space using space api
@@ -43,13 +44,6 @@ export class ExternalSpaceApiService {
     );
   }
 
-  public getLabManagerRecommendedVersion(): Promise<LabManagerRecommendedVersion> {
-    return lastValueFrom(this.apiService.get(this.constructRoute('recommended-version'))).catch((err) => {
-      this.logger.error('Error while getting the recommended version', err);
-      throw new BadRequestException('Error while getting the recommended version of lab manager');
-    });
-  }
-
   public getUpdateLabManagerCommand(): Promise<UpdateLabManagerCommand> {
     return lastValueFrom(
       this.apiService.get(this.constructRoute('desktop/update-lab-manager-command'), this.getRequestOptions())
@@ -59,10 +53,20 @@ export class ExternalSpaceApiService {
     });
   }
 
+  public getVersionUpgradeInfo(): Promise<LabManagerMigrationPlanDTO> {
+    const version = this.configService.getLabManagerVersion();
+    return lastValueFrom(this.apiService.get(this.constructRoute(`version-upgrade-info/${version}`))).catch(
+      (err) => {
+        this.logger.error('Error while getting the version upgrade info', err);
+        throw new BadRequestException('Error while getting the version upgrade info');
+      }
+    );
+  }
+
   ////////////////// METHODS TO BUILD THE REQUEST //////////////////
 
   private constructRoute(route: string): string {
-    const isLocal = this.configService.isLocal() && false;
+    const isLocal = this.configService.isLocal();
     let url: string;
     if (isLocal) {
       url = 'http://host.docker.internal:3001';

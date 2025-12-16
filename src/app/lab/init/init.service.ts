@@ -9,6 +9,7 @@ import { DockerComposeAggregateService } from '../../docker/compose/docker-compo
 import { MainComposeService } from '../../docker/compose/main-compose.service';
 import { EnvVariableService } from '../env-variable/env-variable.service';
 import { LabInitConfig } from '../lab.class';
+import { MigrationService } from './migration/migration.service';
 
 @Injectable()
 export class InitService {
@@ -21,7 +22,8 @@ export class InitService {
     private mainComposeService: MainComposeService,
     private envVariableService: EnvVariableService,
     private taskService: TaskService,
-    private aggregateComposeService: DockerComposeAggregateService
+    private aggregateComposeService: DockerComposeAggregateService,
+    private migrationService: MigrationService
   ) {}
 
   public async configureAndInitLab(labInitConfig: LabInitConfig): Promise<void> {
@@ -61,6 +63,10 @@ export class InitService {
   }
 
   private async init(): Promise<void> {
+    // Run migrations first, before configuring docker compose
+    // If migrations fail, the init process will stop
+    await this.migrationService.executeMigrations();
+
     await this.configureDockerCompose();
 
     // UP CONTAINERS

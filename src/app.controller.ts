@@ -1,8 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
 import { Public } from './app/core/decorators/public.decorator';
-import { ExternalSpaceApiService } from './app/core/services/external/external-space-api.service';
-import { LabManagerRecommendedVersion } from './app/core/services/external/external-space.class';
 import { ExternalLabApiService } from './app/core/services/external/external-lab-api.service';
+import { ExternalSpaceApiService } from './app/core/services/external/external-space-api.service';
+import { LabManagerMigrationPlanDTO } from './app/lab/init/migration/migration.dto';
 
 @Controller()
 export class AppController {
@@ -17,9 +17,9 @@ export class AppController {
     return true;
   }
 
-  @Get('lab-manager-recommended-version')
-  async getLabManagerRecommendedVersion(): Promise<LabManagerRecommendedVersion> {
-    return this.spaceService.getLabManagerRecommendedVersion();
+  @Get('version-upgrade-info')
+  async getVersionUpgradeInfo(): Promise<LabManagerMigrationPlanDTO> {
+    return this.spaceService.getVersionUpgradeInfo();
   }
 
   @Get('lab-is-running')
