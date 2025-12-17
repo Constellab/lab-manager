@@ -37,6 +37,10 @@ export class DockerFormatKeys {
     key: 'startedAt',
     dockerKey: 'State.StartedAt',
   };
+  public static readonly INSPECT_HEALTH: DockerFormatKey = {
+    key: 'health',
+    dockerKey: 'State.Health.Status',
+  };
 
   public static keysToString(keys: DockerFormatKey[]): string {
     // generate code to generate a string like above
@@ -117,20 +121,22 @@ export class DockerCommand {
       DockerFormatKeys.INSPECT_NAME,
       DockerFormatKeys.INSPECT_IMAGE,
       DockerFormatKeys.INSPECT_STARTED_AT,
+      DockerFormatKeys.INSPECT_HEALTH,
     ]);
 
     const result = await this.getCommand()
       .execCommand(`docker inspect ${containerName} --format=${strFormat}`, ExecCommandMode.NO_LOG)
       .catch(() => null);
 
-    if (result === null) return new DockerInspect(containerName, null, '0', null, null);
+    if (result === null) return new DockerInspect(containerName, null, '0', null, null, null);
     const JSONResult = JSON.parse(result);
     return new DockerInspect(
       containerName,
       JSONResult.state,
       JSONResult.exitCode,
       JSONResult.image,
-      JSONResult.startedAt
+      JSONResult.startedAt,
+      JSONResult.health
     );
   }
 

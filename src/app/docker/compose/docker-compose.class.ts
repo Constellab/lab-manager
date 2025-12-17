@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import { Command, ExecCommandMode } from '../../core/utils/command';
 import { DockerCommand, DockerExecOptions } from '../docker-command.class';
+import { DockerInspect } from '../docker.class';
 import { DockerComposeInspect, DockerComposeStatusInfo } from './docker-compose-inspect.class';
 import { DockerComposeYaml } from './docker-compose-yaml';
 import { DockerComposeUniqueId } from './docker-compose.types';
@@ -30,6 +31,12 @@ export class DockerCompose {
   public composeInspect(): Promise<DockerComposeInspect> {
     const dockerCommand = new DockerCommand();
     return dockerCommand.dockerInspectMultiple(this.getContainerNames());
+  }
+
+  public inspectService(serviceName: string): Promise<DockerInspect> {
+    const containerName = this.composeYaml.getContainerNameFromService(serviceName);
+    const dockerCommand = new DockerCommand();
+    return dockerCommand.dockerInspect(containerName);
   }
 
   public async getStatus(): Promise<DockerComposeStatusInfo> {

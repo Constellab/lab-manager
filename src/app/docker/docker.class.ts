@@ -6,6 +6,8 @@ export type DockerContainerState = 'running' | 'exited' | 'created' | 'paused' |
 // type for container computed status
 export type ContainerStatus = 'running' | 'stopped' | 'error' | 'none';
 
+export type ContainerHealth = 'healthy' | 'unhealthy' | 'starting' | 'none';
+
 export interface DockerPsFull {
   image: string;
   command: string;
@@ -26,18 +28,21 @@ export class DockerInspect {
   exitCode: number;
   image: string;
   startedAt: string;
+  health: ContainerHealth;
 
   constructor(
     names: string,
     state: DockerContainerState | null,
     exitCode: string,
     image: string,
-    startedAt: string
+    startedAt: string,
+    health: ContainerHealth
   ) {
     this.names = names;
     this.exitCode = parseInt(exitCode);
     this.image = image;
     this.startedAt = startedAt;
+    this.health = health;
 
     this.status = this.convertStateToStatus(state, this.exitCode, this.names);
   }

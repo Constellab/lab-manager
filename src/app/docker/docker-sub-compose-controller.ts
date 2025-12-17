@@ -15,6 +15,7 @@ import {
   DockerComposeUniqueId,
   DockerComposeYamlEnv,
 } from './compose/docker-compose.types';
+import { DockerInspect } from './docker.class';
 import { DockerNameValidationPipe } from './pipes/docker-name-validation.pipe';
 import { JsonParsePipe } from './pipes/json-parse.pipe';
 
@@ -82,6 +83,16 @@ export class DockerSubComposeController {
   ): Promise<ComposeStatus> {
     const composeId = this.getComposeId(brickName, uniqueName);
     return await this.dockerComposeAggregateService.getComposeStatus(composeId);
+  }
+
+  @Get(':brickName/:uniqueName/service/:serviceName/status')
+  async getSubComposeServiceStatus(
+    @Param('brickName', DockerNameValidationPipe) brickName: string,
+    @Param('uniqueName', DockerNameValidationPipe) uniqueName: string,
+    @Param('serviceName', DockerNameValidationPipe) serviceName: string
+  ): Promise<DockerInspect> {
+    const composeId = this.getComposeId(brickName, uniqueName);
+    return await this.dockerComposeAggregateService.getSubComposeServiceStatus(composeId, serviceName);
   }
 
   @Get('list')

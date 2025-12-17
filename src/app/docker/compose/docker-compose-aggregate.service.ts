@@ -294,6 +294,15 @@ export class DockerComposeAggregateService implements OnModuleInit {
     }
   }
 
+  ///////////////////////////////// SUB COMPOSE SERVICE //////////////////////////////////////
+
+  public async getSubComposeServiceStatus(
+    composeId: DockerComposeUniqueId,
+    serviceName: string
+  ): Promise<DockerInspect> {
+    const compose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
+    return compose.inspectService(serviceName);
+  }
   ///////////////////////////////// SPECIFIC SERVICES //////////////////////////////////////
 
   public async registerSQLDBCompose(
