@@ -44,7 +44,7 @@ export class Migration280 extends Migration {
       },
       {
         name: BrickGWS.GWS_BIOTA,
-        version: '0.10.0',
+        version: '0.11.0',
       },
     ];
 
