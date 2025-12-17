@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { Command, ExecCommandMode } from 'src/app/core/utils/command';
 import { DockerComposeInspect } from './compose/docker-compose-inspect.class';
 import { DockerInspect, DockerPsFull, DockerRunOptions } from './docker.class';
@@ -26,22 +26,6 @@ export class DockerFormatKeys {
   public static readonly RUNNING_FOR: DockerFormatKey = { key: 'runningFor', dockerKey: 'RunningFor' };
   public static readonly STATUS: DockerFormatKey = { key: 'status', dockerKey: 'Status' };
 
-  public static readonly INSPECT_STATE: DockerFormatKey = { key: 'state', dockerKey: 'State.Status' };
-  public static readonly INSPECT_EXIT_CODE: DockerFormatKey = {
-    key: 'exitCode',
-    dockerKey: 'State.ExitCode',
-  };
-  public static readonly INSPECT_NAME: DockerFormatKey = { key: 'names', dockerKey: 'Name' };
-  public static readonly INSPECT_IMAGE: DockerFormatKey = { key: 'image', dockerKey: 'Config.Image' };
-  public static readonly INSPECT_STARTED_AT: DockerFormatKey = {
-    key: 'startedAt',
-    dockerKey: 'State.StartedAt',
-  };
-  public static readonly INSPECT_HEALTH: DockerFormatKey = {
-    key: 'health',
-    dockerKey: 'State.Health.Status',
-  };
-
   public static keysToString(keys: DockerFormatKey[]): string {
     // generate code to generate a string like above
     const content = keys
@@ -62,6 +46,8 @@ export class DockerFormatKeys {
  * Service to execute docker command and get result
  */
 export class DockerCommand {
+  private readonly logger = new Logger(DockerCommand.name);
+
   public async getContainerFullInfo(containerName: string): Promise<DockerPsFull> {
     // le size peut rendre la réponse trop longue
     const result = await this.runDockerPs(
@@ -115,29 +101,23 @@ export class DockerCommand {
   }
 
   public async dockerInspect(containerName: string): Promise<DockerInspect> {
-    const strFormat = DockerFormatKeys.keysToString([
-      DockerFormatKeys.INSPECT_STATE,
-      DockerFormatKeys.INSPECT_EXIT_CODE,
-      DockerFormatKeys.INSPECT_NAME,
-      DockerFormatKeys.INSPECT_IMAGE,
-      DockerFormatKeys.INSPECT_STARTED_AT,
-      DockerFormatKeys.INSPECT_HEALTH,
-    ]);
-
+    // Get only State and Config as JSON objects to avoid template parsing issues with missing fields
+    // eslint-disable-next-line max-len
+    const strFormat = `{\\"state\\":{{json .State}},\\"name\\":{{json .Name}},\\"image\\":{{json .Config.Image}}}`;
     const result = await this.getCommand()
-      .execCommand(`docker inspect ${containerName} --format=${strFormat}`, ExecCommandMode.NO_LOG)
+      .execCommand(`docker inspect ${containerName} --format="${strFormat}"`, ExecCommandMode.NO_LOG)
       .catch(() => null);
 
     if (result === null) return new DockerInspect(containerName, null, '0', null, null, null);
-    const JSONResult = JSON.parse(result);
-    return new DockerInspect(
-      containerName,
-      JSONResult.state,
-      JSONResult.exitCode,
-      JSONResult.image,
-      JSONResult.startedAt,
-      JSONResult.health
-    );
+
+    const inspectData = JSON.parse(result);
+    const state = inspectData.state?.Status || null;
+    const exitCode = inspectData.state?.ExitCode?.toString() || '0';
+    const image = inspectData.image || null;
+    const startedAt = inspectData.state?.StartedAt || null;
+    const health = inspectData.state?.Health?.Status || 'none';
+
+    return new DockerInspect(containerName, state, exitCode, image, startedAt, health);
   }
 
   public async dockerInspectMultiple(containerNames: string[]): Promise<DockerComposeInspect> {

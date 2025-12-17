@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker inspect:*)"
     ],
     "deny": [],
     "ask": []
