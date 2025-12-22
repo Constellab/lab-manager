@@ -58,8 +58,8 @@ export class DockerComposeAggregateService implements OnModuleInit {
     this.taskService.newTask(taskName);
 
     try {
-      const mainCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
-      const result = await mainCompose.composePull();
+      const dockerCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
+      const result = await dockerCompose.composePull();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -93,10 +93,9 @@ export class DockerComposeAggregateService implements OnModuleInit {
     this.taskService.newTask(taskName);
 
     try {
-      const mainCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
-      const result = await mainCompose.composeUp([], services);
+      const dockerCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
+      const result = await dockerCompose.composeUp([], services);
 
-      // const inspect = await mainCompose.composeInspect();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -110,8 +109,8 @@ export class DockerComposeAggregateService implements OnModuleInit {
     this.taskService.newTask(taskName);
 
     try {
-      const mainCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
-      const result = await mainCompose.composeStop(services);
+      const dockerCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
+      const result = await dockerCompose.composeStop(services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());
@@ -125,8 +124,8 @@ export class DockerComposeAggregateService implements OnModuleInit {
     this.taskService.newTask(taskName);
 
     try {
-      const mainCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
-      const result = await mainCompose.composeDown(services);
+      const dockerCompose = this.dockerComposeService.getAndCheckDockerCompose(composeId);
+      const result = await dockerCompose.composeDown(services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());

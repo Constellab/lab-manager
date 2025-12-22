@@ -67,6 +67,15 @@ export class DockerSubComposeController {
     return await this.dockerComposeAggregateService.registerSubComposeFromZip(composeId, file.buffer, body);
   }
 
+  @Post(':brickName/:uniqueName/stop')
+  async stopSubCompose(
+    @Param('brickName', DockerNameValidationPipe) brickName: string,
+    @Param('uniqueName', DockerNameValidationPipe) uniqueName: string
+  ): Promise<void> {
+    const composeId = this.getComposeId(brickName, uniqueName);
+    return await this.dockerComposeAggregateService.stopServicesTask(composeId);
+  }
+
   @Delete(':brickName/:uniqueName/unregister')
   async unregisterSubCompose(
     @Param('brickName', DockerNameValidationPipe) brickName: string,
