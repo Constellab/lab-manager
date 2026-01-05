@@ -97,6 +97,14 @@ export class Command {
         lastError = data.toString();
       });
 
+      spawnCommand.on('error', (error) => {
+        this.logger.error(`Error spawning command '${command}': ${error.message}`);
+        subscriber.error({
+          status: 'error',
+          data: `Failed to spawn command '${command}': ${error.message}`,
+        });
+      });
+
       spawnCommand.on('exit', (code: number, signal: NodeJS.Signals | null) => {
         console.log('EXIT ' + code, +' ' + signal);
 
