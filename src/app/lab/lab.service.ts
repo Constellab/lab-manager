@@ -103,7 +103,7 @@ export class LabService implements OnModuleInit {
       glabStatus: {
         status: containers.getContainer(MainComposeServiceName.GLAB)?.status ?? 'none',
         startProgress: glabStartLog?.progress,
-        hasStartError: glabStartLog?.errors?.length > 0,
+        hasStartError: glabStartLog?.main_errors?.length > 0,
       },
     };
   }
