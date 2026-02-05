@@ -140,32 +140,29 @@ export class DockerCommand {
   }
 
   public async getLogs(containerName: string): Promise<string> {
-    // --timestamps : add timestamps to logs
     // --tail 2000 : only get the last 2000 lines
     // 2>&1 : redirect stderr to stdout to get it in the result in the order it was written
     return this.getCommand().execCommand(
-      `docker logs --timestamps --tail 2000 ${containerName} 2>&1`,
+      `docker logs --tail 2000 ${containerName} 2>&1`,
       ExecCommandMode.STDERR_AS_SUCCESS
     );
   }
 
   public async getErrorLogs(containerName: string): Promise<string> {
     const inspect = await this.dockerInspect(containerName);
-    // --timestamps : add timestamps to logs
     // --tail 2000 : only get the last 2000 lines
     // --since : only get logs since the container started (to avoid getting old logs)
     // 2>&1 : redirect stderr to stdout to get it in the result in the order it was written
     // 1>/dev/null : redirect stdout to /dev/null to only get stderr
     return this.getCommand().execCommand(
-      `docker logs --timestamps --tail 2000 ${containerName} --since ${inspect.startedAt} 2>&1 1>/dev/null`,
+      `docker logs --tail 2000 ${containerName} --since ${inspect.startedAt} 2>&1 1>/dev/null`,
       ExecCommandMode.STDERR_AS_SUCCESS
     );
   }
 
   public async exportLogsToFile(containerName: string, filePath: string): Promise<string> {
-    // --timestamps : add timestamps to logs
     // 2>&1 : redirect stderr to stdout to get it in the result in the order it was written
-    await this.getCommand().execCommand(`docker logs --timestamps ${containerName} > ${filePath} 2>&1`);
+    await this.getCommand().execCommand(`docker logs ${containerName} > ${filePath} 2>&1`);
     return filePath;
   }
 
