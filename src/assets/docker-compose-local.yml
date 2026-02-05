@@ -96,6 +96,8 @@ services:
       - lab-manager-config:/conf
       - lab-manager-dev-lab:/lab
       - lab-manager-dev-data:/data
+      # store SSH keys and vscode config persistent (same as prod but with a single volume for /home/labuser)
+      - lab-manager-dev-codelab-home:/home/labuser
     depends_on:
       - gws_core_dev_db
     networks:
@@ -202,4 +204,6 @@ volumes:
   lab-manager-dev-lab:
     external: true
   lab-manager-dev-data:
+    external: true
+  lab-manager-dev-codelab-home:
     external: true

@@ -120,6 +120,9 @@ services:
       # to keep the keys and prevent error : remote host identification has changed
       # when logging in with SSH
       - /app/dev/etc-ssh:/etc/ssh
+      # volumes for browser vscode and vscode (with ssh) to keep the settings and extensions installed in the codelab persistent
+      - /app/dev/openvscode-server:/home/labuser/.openvscode-server
+      - /app/dev/vscode-server:/home/labuser/.vscode-server
     labels:
       - traefik.enable=true
       # Config for the HTTPS codelab domain to port 8080
