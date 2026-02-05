@@ -1,6 +1,6 @@
 services:
   adminer:
-    image: adminer:4.8.0
+    image: adminer:5.4.1
     container_name: ${CONTAINER_PREFIX}-adminer
     networks:
       - ${LAB_NETWORK}
