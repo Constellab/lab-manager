@@ -236,6 +236,9 @@ export class FileService {
    * @returns Promise that resolves when manifest is created
    */
   public async generateOwnershipManifest(dirPath: string, manifestPath: string): Promise<void> {
+    // Ensure the manifest directory exists
+    mkdirSync(dirname(manifestPath), { recursive: true });
+
     // Use sudo find to get ownership info for all files
     // Format: path|uid|gid|mode
     const command = `sudo find "${dirPath}" -printf '%p|%U|%G|%m\\n' > "${manifestPath}"`;
