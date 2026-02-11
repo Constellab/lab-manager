@@ -21,7 +21,7 @@ export interface DockerComposeServiceJson {
   networks?: string[];
   depends_on?: string[];
   labels?: string[];
-  'x-gws-config'?: Record<string, unknown>[];
+  'x-gws-config'?: XGwsServiceConfig[];
 }
 
 /**
@@ -105,6 +105,11 @@ export interface DockerComposeVolumeVariable {
   isNamed: boolean;
 }
 
+export interface XBackupExclude {
+  pattern: string;
+  volume: string;
+}
+
 export interface XHttpsLabel {
   name: string;
   subDomain: string;
@@ -116,4 +121,9 @@ export interface XHttpsLabel {
    * Default: internalPort
    */
   localhostHostPort?: number;
+}
+
+export interface XGwsServiceConfig {
+  https?: XHttpsLabel;
+  backupExclude?: XBackupExclude;
 }

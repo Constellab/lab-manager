@@ -12,7 +12,8 @@ export class RcloneService {
     config: BucketConfig,
     localSourcePath: string,
     s3DestinationPath: string,
-    useSudo: boolean = false
+    useSudo: boolean = false,
+    excludePatterns: string[] = []
   ): RCloneRespsonse {
     if (!s3DestinationPath.startsWith('/')) s3DestinationPath = '/' + s3DestinationPath;
 
@@ -24,7 +25,8 @@ export class RcloneService {
       options,
       localSourcePath,
       bucketType + bucketName + s3DestinationPath,
-      useSudo
+      useSudo,
+      excludePatterns
     );
   }
 
@@ -85,7 +87,8 @@ export class RcloneService {
     options: string[],
     source: string,
     destination: string,
-    useSudo: boolean = false
+    useSudo: boolean = false,
+    excludePatterns: string[] = []
   ): RCloneRespsonse {
     const rcloneArgs = [
       '-P',
@@ -100,6 +103,7 @@ export class RcloneService {
       '--transfers',
       '16',
       ...options,
+      ...excludePatterns.flatMap((pattern) => ['--exclude', pattern]),
       'sync',
       source,
       destination,

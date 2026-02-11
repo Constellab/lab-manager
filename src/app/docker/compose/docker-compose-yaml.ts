@@ -7,6 +7,8 @@ import {
   DockerComposeVolume,
   DockerComposeVolumeVariable,
   DockerComposeYamlEnv,
+  XBackupExclude,
+  XGwsServiceConfig,
   XHttpsLabel,
 } from './docker-compose.types';
 import { TraefikLabels } from './traefik.labels';
@@ -27,6 +29,7 @@ export class DockerComposeYaml {
   public static readonly CONTAINER_PREFIX = 'CONTAINER_PREFIX';
   public static readonly LAB_DOMAIN_VAR_NAME = 'LAB_DOMAIN';
   public static readonly X_HTTPS_LABELS = 'https';
+  public static readonly X_BACKUP_EXCLUDE = 'backupExclude';
   public static readonly X_GWS_CONFIG = 'x-gws-config';
 
   constructor(strYaml: string, composeId?: DockerComposeUniqueId | null) {
@@ -395,6 +398,27 @@ export class DockerComposeYaml {
   ///////////////////////// X GWS CONFIG ///////////////////////
 
   /**
+   * Get the x-gws-config for a service as a merged object, or null if not present/invalid
+   */
+  getServiceGwsConfig(serviceName: string): XGwsServiceConfig | null {
+    this.checkServiceExists(serviceName);
+    const gwsConfig = this.content.services[serviceName][DockerComposeYaml.X_GWS_CONFIG];
+    if (!gwsConfig || !Array.isArray(gwsConfig)) return null;
+
+    const result: XGwsServiceConfig = {};
+    for (const item of gwsConfig) {
+      if (typeof item !== 'object' || item === null) continue;
+      if (DockerComposeYaml.X_HTTPS_LABELS in item) {
+        result.https = item[DockerComposeYaml.X_HTTPS_LABELS] as XHttpsLabel;
+      }
+      if (DockerComposeYaml.X_BACKUP_EXCLUDE in item) {
+        result.backupExclude = item[DockerComposeYaml.X_BACKUP_EXCLUDE] as XBackupExclude;
+      }
+    }
+    return result;
+  }
+
+  /**
    * In the x-gws-config section, replace the following custom label to traefik labels
    * x-gws-config:
    *   - https:
@@ -407,41 +431,29 @@ export class DockerComposeYaml {
     for (const serviceName of Object.keys(this.content.services)) {
       const service = this.content.services[serviceName];
 
-      // Check if service has x-gws-config
-      if (!service[DockerComposeYaml.X_GWS_CONFIG]) {
-        continue;
-      }
-
-      const gwsConfig = service[DockerComposeYaml.X_GWS_CONFIG];
-      if (!Array.isArray(gwsConfig)) {
-        continue;
-      }
+      const gwsConfig = this.getServiceGwsConfig(serviceName);
+      if (!gwsConfig) continue;
 
       // Initialize labels array if it doesn't exist
       if (!service.labels) {
         service.labels = [];
       }
 
-      // Process each config item
+      // Process config
       const traefikLabels = new TraefikLabels();
-      for (const configItem of gwsConfig) {
-        if (typeof configItem === 'object' && configItem !== null) {
-          if (DockerComposeYaml.X_HTTPS_LABELS in configItem) {
-            // in localhost we do not add traefik labels
-            // but we open the port mapping to the host
-            if (labDomain === 'localhost') {
-              const httpsLabel = configItem[DockerComposeYaml.X_HTTPS_LABELS] as XHttpsLabel;
-              this.addPortMapping(
-                serviceName,
-                httpsLabel.localhostHostPort ?? httpsLabel.internalPort,
-                httpsLabel.internalPort
-              );
-            } else {
-              const httpsLabel = configItem[DockerComposeYaml.X_HTTPS_LABELS] as XHttpsLabel;
-              const host = `${httpsLabel.subDomain}.${labDomain}`;
-              traefikLabels.addTraefikDomainLabels(host, httpsLabel.internalPort, httpsLabel.name);
-            }
-          }
+      if (gwsConfig.https) {
+        const httpsLabel = gwsConfig.https;
+        if (labDomain === 'localhost') {
+          // in localhost we do not add traefik labels
+          // but we open the port mapping to the host
+          this.addPortMapping(
+            serviceName,
+            httpsLabel.localhostHostPort ?? httpsLabel.internalPort,
+            httpsLabel.internalPort
+          );
+        } else {
+          const host = `${httpsLabel.subDomain}.${labDomain}`;
+          traefikLabels.addTraefikDomainLabels(host, httpsLabel.internalPort, httpsLabel.name);
         }
       }
 
@@ -460,8 +472,6 @@ export class DockerComposeYaml {
         }
       }
 
-      // Remove the x-gws-config after processing
-      delete service[DockerComposeYaml.X_GWS_CONFIG];
     }
   }
 
@@ -514,6 +524,60 @@ export class DockerComposeYaml {
 
   setAutoStart(autoStart: boolean): void {
     this.content['x-gws-config'].autoStart = autoStart;
+  }
+
+  /**
+   * Collect backup exclude patterns from service-level x-gws-config entries.
+   * Each backupExclude entry specifies a pattern and a container volume path.
+   * The container path is resolved to the host volume subfolder so that the
+   * pattern is relative to the extension's volume root.
+   *
+   * Example in docker-compose.yml:
+   *   minio:
+   *     volumes:
+   *       - ${LAB_VOLUME_HOST}/minio_data:/data
+   *     x-gws-config:
+   *       - backupExclude:
+   *           pattern: '.minio.sys/**'
+   *           volume: /data
+   *
+   * This resolves to: 'minio_data/.minio.sys/**'
+   */
+  getBackupExcludePatterns(): string[] {
+    const patterns: string[] = [];
+
+    for (const serviceName of this.getServiceNames()) {
+      const gwsConfig = this.getServiceGwsConfig(serviceName);
+      if (!gwsConfig?.backupExclude) continue;
+
+      const excludeConfig = gwsConfig.backupExclude;
+      if (!excludeConfig.pattern || !excludeConfig.volume) continue;
+
+      const hostSubfolder = this.resolveVolumeHostSubfolder(serviceName, excludeConfig.volume);
+      if (hostSubfolder) {
+        patterns.push(`${hostSubfolder}/${excludeConfig.pattern}`);
+      }
+    }
+
+    return patterns;
+  }
+
+  /**
+   * Find the host volume subfolder name for a given container path on a service.
+   * e.g. for volume '/app/prod/data/extensions/gws_ai_toolkit/ragflow/minio_data:/data'
+   * and containerPath '/data', returns 'minio_data'
+   */
+  private resolveVolumeHostSubfolder(serviceName: string, containerPath: string): string | null {
+    const volumes = this.getServiceVolumes(serviceName);
+    for (const vol of volumes) {
+      const parts = vol.split(':');
+      if (parts.length < 2) continue;
+
+      if (parts[1].trim() === containerPath) {
+        return parts[0].trim().split('/').pop() || null;
+      }
+    }
+    return null;
   }
 
   getEnv(): DockerComposeYamlEnv {

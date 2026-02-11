@@ -341,8 +341,47 @@ export class BackupService implements OnModuleInit {
       // Continue with backup even if manifest generation fails
     }
 
+    // Collect backup exclude patterns from all registered sub-composes
+    const excludePatterns = this.getBackupExcludePatterns();
+    if (excludePatterns.length > 0) {
+      this.logger.log(`Backup exclude patterns: ${excludePatterns.join(', ')}`);
+    }
+
     // Sync the data folder with sudo to access all files
-    this.callSyncToS3(backup, dataFolder, this.dataS3FolderDestination, 'DATA', true);
+    this.callSyncToS3(backup, dataFolder, this.dataS3FolderDestination, 'DATA', true, excludePatterns);
+  }
+
+  /**
+   * Collect backup exclude patterns from all registered sub-composes.
+   * Patterns are prefixed with the extension's relative path (extensions/brickName/uniqueName/)
+   * so they are relative to the data folder being synced.
+   */
+  private getBackupExcludePatterns(): string[] {
+    const patterns: string[] = [];
+
+    try {
+      const subComposes = this.dockerComposeService.getAllSubComposes();
+
+      for (const composeInfo of subComposes.composes) {
+        const compose = this.dockerComposeService.getDockerCompose({
+          brickName: composeInfo.brickName,
+          uniqueName: composeInfo.uniqueName,
+          env: composeInfo.env,
+        });
+
+        if (!compose) continue;
+
+        const composePatterns = compose.getComposeYaml().getBackupExcludePatterns();
+        for (const pattern of composePatterns) {
+          // Prefix pattern with the extension's relative path inside the data folder
+          patterns.push(`extensions/${composeInfo.brickName}/${composeInfo.uniqueName}/${pattern}`);
+        }
+      }
+    } catch (e) {
+      this.logError(`Error while collecting backup exclude patterns: ${e.message}`, e);
+    }
+
+    return patterns;
   }
 
   /**
@@ -367,13 +406,15 @@ export class BackupService implements OnModuleInit {
     pathToSync: string,
     destinationFolder: string,
     backupType: BackupType,
-    useSudo: boolean = false
+    useSudo: boolean = false,
+    excludePatterns: string[] = []
   ): void {
     const response = this.rcloneService.syncFolderToS3(
       backup.getBucketConfig(),
       pathToSync,
       backup.s3Prefix + '/' + destinationFolder,
-      useSudo
+      useSudo,
+      excludePatterns
     );
     // store process
     backup.setProcess(backupType, response.childProcess);
