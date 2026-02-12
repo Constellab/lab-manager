@@ -4,8 +4,11 @@ import { ConfigFileService } from '../../../core/services/config-file/config-fil
 import { CoreConfigService } from '../../../core/services/config/core-config.service';
 import { FileService } from '../../../core/services/file/file.service';
 import { TaskService } from '../../../core/services/task/task.service';
+import { DockerComposeService } from '../../../docker/compose/docker-compose.service';
+import { MainComposeService } from '../../../docker/compose/main-compose.service';
 import { Migration } from './migration.interface';
 import { Migration280 } from './migrations/migration_2.8.0';
+import { Migration2110 } from './migrations/migration_2.11.0';
 
 /**
  * Type for migration class constructors
@@ -24,7 +27,9 @@ export class MigrationService {
     private fileService: FileService,
     private configService: CoreConfigService,
     private taskService: TaskService,
-    private configFileService: ConfigFileService
+    private configFileService: ConfigFileService,
+    private dockerComposeService: DockerComposeService,
+    private mainComposeService: MainComposeService
   ) {}
 
   /**
@@ -121,7 +126,15 @@ export class MigrationService {
    * Get all registered migrations sorted by destination version.
    */
   private getRegisteredMigrations(): Migration[] {
-    const migrations = [new Migration280(this.configFileService)];
+    const migrations = [
+      new Migration280(this.configFileService),
+      new Migration2110(
+        this.dockerComposeService,
+        this.fileService,
+        this.configService,
+        this.mainComposeService
+      ),
+    ];
     return migrations.sort((a, b) => a.getDestinationVersionObject().getDif(b.getDestinationVersionObject()));
   }
 }

@@ -157,4 +157,63 @@ export class MainDockerCompose extends DockerCompose {
   public async prodDbIsRunning(): Promise<boolean> {
     return this.serviceIsRunning(MainComposeServiceName.GWS_CORE_PROD_DB);
   }
+
+  //////////////////////// DEV DB MANAGEMENT ////////////////////////
+
+  /**
+   * Dump the development database to a file in the lab-manager container.
+   * Same strategy as dumpProdDb but targeting the dev database.
+   *
+   * @param dumpFilePath - Path where to save the dump file in the lab-manager container
+   * @returns Error message if any, empty string on success
+   */
+  public async dumpDevDb(dumpFilePath: string): Promise<string> {
+    try {
+      const dir = dirname(dumpFilePath);
+      if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+      }
+
+      await this.execCommandInService(
+        MainComposeServiceName.GWS_CORE_DEV_DB,
+        `sh -c "mysqldump --user='root' --password=\\$MYSQL_ROOT_PASSWORD ` +
+          `--max_allowed_packet=256M \\$MYSQL_DATABASE"`,
+        { user: MainDockerCompose.MARIA_DB_USERNAME },
+        `> ${dumpFilePath}`
+      );
+
+      return '';
+    } catch (error) {
+      return error.message || error.toString();
+    }
+  }
+
+  /**
+   * Restore the development database from a dump file in the lab-manager container.
+   * Same strategy as restoreProdDb but targeting the dev database.
+   *
+   * @param dumpFilePath - Path to the dump file in the lab-manager container
+   * @returns Error message if any, empty string on success
+   */
+  public async restoreDevDb(dumpFilePath: string): Promise<string> {
+    try {
+      await this.execCommandInService(
+        MainComposeServiceName.GWS_CORE_DEV_DB,
+        `sh -c "mysql --user='root' --password=\\$MYSQL_ROOT_PASSWORD ` +
+          `--max_allowed_packet=256M \\$MYSQL_DATABASE"`,
+        {
+          user: MainDockerCompose.MARIA_DB_USERNAME,
+          interactive: true,
+        },
+        `< ${dumpFilePath}`
+      );
+      return '';
+    } catch (error) {
+      return error.message || error.toString();
+    }
+  }
+
+  public async devDbIsRunning(): Promise<boolean> {
+    return this.serviceIsRunning(MainComposeServiceName.GWS_CORE_DEV_DB);
+  }
 }
