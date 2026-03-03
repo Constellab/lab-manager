@@ -331,11 +331,15 @@ export class BackupService implements OnModuleInit {
     // Extensions folder contains volumes from sub-compose containers which may have different users
     try {
       const extensionsFolder = this.configService.getDataExtensionsFolder('prod');
-      const manifestPath = this.getOwnershipManifestPath();
-      await this.fileService.generateOwnershipManifest(extensionsFolder, manifestPath);
+      if (this.fileService.exists(extensionsFolder)) {
+        const manifestPath = this.getOwnershipManifestPath();
+        await this.fileService.generateOwnershipManifest(extensionsFolder, manifestPath);
 
-      // Upload the manifest to S3
-      await this.uploadOwnershipManifest(backup);
+        // Upload the manifest to S3
+        await this.uploadOwnershipManifest(backup);
+      } else {
+        this.logger.log('Extensions folder does not exist, skipping ownership manifest generation');
+      }
     } catch (e) {
       this.logError(`Error while generating ownership manifest. Error : ${e.message}`, e);
       // Continue with backup even if manifest generation fails
