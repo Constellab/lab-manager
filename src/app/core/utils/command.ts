@@ -77,8 +77,10 @@ export class Command {
     });
   }
 
-  public spawn(command: string, args: string[] = []): SpawnResponse {
-    const spawnCommand = spawn(command, args);
+  public spawn(command: string, args: string[] = [], env?: Record<string, string>): SpawnResponse {
+    const spawnCommand = spawn(command, args, {
+      env: env ? { ...process.env, ...env } : undefined,
+    });
     const obs: Observable<SpawnResult> = new Observable((subscriber) => {
       let lastError: string;
 

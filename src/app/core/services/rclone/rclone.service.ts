@@ -18,6 +18,7 @@ export class RcloneService {
     if (!s3DestinationPath.startsWith('/')) s3DestinationPath = '/' + s3DestinationPath;
 
     const options = this.getOptions(config);
+    const secretEnv = this.getSecretEnv(config);
     const bucketName = this.getBucketName(config);
     const bucketType = this.getBucketType(config);
 
@@ -26,7 +27,8 @@ export class RcloneService {
       localSourcePath,
       bucketType + bucketName + s3DestinationPath,
       useSudo,
-      excludePatterns
+      excludePatterns,
+      secretEnv
     );
   }
 
@@ -39,6 +41,7 @@ export class RcloneService {
     if (!s3SourcePath.startsWith('/')) s3SourcePath = '/' + s3SourcePath;
 
     const options = this.getOptions(config);
+    const secretEnv = this.getSecretEnv(config);
     const bucketName = this.getBucketName(config);
     const bucketType = this.getBucketType(config);
 
@@ -46,25 +49,34 @@ export class RcloneService {
       options,
       bucketType + bucketName + s3SourcePath,
       localDestinationPath,
-      useSudo
+      useSudo,
+      [],
+      secretEnv
     );
   }
 
   private getOptions(config: BucketConfig): string[] {
     if (config.type === BucketType.AZURE) {
-      return ['--azureblob-account', config.config.accountName, '--azureblob-key', config.config.accountKey];
+      return ['--azureblob-account', config.config.accountName];
     } else {
       return [
         '--s3-endpoint',
         config.config.endpoint,
         '--s3-region',
         config.config.region,
-        '--s3-access-key-id',
-        config.config.credentials.accessKeyId,
-        '--s3-secret-access-key',
-        config.config.credentials.secretAccessKey,
       ];
     }
+  }
+
+  private getSecretEnv(config: BucketConfig): Record<string, string> {
+    if (config.type === BucketType.AZURE) {
+      return { RCLONE_AZUREBLOB_KEY: config.config.accountKey };
+    }
+
+    return {
+      RCLONE_S3_ACCESS_KEY_ID: config.config.credentials.accessKeyId,
+      RCLONE_S3_SECRET_ACCESS_KEY: config.config.credentials.secretAccessKey,
+    };
   }
 
   private getBucketName(config: BucketConfig): string {
@@ -88,7 +100,8 @@ export class RcloneService {
     source: string,
     destination: string,
     useSudo: boolean = false,
-    excludePatterns: string[] = []
+    excludePatterns: string[] = [],
+    secretEnv: Record<string, string> = {}
   ): RCloneRespsonse {
     const rcloneArgs = [
       '-P',
@@ -110,8 +123,8 @@ export class RcloneService {
     ];
 
     const spanwResult = useSudo
-      ? new Command().spawn('sudo', ['rclone', ...rcloneArgs])
-      : new Command().spawn('rclone', rcloneArgs);
+      ? new Command().spawn('sudo', ['rclone', ...rcloneArgs], secretEnv)
+      : new Command().spawn('rclone', rcloneArgs, secretEnv);
 
     return {
       childProcess: spanwResult.childProcess,
