@@ -278,7 +278,7 @@ export class LabService implements OnModuleInit {
       await this.composeAggregateService.removeErrorSubComposes();
     }
     if (requestDTO.pruneSystem) {
-      await this.dockerContainerService.systemPrune();
+      await this.dockerContainerService.pruneUnusedImages();
     }
   }
 }

@@ -100,7 +100,7 @@ export class DockerContainerService {
     }
   }
 
-  public async systemPrune(): Promise<void> {
+  public async pruneUnusedImages(): Promise<void> {
     // in local mode, don't prune because it breaks the local docker environment
     if (this.configService.isLocal()) return;
 
@@ -109,7 +109,7 @@ export class DockerContainerService {
 
     try {
       const dockerCommand = new DockerCommand();
-      const result = await dockerCommand.systemPrune();
+      const result = await dockerCommand.pruneUnusedImages();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
       this.taskService.markTaskAsError(taskName, e.toString());

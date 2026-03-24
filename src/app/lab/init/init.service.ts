@@ -7,6 +7,7 @@ import { CoreConfigService } from '../../core/services/config/core-config.servic
 import { FileService } from '../../core/services/file/file.service';
 import { DockerComposeAggregateService } from '../../docker/compose/docker-compose-aggregate.service';
 import { MainComposeService } from '../../docker/compose/main-compose.service';
+import { DockerContainerService } from '../../docker/container/docker-container.service';
 import { EnvVariableService } from '../env-variable/env-variable.service';
 import { LabInitConfig } from '../lab.class';
 import { MigrationService } from './migration/migration.service';
@@ -23,7 +24,8 @@ export class InitService {
     private envVariableService: EnvVariableService,
     private taskService: TaskService,
     private aggregateComposeService: DockerComposeAggregateService,
-    private migrationService: MigrationService
+    private migrationService: MigrationService,
+    private dockerContainerService: DockerContainerService
   ) {}
 
   public async configureAndInitLab(labInitConfig: LabInitConfig): Promise<void> {
@@ -69,9 +71,13 @@ export class InitService {
 
     await this.configureDockerCompose();
 
+    
     // UP CONTAINERS
     await this.aggregateComposeService.restartMainServices({ updateContainers: true });
-
+    
+    // Prune unused images before starting containers
+    await this.dockerContainerService.pruneUnusedImages();
+    
     // wait for 10 seconds to let the containers start
     // so the progress of the glab is updated before the lab is marked as idle
     // because is not waiting, there is a small gap where we can't detect the lab

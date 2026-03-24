@@ -170,8 +170,8 @@ export class DockerCommand {
     return this.getCommand().execCommand(`docker login -u ${username} -p ${password} ${registryUrl}`);
   }
 
-  public systemPrune(): Promise<string> {
-    return this.getCommand().execCommand(`docker system prune -f -a`);
+  public pruneUnusedImages(): Promise<string> {
+    return this.getCommand().execCommand(`docker image prune -a -f`);
   }
 
   public async dockerRun(
