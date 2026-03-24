@@ -9,7 +9,8 @@ import { BrickVersionDTO } from './external-community.class';
 export class ExternalCommunityApiService {
   private static readonly BRICKS_BASE_ROUTE = 'brick';
 
-  private static readonly API_KEY_HEADER = 'X-Api-Key';
+  private static readonly API_KEY_HEADER = 'Authorization';
+  private static readonly API_KEY_PREFIX = 'api-key';
 
   constructor(
     private apiService: ApiService,
@@ -84,7 +85,7 @@ export class ExternalCommunityApiService {
   private getHeader(apiKey: string): any {
     const header: any = {};
     if (apiKey) {
-      header[ExternalCommunityApiService.API_KEY_HEADER] = `${apiKey}`;
+      header[ExternalCommunityApiService.API_KEY_HEADER] = `${ExternalCommunityApiService.API_KEY_PREFIX} ${apiKey}`;
     }
     // add the lab manager version in the header
     return header;
