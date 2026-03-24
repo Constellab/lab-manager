@@ -17,18 +17,15 @@ export class ExternalCommunityApiService {
   ) {}
 
   public async getBrickLatestVersion(brickName: string): Promise<BrickVersionDTO> {
-    // TODO TO IMPROVE WHEN ROUTE TO GET LATEST VERSION WILL BE IMPLEMENTED
-    const brick = await this.getByName(brickName);
-    const brickVersions = await this.getVersionsList(brick.id);
-    const latestVersion = brickVersions[0];
-    return this.getBrickVersion(brickName, latestVersion);
+    return this.getBrickVersion(brickName, 'latest');
   }
 
   public getBrickVersion(brickName: string, brickVersion: string): Promise<BrickVersionDTO> {
     return lastValueFrom(
       this.apiService.get(
         this.constructRoute(
-          `${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/space/name/${brickName}/${brickVersion}`
+          `${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/brick/for-space/version-info/` +
+            `${brickName}/${brickVersion}`
         ),
         this.getRequestOptions()
       )
@@ -80,7 +77,7 @@ export class ExternalCommunityApiService {
   private getRequestOptions(options: ApiHttpOption = {}): ApiHttpOption {
     const privateFile = this.fileService.readPrivateFile();
 
-    return Object.assign(options, { headers: this.getHeader(privateFile.community.api_key) });
+    return Object.assign(options, { headers: this.getHeader(privateFile.space.prod_api_key) });
   }
 
   // get the header with api key

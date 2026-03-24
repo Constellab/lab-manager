@@ -73,7 +73,6 @@ export class EnvVariableService {
       if (privateJson.community) {
         envVariables.addEnvVariable('COMMUNITY_FRONT_URL', privateJson.community.front_url);
         envVariables.addEnvVariable('COMMUNITY_API_URL', privateJson.community.api_url);
-        envVariables.addEnvVariable('COMMUNITY_API_KEY', privateJson.community.api_key);
       }
 
       envVariables.addEnvVariable('GWS_CORE_PROD_DB_PASSWORD', privateJson.db.gws_core_prod_password);

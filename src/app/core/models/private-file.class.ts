@@ -9,7 +9,6 @@ export interface PrivateFile {
   community: {
     front_url: string;
     api_url: string;
-    api_key: string;
   };
   lab: {
     codelabUsername: string;
@@ -47,7 +46,6 @@ export function getPrivateFileTemplate(): PrivateFile {
     community: {
       front_url: null,
       api_url: null,
-      api_key: null,
     },
     lab: {
       codelabUsername: 'codelab',

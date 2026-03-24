@@ -24,7 +24,6 @@ services:
       # COMMUNITY
       - COMMUNITY_API_URL=${COMMUNITY_API_URL}
       - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}
-      - COMMUNITY_API_KEY=${COMMUNITY_API_KEY}
       # GWS_CORE database
       - GWS_CORE_DB_HOST=gws_core_prod_db
       - GWS_CORE_DB_USER=gws_core
@@ -91,7 +90,6 @@ services:
       # COMMUNITY
       - COMMUNITY_API_URL=${COMMUNITY_API_URL}
       - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}
-      - COMMUNITY_API_KEY=${COMMUNITY_API_KEY}
       # GWS_CORE database
       - GWS_CORE_DB_HOST=gws_core_dev_db
       - GWS_CORE_DB_USER=gws_core

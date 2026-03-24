@@ -132,7 +132,6 @@ export class InitService {
       // Community information
       privateJson.community.front_url = labInitConfig.community.frontUrl;
       privateJson.community.api_url = labInitConfig.community.apiUrl;
-      privateJson.community.api_key = labInitConfig.community.apiKey;
 
       // Backup info
       privateJson.backup = {
