@@ -123,7 +123,7 @@ export class RcloneService {
     ];
 
     const spanwResult = useSudo
-      ? new Command().spawn('sudo', ['rclone', ...rcloneArgs], secretEnv)
+      ? new Command().spawn('sudo', ['-E', 'rclone', ...rcloneArgs], secretEnv)
       : new Command().spawn('rclone', rcloneArgs, secretEnv);
 
     return {
