@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.6
+
 # docker file based on the following tutorial :
 # https://blog.logrocket.com/containerized-development-nestjs-docker/
 
@@ -27,22 +29,26 @@ ENV DOCKER_COMPOSE_VERSION=2.26.1
 
 
 # Install docker and dependencies
-RUN apt-get update && apt-get -y install \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    rm -f /etc/apt/apt.conf.d/docker-clean && \
+    sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list && \
+    apt-get update && apt-get -y install \
     ca-certificates \
     curl \
     gnupg \
     lsb-release \
-    sudo && \
-    rm -rf /var/lib/apt/lists/*
+    sudo
 
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 
 # Install docker engine and docker cli
-RUN echo \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
-    apt-get update && apt-get -y install docker-ce docker-ce-cli containerd.io && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get update && apt-get -y install docker-ce docker-ce-cli containerd.io
 
 
 # Install node js directly from official binaries
@@ -56,9 +62,10 @@ RUN curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-li
 ENV PATH="/usr/local/lib/nodejs/node-v${NODE_VERSION}-linux-x64/bin:${PATH}"
 
 # Install rclone, unzip and pciutils (useful for lspci command)
-RUN apt-get update && \
-    apt-get install -y rclone=${CUSTOM_RCLONE_VERSION} unzip pciutils && \
-    rm -rf /var/lib/apt/lists/*
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && \
+    apt-get install -y rclone=${CUSTOM_RCLONE_VERSION} unzip pciutils
 
 
 # Set UTC timezone for the docker

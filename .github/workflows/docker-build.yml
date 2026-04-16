@@ -23,6 +23,9 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v6.0.2
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v4.1.0
         with:
@@ -48,6 +51,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             LAB_MANAGER_VERSION=${{ github.ref_name }}
+          cache-from: type=gha,scope=lab-manager
+          cache-to: type=gha,mode=max,scope=lab-manager
 
       # step to set the docker image description from docker_hub_README.md
       - name: Docker Hub Description
