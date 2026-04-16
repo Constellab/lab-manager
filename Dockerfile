@@ -65,17 +65,14 @@ RUN apt-get update && \
 ENV TZ=UTC \
     SHELL=/bin/bash
 
-# Create non-root user matching host ubuntu user
+# Create non-root user. The docker group is resolved at runtime from the
+# bind-mounted /var/run/docker.sock GID (see entrypoint.sh), so we don't hardcode it here.
 ARG USER_ID=1000
 ARG GROUP_ID=1000
-ARG DOCKER_GID=999
 ARG LAB_MANAGER_VERSION
 
-# Create docker group with host's docker GID and add user to it
-RUN groupadd -g ${DOCKER_GID} docker_host || true && \
-    groupadd -g ${GROUP_ID} labuser && \
-    useradd -m -u ${USER_ID} -g ${GROUP_ID} -G ${DOCKER_GID} -s /bin/bash labuser && \
-    # enable sudo for labuser without password
+RUN groupadd -g ${GROUP_ID} labuser && \
+    useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash labuser && \
     echo "labuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
     chown labuser:labuser /lab-manager
 

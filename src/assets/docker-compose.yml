@@ -5,6 +5,7 @@ services:
   # Production Glab
   glab:
     image: constellab/glab:${TAG_PREFIX}${GLAB_TAG}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     environment:
       - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}
@@ -67,6 +68,7 @@ services:
   # Codelab
   codelab:
     image: constellab/codelab:${TAG_PREFIX}${GLAB_TAG}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     environment:
       # The environment variables are also define in gpm repository
       # in codelab-init-ssh.sh file.
