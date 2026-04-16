@@ -7,7 +7,7 @@ import { BrickVersionDTO } from './external-community.class';
 
 @Injectable()
 export class ExternalCommunityApiService {
-  private static readonly BRICKS_BASE_ROUTE = 'brick';
+  private static readonly BRICKS_BASE_ROUTE = 'lab/brick';
 
   private static readonly API_KEY_HEADER = 'Authorization';
   private static readonly API_KEY_PREFIX = 'api-key';
@@ -25,8 +25,7 @@ export class ExternalCommunityApiService {
     return lastValueFrom(
       this.apiService.get(
         this.constructRoute(
-          `${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/for-space/version-info/` +
-            `${brickName}/${brickVersion}`
+          `${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/${brickName}/${brickVersion}`
         ),
         this.getRequestOptions()
       )
@@ -36,11 +35,9 @@ export class ExternalCommunityApiService {
   public getAllWithFilters(filters: any, page: number, size: number): Promise<any> {
     return lastValueFrom(
       this.apiService.post(
-        this.constructRoute(`${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/filters`),
+        this.constructRoute(`${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/search`),
         {
-          spacesFilter: filters.spacesFilter,
           titleFilter: filters.titleFilter,
-          sorts: [],
         },
         {
           params: {
@@ -55,15 +52,17 @@ export class ExternalCommunityApiService {
   public getByName(name: string): Promise<any> {
     return lastValueFrom(
       this.apiService.get(
-        this.constructRoute(`${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/name/${name}`)
+        this.constructRoute(`${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/${name}`),
+        this.getRequestOptions()
       )
     );
   }
 
-  public getVersionsList(brickId: string): Promise<string[]> {
+  public getVersionsList(name: string): Promise<string[]> {
     return lastValueFrom(
       this.apiService.get(
-        this.constructRoute(`${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/versions-list/${brickId}`)
+        this.constructRoute(`${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/${name}/versions`),
+        this.getRequestOptions()
       )
     );
   }

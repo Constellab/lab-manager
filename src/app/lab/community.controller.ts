@@ -36,8 +36,8 @@ export class CommunityController {
     return this.communityService.getByName(name);
   }
 
-  @Get('brick/:id/version')
-  async getVersionsList(@Param('id') id: string): Promise<string[]> {
-    return this.communityService.getVersionsList(id);
+  @Get('brick/:name/version')
+  async getVersionsList(@Param('name') name: string): Promise<string[]> {
+    return this.communityService.getVersionsList(name);
   }
 }
