@@ -48,4 +48,6 @@ fi
 export HOST_UID=$(id -u labuser)
 export HOST_GID=$(id -g labuser)
 
-exec sudo -u labuser -E -H "$@"
+# sudo resets PATH to its secure_path even with -E; re-inject it explicitly
+# so node and other tools installed outside /usr/bin remain reachable.
+exec sudo -u labuser -E -H env PATH="$PATH" "$@"
