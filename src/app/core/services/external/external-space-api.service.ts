@@ -66,9 +66,9 @@ export class ExternalSpaceApiService {
   ////////////////// METHODS TO BUILD THE REQUEST //////////////////
 
   private constructRoute(route: string): string {
-    const isLocal = this.configService.isLocal();
+    const isDev = this.configService.isDevelopment();
     let url: string;
-    if (isLocal) {
+    if (isDev) {
       url = 'http://host.docker.internal:3001';
     } else {
       const privateFile = this.fileService.readPrivateFile();
