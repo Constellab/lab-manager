@@ -65,8 +65,8 @@ export class ApiKeyGuard implements CanActivate {
       }
     }
 
-    // in local, no need for api key
-    if (this.configService.isLocal()) {
+    // in local or private-cloud, no need for api key
+    if (!this.configService.apiKeyIsRequired()) {
       AuthContextService.setContext({
         type: 'local',
       });

@@ -55,16 +55,19 @@ The application uses a sophisticated Docker Compose management system:
 - `MainDockerCompose` - Handles the primary lab compose file
 - `DockerCompose` - Generic compose file operations (up/down/status)
 - `DockerComposeYaml` - YAML parsing and manipulation
-- `LabDesktopComposeService` - Desktop environment management
+- `LabStandaloneFrontComposeService` - Auto-starts the standalone configuration front container in `desktop` and `private-cloud` modes
 
 ### Environment Profiles
 
 Configured via `ENVIRONMENT_PROFILE` environment variable:
 
-- `prod` - Production lab environment
-- `dev` - Development environment
-- `desktop` - Desktop/standalone mode
+- `prod` - Production lab environment (cloud-reachable, full compose stack, API key required)
+- `dev` - Development environment (uses `docker-compose-local.yml`, API key bypassed)
+- `desktop` - Desktop/standalone mode (single-user install, standalone front on host port 82, API key bypassed)
+- `private-cloud` - Prod-grade cloud lab on a private network the Constellab cloud cannot reach. Behaves like `prod` for the compose lifecycle but also starts the standalone front behind traefik on `lab-config.${VIRTUAL_HOST}` and bypasses the API key for on-site configuration
 - `test` - Testing environment
+
+See [src/app/core/models/config.class.ts](src/app/core/models/config.class.ts) for the authoritative description of each profile.
 
 ### Configuration System
 

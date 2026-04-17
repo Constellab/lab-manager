@@ -6,12 +6,18 @@ import { CommunityController } from './community.controller';
 import { EnvVariableService } from './env-variable/env-variable.service';
 import { InitService } from './init/init.service';
 import { MigrationService } from './init/migration/migration.service';
-import { LabDesktopComposeService } from './lab-desktop-compose.service';
+import { LabStandaloneFrontComposeService } from './lab-standalone-front-compose.service';
 import { LabController } from './lab.controller';
 import { LabService } from './lab.service';
 
 @Module({
-  providers: [InitService, LabService, LabDesktopComposeService, EnvVariableService, MigrationService],
+  providers: [
+    InitService,
+    LabService,
+    LabStandaloneFrontComposeService,
+    EnvVariableService,
+    MigrationService,
+  ],
   controllers: [LabController, CommunityController],
   imports: [HttpModule, CoreModule, DockerModule],
 })

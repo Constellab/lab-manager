@@ -29,9 +29,17 @@ export class CoreConfigService {
     return this.getEnvironmentProfile() === 'desktop';
   }
 
+  public isPrivateCloud(): boolean {
+    return this.getEnvironmentProfile() === 'private-cloud';
+  }
+
   public isLocal(): boolean {
     const env: EnvironmentProfile = this.getEnvironmentProfile();
     return env === 'dev' || env === 'test' || env === 'desktop';
+  }
+
+  public apiKeyIsRequired(): boolean {
+    return !this.isLocal() && !this.isPrivateCloud();
   }
 
   public getLabManagerVersion(): string {
