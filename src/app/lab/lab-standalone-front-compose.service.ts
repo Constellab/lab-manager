@@ -20,6 +20,14 @@ export class LabStandaloneFrontComposeService implements OnModuleInit {
 
   private static readonly STANDALONE_FRONT_TEMPLATE_FILE = 'docker-compose-lab-desktop.yml';
 
+  // Subdomain prepended to ${VIRTUAL_HOST} for the lab manager API URL the
+  // standalone front talks to (private-cloud mode).
+  private static readonly LAB_MANAGER_SUBDOMAIN = 'lab-manager';
+
+  // Subdomain prepended to ${VIRTUAL_HOST} for the standalone front itself
+  // when exposed via traefik in private-cloud mode.
+  private static readonly LAB_CONFIG_SUBDOMAIN = 'lab-config';
+
   private readonly logger = new Logger(LabStandaloneFrontComposeService.name);
 
   constructor(
@@ -80,15 +88,20 @@ export class LabStandaloneFrontComposeService implements OnModuleInit {
         'COMMUNITY_FRONT_URL',
         this.coreConfigService.getDesktopCommunityFrontUrl()
       );
+      const labManagerSubdomain = LabStandaloneFrontComposeService.LAB_MANAGER_SUBDOMAIN;
+      const virtualHost = this.coreConfigService.getVirtualHost();
       dockerYaml.addEnvironmentVariable(
         serviceName,
         'API_URL',
         isPrivateCloud
-          ? `https://lab-manager.${this.coreConfigService.getVirtualHost()}`
+          ? `https://${labManagerSubdomain}.${virtualHost}`
           : `http://localhost:${this.coreConfigService.getPort()}`
       );
 
       if (isPrivateCloud) {
+        // Traefik routes by Host header, so the container needs to know the
+        // virtual host it is served under.
+        dockerYaml.addEnvironmentVariable(serviceName, 'VIRTUAL_HOST', virtualHost);
         this.applyPrivateCloudTraefikConfig(dockerYaml, serviceName);
       }
 
@@ -110,16 +123,17 @@ export class LabStandaloneFrontComposeService implements OnModuleInit {
 
   /**
    * In private-cloud mode the standalone front is exposed via traefik on
-   * `lab-config.${VIRTUAL_HOST}` rather than the host port mapping used in desktop mode.
+   * `${LAB_CONFIG_SUBDOMAIN}.${VIRTUAL_HOST}` rather than the host port mapping used in desktop mode.
    */
   private applyPrivateCloudTraefikConfig(dockerYaml: DockerComposeYaml, serviceName: string): void {
     const virtualHost = this.coreConfigService.getVirtualHost();
+    const host = `${LabStandaloneFrontComposeService.LAB_CONFIG_SUBDOMAIN}.${virtualHost}`;
     const routerName = 'lab-desktop-router';
     const traefikServiceName = 'lab-desktop-service';
 
     dockerYaml.addLabels(serviceName, [
       'traefik.enable=true',
-      `traefik.http.routers.${routerName}.rule=Host(\`lab-config.${virtualHost}\`)`,
+      `traefik.http.routers.${routerName}.rule=Host(\`${host}\`)`,
       `traefik.http.routers.${routerName}.service=${traefikServiceName}`,
       `traefik.http.services.${traefikServiceName}.loadbalancer.server.port=80`,
       `traefik.http.routers.${routerName}.entrypoints=websecure`,
