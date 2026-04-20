@@ -1,6 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { CoreConfigService } from '../core/services/config/core-config.service';
-import { TaskService } from '../core/services/task/task.service';
 import { DockerComposeYaml } from '../docker/compose/docker-compose-yaml';
 import { DockerCompose } from '../docker/compose/docker-compose.class';
 import { DockerComposeService } from '../docker/compose/docker-compose.service';
@@ -31,7 +30,6 @@ export class LabStandaloneFrontComposeService implements OnModuleInit {
   private readonly logger = new Logger(LabStandaloneFrontComposeService.name);
 
   constructor(
-    private taskService: TaskService,
     private coreConfigService: CoreConfigService,
     private dockerComposeService: DockerComposeService
   ) {}
@@ -57,8 +55,7 @@ export class LabStandaloneFrontComposeService implements OnModuleInit {
   }
 
   private async startStandaloneFrontContainer(): Promise<boolean> {
-    const taskName = 'Start lab standalone front service';
-    this.taskService.newTask(taskName);
+    this.logger.log('Starting lab standalone front service');
 
     try {
       const templatePath = this.coreConfigService.getAssetPath(
@@ -113,10 +110,10 @@ export class LabStandaloneFrontComposeService implements OnModuleInit {
       // We force recreate to ensure the latest image is used
       const wasStarted = await dockerCompose.composeUp(['--pull always']);
 
-      this.taskService.markTaskAsSuccess(taskName, 'Ok');
+      this.logger.log('Lab standalone front service started');
       return wasStarted != null;
     } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
+      this.logger.error('Error while starting the lab standalone front service', e);
       throw e;
     }
   }

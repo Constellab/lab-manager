@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
+import { GPUService } from 'src/app/core/services/gpu/gpu.service';
+import { TaskService } from 'src/app/core/services/task/task.service';
 import { ConfigFile } from '../../core/models/config-file.class';
 import { PrivateFile } from '../../core/models/private-file.class';
 import { FileService } from '../../core/services/file/file.service';
-import { TaskService } from 'src/app/core/services/task/task.service';
-import { GPUService } from 'src/app/core/services/gpu/gpu.service';
-import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
 
 /**
  * Simple class to generate the env variable string
@@ -37,10 +37,9 @@ export class EnvVariableService {
    */
   public async setAllEnvVariables(configJson: ConfigFile, privateJson: PrivateFile): Promise<void> {
     const taskName = 'Configure lab manager';
+    await this.taskService.newTask(taskName, 'Initializing env variable');
 
     try {
-      this.taskService.newTask(taskName, 'Initializing env variable');
-
       const envVariables = new EnvVariables();
 
       if (configJson == null) {
@@ -102,7 +101,8 @@ export class EnvVariableService {
 
       this.taskService.markTaskAsSuccess(taskName, 'Env variables set');
     } catch (error) {
-      this.taskService.markTaskAsError(taskName, `Error while setting env variables: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.taskService.markTaskAsError(taskName, `Error while setting env variables: ${message}`);
       throw error;
     }
   }
