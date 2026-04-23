@@ -11,6 +11,8 @@ services:
       - LAB_NAME=${LAB_NAME}
       - LAB_MODE=prod
       - LAB_ENVIRONMENT=ON_CLOUD
+      - LAB_FOLDER=/lab
+      - DATA_FOLDER=/data
       - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
       - LAB_MANAGER_API_URL=https://lab-manager.${VIRTUAL_HOST}
@@ -78,6 +80,8 @@ services:
       - LAB_NAME=${LAB_NAME}
       - LAB_MODE=dev
       - LAB_ENVIRONMENT=ON_CLOUD
+      - LAB_FOLDER=/lab
+      - DATA_FOLDER=/data
       - LAB_PROD_API_URL=https://glab.${VIRTUAL_HOST}
       - LAB_DEV_API_URL=https://glab-dev.${VIRTUAL_HOST}
       - LAB_MANAGER_API_URL=https://lab-manager.${VIRTUAL_HOST}
@@ -100,7 +104,7 @@ services:
       - GWS_CORE_DB_PORT=3306
       # Test database
       - GWS_TEST_DB_HOST=test_gws_dev_db
-      - GWS_TEST_DB_USER=test_gws
+      - GWS_TEST_DB_USER=root
       - GWS_TEST_DB_PASSWORD=gencovery
       - GWS_TEST_DB_NAME=test_gws
       - GWS_TEST_DB_PORT=3306
@@ -224,14 +228,28 @@ services:
   test_gws_dev_db:
     image: mariadb:10.7.4
     command: --max_allowed_packet=256M
+    # Only root credentials are needed — test databases and users are
+    # created on the fly by the test suite.
     environment:
       - MYSQL_ROOT_PASSWORD=gencovery
-      - MYSQL_USER=test_gws
-      - MYSQL_PASSWORD=gencovery
-      - MYSQL_DATABASE=test_gws
     networks:
       - gencovery-network-dev
     container_name: test_gws_dev_db
+        # Use tmpfs (RAM-backed filesystem) instead of a volume so the test DB
+    # is ephemeral — data is discarded when the container stops, and I/O is
+    # much faster since nothing hits disk.
+    tmpfs:
+      - /var/lib/mysql:rw,size=2g
+    # MariaDB tuning flags to maximize write speed at the cost of durability,
+    # which is fine for a test database that is thrown away after each run.
+    command:
+      - --innodb-flush-log-at-trx-commit=0 # don't flush redo log on every commit
+      - --innodb-doublewrite=0 # skip the doublewrite buffer
+      - --sync-binlog=0 # don't fsync the binlog on each write
+      - --skip-log-bin # disable binary logging entirely
+      - --innodb-flush-method=nosync # skip fsync/fdatasync calls
+      - --innodb-buffer-pool-size=512M # generous buffer pool for in-memory work
+      - --max-connections=200 # allow enough connections for parallel tests
 
 
 networks:
