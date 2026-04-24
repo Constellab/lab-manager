@@ -63,7 +63,7 @@ export class LabService implements OnModuleInit {
   public async getStatus(): Promise<LabManagerStatus> {
     let lastInitManagerVersion: string = null;
     if (this.fileService.privateFileExists()) {
-      lastInitManagerVersion = this.fileService.readPrivateFile().data?.last_init_manager_version ?? null;
+      lastInitManagerVersion = this.fileService.readPrivateFile().data?.lastInitManagerVersion ?? null;
     }
 
     const containers = await this.mainComposeService.inspectContainers();
@@ -172,9 +172,10 @@ export class LabService implements OnModuleInit {
     if (
       !labInitConfig.space ||
       !labInitConfig.community ||
-      !labInitConfig.gwsCoreProdPassword ||
-      !labInitConfig.gwsCoreDevPassword ||
-      !labInitConfig.labConfig
+      !labInitConfig.db?.gwsCoreProdPassword ||
+      !labInitConfig.db?.gwsCoreDevPassword ||
+      !labInitConfig.lab ||
+      !labInitConfig.backup
     ) {
       throw new BadRequestException('The provided configuration is missing some required fields');
     }
@@ -223,8 +224,6 @@ export class LabService implements OnModuleInit {
     }
 
     const configFile: ConfigFile = {
-      lab_id: null,
-      name: null,
       front_version: null,
       glab_tag: null,
       environment: {

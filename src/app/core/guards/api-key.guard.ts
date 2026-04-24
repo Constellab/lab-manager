@@ -44,7 +44,7 @@ export class ApiKeyGuard implements CanActivate {
       if (isDecoratedWithLabGuard(this.reflector, context)) {
         try {
           const privateFile = this.fileService.readPrivateFile();
-          if (apiKey === authorizationSchema + ' ' + privateFile.space.prod_api_key) {
+          if (apiKey === authorizationSchema + ' ' + privateFile.space.prodApiKey) {
             AuthContextService.setContext({
               type: 'lab',
               env: 'prod',
@@ -52,7 +52,7 @@ export class ApiKeyGuard implements CanActivate {
             return true;
           }
 
-          if (apiKey === authorizationSchema + ' ' + privateFile.space.dev_api_key) {
+          if (apiKey === authorizationSchema + ' ' + privateFile.space.devApiKey) {
             AuthContextService.setContext({
               type: 'lab',
               env: 'dev',

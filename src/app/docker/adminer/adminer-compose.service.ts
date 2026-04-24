@@ -104,14 +104,14 @@ export class AdminerComposeService {
         host: 'gws_core_prod_db',
         username: 'gws_core',
         dbName: 'gws_core',
-        password: privateFile.db.gws_core_prod_password,
+        password: privateFile.db.gwsCoreProdPassword,
       },
 
       gwsCoreDev: {
         host: 'gws_core_dev_db',
         username: 'gws_core',
         dbName: 'gws_core',
-        password: privateFile.db.gws_core_dev_password,
+        password: privateFile.db.gwsCoreDevPassword,
       },
     };
 

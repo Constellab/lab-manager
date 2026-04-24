@@ -12,7 +12,7 @@ export abstract class Migration {
 
   /**
    * Checks if this migration applies based on source and destination versions
-   * @param sourceVersion - The current version of the lab (last_init_manager_version)
+   * @param sourceVersion - The current version of the lab (lastInitManagerVersion)
    * @param targetVersion - The version the lab is being upgraded to (current lab manager version)
    * @returns true if this migration should be executed
    */

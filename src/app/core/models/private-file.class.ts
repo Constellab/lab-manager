@@ -1,16 +1,18 @@
 export interface PrivateFile {
   version: number;
   space: {
-    prod_api_key: string;
-    dev_api_key: string;
-    api_url: string;
-    front_url: string;
+    prodApiKey: string;
+    devApiKey: string;
+    apiUrl: string;
+    frontUrl: string;
   };
   community: {
-    front_url: string;
-    api_url: string;
+    frontUrl: string;
+    apiUrl: string;
   };
   lab: {
+    id: string;
+    name: string;
     codelabUsername: string;
     codelabToken: string;
     codelabHashToken: string;
@@ -20,10 +22,10 @@ export interface PrivateFile {
     enable: boolean;
   };
   db: {
-    gws_core_prod_password: string;
-    gws_core_dev_password: string;
+    gwsCoreProdPassword: string;
+    gwsCoreDevPassword: string;
   };
-  openai_api_key: string;
+  openaiApiKey: string;
   // contains some information about the current state of the lab
   // thoses information are kept when private.json is updated
   data: PrivateFileData;
@@ -31,23 +33,25 @@ export interface PrivateFile {
 
 export interface PrivateFileData {
   // version of the manager that has been used to init the lab
-  last_init_manager_version: string;
+  lastInitManagerVersion: string;
 }
 
 export function getPrivateFileTemplate(): PrivateFile {
   return {
     version: 1,
     space: {
-      prod_api_key: null,
-      dev_api_key: null,
-      api_url: null,
-      front_url: null,
+      prodApiKey: null,
+      devApiKey: null,
+      apiUrl: null,
+      frontUrl: null,
     },
     community: {
-      front_url: null,
-      api_url: null,
+      frontUrl: null,
+      apiUrl: null,
     },
     lab: {
+      id: null,
+      name: null,
       codelabUsername: 'codelab',
       codelabToken: null,
       codelabHashToken: null,
@@ -57,12 +61,12 @@ export function getPrivateFileTemplate(): PrivateFile {
       enable: true,
     },
     db: {
-      gws_core_prod_password: null,
-      gws_core_dev_password: null,
+      gwsCoreProdPassword: null,
+      gwsCoreDevPassword: null,
     },
     data: {
-      last_init_manager_version: null,
+      lastInitManagerVersion: null,
     },
-    openai_api_key: null,
+    openaiApiKey: null,
   };
 }

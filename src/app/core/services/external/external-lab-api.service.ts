@@ -53,7 +53,7 @@ export class ExternalLabApiService {
   private getRequestOptions(options: ApiHttpOption): ApiHttpOption {
     const privateFile = this.fileService.readPrivateFile();
 
-    return Object.assign(options, { headers: this.getHeader(privateFile.space.prod_api_key) });
+    return Object.assign(options, { headers: this.getHeader(privateFile.space.prodApiKey) });
   }
 
   // get the header with api key

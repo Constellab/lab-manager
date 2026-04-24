@@ -40,12 +40,16 @@ export interface LabInitConfig {
     apiKey: string;
     frontUrl: string;
   };
-  codelabToken: string | null;
-  gwsCoreProdPassword: string;
-  gwsCoreDevPassword: string;
-  labConfig: {
-    enableBackup: boolean;
+  lab: {
+    codelabToken: string | null;
+    captchaSiteKey: string | null;
   };
-  captchaSiteKey: string | null;
+  db: {
+    gwsCoreProdPassword: string;
+    gwsCoreDevPassword: string;
+  };
+  backup: {
+    enable: boolean;
+  };
   openaiApiKey: string | null;
 }

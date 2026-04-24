@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigFile, ConfigFileBrick } from '../../models/config-file.class';
 import { ClVersion } from '../../models/version.class';
-import { CoreConfigService } from '../config/core-config.service';
 import { FileService } from '../file/file.service';
 
 @Injectable()
@@ -10,23 +9,12 @@ export class ConfigFileService {
 
   private readonly logger = new Logger(ConfigFileService.name);
 
-  constructor(
-    private fileService: FileService,
-    private coreConfigService: CoreConfigService
-  ) {}
+  constructor(private fileService: FileService) {}
 
   /**
    * Update the config and store result in config file
    */
   public updateConfig(config: ConfigFile): void {
-    if (!config.name) {
-      config.name = this.getLabName();
-    }
-
-    if (!config.lab_id) {
-      config.lab_id = this.getLabId();
-    }
-
     this.fileService.writeJsonFile(this.configFilePath, config);
   }
 
@@ -91,34 +79,6 @@ export class ConfigFileService {
     } else {
       this.logger.debug('No brick versions needed to be updated.');
     }
-  }
-
-  private getLabName(): string {
-    if (this.configFileExists()) {
-      try {
-        const name = this.readConfigFile().name;
-        if (name) return name;
-      } catch (e) {
-        this.logger.error('Error while reading lab name from config file. ' + e);
-      }
-    }
-
-    // return the default name
-    return this.coreConfigService.getLabName();
-  }
-
-  private getLabId(): string {
-    if (this.configFileExists()) {
-      try {
-        const id = this.readConfigFile().lab_id;
-        if (id) return id;
-      } catch (e) {
-        this.logger.error('Error while reading lab id from config file. ' + e);
-      }
-    }
-
-    // return the default id
-    return this.coreConfigService.getLabId();
   }
 
   ///////////////////////////// FILE  ///////////////////////////////

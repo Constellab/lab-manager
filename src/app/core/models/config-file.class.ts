@@ -1,6 +1,4 @@
 export interface ConfigFile {
-  lab_id: string;
-  name: string;
   front_version: string;
   glab_tag: 'latest' | 'beta' | string;
   variables: Record<string, string>;

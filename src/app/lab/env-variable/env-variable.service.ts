@@ -51,8 +51,8 @@ export class EnvVariableService {
       }
 
       // FROM CONFIG
-      envVariables.addEnvVariable('LAB_ID', configJson.lab_id);
-      envVariables.addEnvVariable('LAB_NAME', configJson.name);
+      envVariables.addEnvVariable('LAB_ID', privateJson.lab.id);
+      envVariables.addEnvVariable('LAB_NAME', privateJson.lab.name);
       envVariables.addEnvVariable('LAB_MODE', 'prod');
 
       const labEnvironment = this.coreConfigService.isLocal() ? 'DESKTOP' : 'ON_CLOUD';
@@ -64,18 +64,18 @@ export class EnvVariableService {
       // GLAB TAG
       envVariables.addEnvVariable('GLAB_TAG', configJson.glab_tag);
 
-      envVariables.addEnvVariable('SPACE_PROD_API_KEY', privateJson.space.prod_api_key);
-      envVariables.addEnvVariable('SPACE_DEV_API_KEY', privateJson.space.dev_api_key);
-      envVariables.addEnvVariable('SPACE_API_URL', privateJson.space.api_url);
-      envVariables.addEnvVariable('SPACE_FRONT_URL', privateJson.space.front_url);
+      envVariables.addEnvVariable('SPACE_PROD_API_KEY', privateJson.space.prodApiKey);
+      envVariables.addEnvVariable('SPACE_DEV_API_KEY', privateJson.space.devApiKey);
+      envVariables.addEnvVariable('SPACE_API_URL', privateJson.space.apiUrl);
+      envVariables.addEnvVariable('SPACE_FRONT_URL', privateJson.space.frontUrl);
 
       if (privateJson.community) {
-        envVariables.addEnvVariable('COMMUNITY_FRONT_URL', privateJson.community.front_url);
-        envVariables.addEnvVariable('COMMUNITY_API_URL', privateJson.community.api_url);
+        envVariables.addEnvVariable('COMMUNITY_FRONT_URL', privateJson.community.frontUrl);
+        envVariables.addEnvVariable('COMMUNITY_API_URL', privateJson.community.apiUrl);
       }
 
-      envVariables.addEnvVariable('GWS_CORE_PROD_DB_PASSWORD', privateJson.db.gws_core_prod_password);
-      envVariables.addEnvVariable('GWS_CORE_DEV_DB_PASSWORD', privateJson.db.gws_core_dev_password);
+      envVariables.addEnvVariable('GWS_CORE_PROD_DB_PASSWORD', privateJson.db.gwsCoreProdPassword);
+      envVariables.addEnvVariable('GWS_CORE_DEV_DB_PASSWORD', privateJson.db.gwsCoreDevPassword);
 
       if (privateJson.lab.codelabHashToken) {
         envVariables.addEnvVariable(
@@ -94,7 +94,7 @@ export class EnvVariableService {
       envVariables.addEnvVariable('CAPTCHA_SITE_KEY', privateJson.lab.captchaSiteKey);
 
       // OPEN AI KEY
-      envVariables.addEnvVariable('OPENAI_API_KEY', privateJson.openai_api_key);
+      envVariables.addEnvVariable('OPENAI_API_KEY', privateJson.openaiApiKey);
 
       // write the env variables to the .env file
       this.fileService.updateEnvFile(envVariables.toString());

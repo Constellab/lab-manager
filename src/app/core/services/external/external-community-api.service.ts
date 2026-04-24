@@ -70,14 +70,14 @@ export class ExternalCommunityApiService {
   private constructRoute(route: string): string {
     const privateFile = this.fileService.readPrivateFile();
 
-    return `${privateFile.community.api_url}/${route}`;
+    return `${privateFile.community.apiUrl}/${route}`;
   }
 
   // get the axios request config with the api key in the header
   private getRequestOptions(options: ApiHttpOption = {}): ApiHttpOption {
     const privateFile = this.fileService.readPrivateFile();
 
-    return Object.assign(options, { headers: this.getHeader(privateFile.space.prod_api_key) });
+    return Object.assign(options, { headers: this.getHeader(privateFile.space.prodApiKey) });
   }
 
   // get the header with api key

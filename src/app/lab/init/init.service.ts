@@ -91,7 +91,7 @@ export class InitService {
 
     // save the init version
     this.fileService.updatePrivateFileData({
-      last_init_manager_version: this.configService.getLabManagerVersion(),
+      lastInitManagerVersion: this.configService.getLabManagerVersion(),
     });
   }
 
@@ -129,49 +129,53 @@ export class InitService {
         privateJson.data = oldPrivateJson.data;
       }
 
+      // Preserve prior lab id/name across re-template, or fall back to env vars on fresh install
+      privateJson.lab.id = oldPrivateJson?.lab?.id ?? this.configService.getLabId();
+      privateJson.lab.name = oldPrivateJson?.lab?.name ?? this.configService.getLabName();
+
       // configure space information a space api key
-      privateJson.space.prod_api_key = labInitConfig.space.prodApiKey;
-      privateJson.space.dev_api_key = labInitConfig.space.devApiKey;
-      privateJson.space.api_url = labInitConfig.space.apiUrl;
-      privateJson.space.front_url = labInitConfig.space.frontUrl;
+      privateJson.space.prodApiKey = labInitConfig.space.prodApiKey;
+      privateJson.space.devApiKey = labInitConfig.space.devApiKey;
+      privateJson.space.apiUrl = labInitConfig.space.apiUrl;
+      privateJson.space.frontUrl = labInitConfig.space.frontUrl;
 
       // Community information
-      privateJson.community.front_url = labInitConfig.community.frontUrl;
-      privateJson.community.api_url = labInitConfig.community.apiUrl;
+      privateJson.community.frontUrl = labInitConfig.community.frontUrl;
+      privateJson.community.apiUrl = labInitConfig.community.apiUrl;
 
       // Backup info
       privateJson.backup = {
-        enable: labInitConfig.labConfig?.enableBackup ?? true,
+        enable: labInitConfig.backup?.enable ?? true,
       };
 
       // set token, only update the hash when the token has changed.
       // otherwise a new hash is created each time and as the hash is used
       // as env variable for codelab, this would force re-creation.
       // if the token has not changed and the hash was already set
-      if (labInitConfig.codelabToken) {
+      if (labInitConfig.lab.codelabToken) {
         if (
           oldPrivateJson &&
-          oldPrivateJson.lab.codelabToken === labInitConfig.codelabToken &&
+          oldPrivateJson.lab.codelabToken === labInitConfig.lab.codelabToken &&
           oldPrivateJson.lab.codelabHashToken
         ) {
           privateJson.lab.codelabToken = oldPrivateJson.lab.codelabToken;
           privateJson.lab.codelabHashToken = oldPrivateJson.lab.codelabHashToken;
         } else {
-          privateJson.lab.codelabToken = labInitConfig.codelabToken;
+          privateJson.lab.codelabToken = labInitConfig.lab.codelabToken;
           // Generate the htpasswd for the Lab token for CODELAB using Bcrypt
           privateJson.lab.codelabHashToken = hashSync(privateJson.lab.codelabToken, 10);
         }
       }
 
       // DB information
-      privateJson.db.gws_core_prod_password = labInitConfig.gwsCoreProdPassword;
-      privateJson.db.gws_core_dev_password = labInitConfig.gwsCoreDevPassword;
+      privateJson.db.gwsCoreProdPassword = labInitConfig.db.gwsCoreProdPassword;
+      privateJson.db.gwsCoreDevPassword = labInitConfig.db.gwsCoreDevPassword;
 
       // captcha site key
-      privateJson.lab.captchaSiteKey = labInitConfig.captchaSiteKey;
+      privateJson.lab.captchaSiteKey = labInitConfig.lab.captchaSiteKey;
 
       // open ai
-      privateJson.openai_api_key = labInitConfig.openaiApiKey;
+      privateJson.openaiApiKey = labInitConfig.openaiApiKey;
 
       this.fileService.createPrivateFile(privateJson);
       this.taskService.markTaskAsSuccess(taskName, 'private.json file generated');

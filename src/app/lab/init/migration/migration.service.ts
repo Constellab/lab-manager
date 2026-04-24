@@ -44,14 +44,14 @@ export class MigrationService {
       let lastInitVersion: ClVersion = null;
       if (this.fileService.privateFileExists()) {
         const privateFile = this.fileService.readPrivateFile();
-        const lastInitVersionString = privateFile.data?.last_init_manager_version;
+        const lastInitVersionString = privateFile.data?.lastInitManagerVersion;
 
         if (lastInitVersionString) {
           try {
             lastInitVersion = ClVersion.fromString(lastInitVersionString);
           } catch (e) {
             this.logger.warn(
-              `Invalid last_init_manager_version '${lastInitVersionString}', treating as first init`
+              `Invalid lastInitManagerVersion '${lastInitVersionString}', treating as first init`
             );
           }
         }

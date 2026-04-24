@@ -72,7 +72,7 @@ export class ExternalSpaceApiService {
       url = 'http://host.docker.internal:3001';
     } else {
       const privateFile = this.fileService.readPrivateFile();
-      url = privateFile.space.api_url;
+      url = privateFile.space.apiUrl;
     }
 
     return `${url}/${ExternalSpaceApiService.BASE_API_ROUTE}/${route}`;
