@@ -52,7 +52,7 @@ services:
       - 8511:8511
     #GPU_CONFIG#
 
-  # Codelab
+    # Codelab
   codelab:
     image: constellab/codelab:${TAG_PREFIX}${GLAB_TAG}
     environment:
@@ -112,7 +112,7 @@ services:
       - 8512:8512
     #GPU_CONFIG#
 
-  # Front
+    # Front
   front:
     image: constellab/lab-front:latest
     environment:
@@ -172,7 +172,6 @@ services:
   # GWS Test db
   test_gws_dev_db:
     image: mariadb:10.7.4
-    command: --max_allowed_packet=256M
     # Only root credentials are needed — test databases and users are
     # created on the fly by the test suite.
     environment:
@@ -189,6 +188,7 @@ services:
     # MariaDB tuning flags to maximize write speed at the cost of durability,
     # which is fine for a test database that is thrown away after each run.
     command:
+      - --max_allowed_packet=256M
       - --innodb-flush-log-at-trx-commit=0 # don't flush redo log on every commit
       - --innodb-doublewrite=0 # skip the doublewrite buffer
       - --sync-binlog=0 # don't fsync the binlog on each write

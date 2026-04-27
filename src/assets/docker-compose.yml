@@ -67,7 +67,7 @@ services:
     container_name: glab
     #GPU_CONFIG#
 
-  # Codelab
+    # Codelab
   codelab:
     image: constellab/codelab:${TAG_PREFIX}${GLAB_TAG}
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
@@ -154,7 +154,6 @@ services:
       - traefik.http.services.codelab-app-service.loadbalancer.server.port=8510
       - traefik.http.routers.codelab-app-router.entrypoints=websecure
       - traefik.http.routers.codelab-app-router.tls=true
-
       #App additional host will be inserted here#
     networks:
       - gencovery-network-dev
@@ -164,7 +163,7 @@ services:
       - 2222:2222
     #GPU_CONFIG#
 
-  # Front
+    # Front
   front:
     image: constellab/lab-front:${FRONT_VERSION}
     environment:
@@ -227,15 +226,13 @@ services:
   # GWS Test db
   test_gws_dev_db:
     image: mariadb:10.7.4
-    command: --max_allowed_packet=256M
     # Only root credentials are needed — test databases and users are
     # created on the fly by the test suite.
     environment:
       - MYSQL_ROOT_PASSWORD=gencovery
     networks:
       - gencovery-network-dev
-    container_name: test_gws_dev_db
-        # Use tmpfs (RAM-backed filesystem) instead of a volume so the test DB
+    container_name: test_gws_dev_db # Use tmpfs (RAM-backed filesystem) instead of a volume so the test DB
     # is ephemeral — data is discarded when the container stops, and I/O is
     # much faster since nothing hits disk.
     tmpfs:
@@ -243,6 +240,7 @@ services:
     # MariaDB tuning flags to maximize write speed at the cost of durability,
     # which is fine for a test database that is thrown away after each run.
     command:
+      - --max_allowed_packet=256M
       - --innodb-flush-log-at-trx-commit=0 # don't flush redo log on every commit
       - --innodb-doublewrite=0 # skip the doublewrite buffer
       - --sync-binlog=0 # don't fsync the binlog on each write
@@ -250,7 +248,6 @@ services:
       - --innodb-flush-method=nosync # skip fsync/fdatasync calls
       - --innodb-buffer-pool-size=512M # generous buffer pool for in-memory work
       - --max-connections=200 # allow enough connections for parallel tests
-
 
 networks:
   gencovery-network-dev:
