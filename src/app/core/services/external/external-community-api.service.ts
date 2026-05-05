@@ -69,6 +69,10 @@ export class ExternalCommunityApiService {
 
   private constructRoute(route: string): string {
     const privateFile = this.fileService.readPrivateFile();
+    const apiUrl = privateFile.community.apiUrl;
+    if(!apiUrl) {
+      throw new Error('Community API URL is not defined in the private file');
+    }
 
     return `${privateFile.community.apiUrl}/${route}`;
   }
