@@ -41,6 +41,8 @@ export interface LabInitConfig {
     frontUrl: string;
   };
   lab: {
+    id: string;
+    name: string;
     codelabToken: string | null;
     captchaSiteKey: string | null;
   };

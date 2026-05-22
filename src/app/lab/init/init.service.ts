@@ -130,8 +130,8 @@ export class InitService {
       }
 
       // Preserve prior lab id/name across re-template, or fall back to env vars on fresh install
-      privateJson.lab.id = oldPrivateJson?.lab?.id ?? this.configService.getLabId();
-      privateJson.lab.name = oldPrivateJson?.lab?.name ?? this.configService.getLabName();
+      privateJson.lab.id = labInitConfig.lab.id;
+      privateJson.lab.name = labInitConfig.lab.name;
 
       // configure space information a space api key
       privateJson.space.prodApiKey = labInitConfig.space.prodApiKey;

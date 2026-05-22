@@ -85,13 +85,6 @@ export class CoreConfigService {
     return this.configService.get('LAB_MANAGER_STANDALONE_FRONT_VERSION');
   }
 
-  public getLabName(): string | null {
-    return this.configService.get('LAB_NAME');
-  }
-
-  public getLabId(): string | null {
-    return this.configService.get('LAB_ID');
-  }
 
   public getDesktopCommunityApiUrl(): string {
     return this.configService.get('DESKTOP_COMMUNITY_API_URL');
