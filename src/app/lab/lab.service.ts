@@ -62,9 +62,27 @@ export class LabService implements OnModuleInit {
 
   public async getStatus(): Promise<LabManagerStatus> {
     let lastInitManagerVersion: string = null;
+    let lastInitConfigHash: string = null;
     if (this.fileService.privateFileExists()) {
-      lastInitManagerVersion = this.fileService.readPrivateFile().data?.lastInitManagerVersion ?? null;
+      const privateFileData = this.fileService.readPrivateFile().data;
+      lastInitManagerVersion = privateFileData?.lastInitManagerVersion ?? null;
+      lastInitConfigHash = privateFileData?.lastInitConfigHash ?? null;
     }
+
+    // The lab needs a restart if, since the last restart (init):
+    //  - the config was changed (config.json hash differs), or
+    //  - the lab manager was updated to a different version.
+    // We only evaluate this once the lab has been initialized at least once
+    // (a hash/version was stored) and a config currently exists to compare against.
+    const currentConfigHash = this.configFileService.getConfigHash();
+    const currentManagerVersion = this.coreConfigService.getLabManagerVersion();
+
+    const configChanged =
+      lastInitConfigHash != null && currentConfigHash != null && currentConfigHash !== lastInitConfigHash;
+    const managerVersionChanged =
+      lastInitManagerVersion != null && currentManagerVersion !== lastInitManagerVersion;
+
+    const needsRestart = configChanged || managerVersionChanged;
 
     const containers = await this.mainComposeService.inspectContainers();
     const containersStatus = containers.getStatus();
@@ -93,10 +111,11 @@ export class LabService implements OnModuleInit {
       containersStatus: containersStatus,
       currentTask: this.taskService.currentTask,
       adminerIsRunning: await this.adminerService.adminerIsRunning(),
-      version: this.coreConfigService.getLabManagerVersion(),
+      version: currentManagerVersion,
       isConfigured: this.configFileService.configFileExists(),
       isInitialized: this.fileService.privateFileExists(),
       lastInitVersion: lastInitManagerVersion,
+      needsRestart: needsRestart,
       labFrontUrl: this.getLabFrontUrl(),
       codelabFrontUrl: this.getCodeLabFrontUrl(),
       labStatus: labStatus,
@@ -192,6 +211,14 @@ export class LabService implements OnModuleInit {
   //////////////////////////// CONFIG ////////////////////////////
   public getConfig(): ConfigFile {
     return this.configFileService.getConfig();
+  }
+
+  /**
+   * Get the hash of the current config file.
+   * Returns null if the config file does not exist.
+   */
+  public getConfigHash(): string | null {
+    return this.configFileService.getConfigHash();
   }
 
   public getBricksConfig(): BrickConfigsDTO {

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { ConfigFile, ConfigFileBrick } from '../../models/config-file.class';
 import { ClVersion } from '../../models/version.class';
 import { FileService } from '../file/file.service';
@@ -79,6 +80,20 @@ export class ConfigFileService {
     } else {
       this.logger.debug('No brick versions needed to be updated.');
     }
+  }
+
+  /**
+   * Compute a hash of the current config file content.
+   * Used to detect whether the config was changed since the last lab restart.
+   * Returns null if the config file does not exist.
+   */
+  public getConfigHash(): string | null {
+    const config = this.getConfig();
+    if (!config) {
+      return null;
+    }
+
+    return createHash('sha256').update(JSON.stringify(config)).digest('hex');
   }
 
   ///////////////////////////// FILE  ///////////////////////////////

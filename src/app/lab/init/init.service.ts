@@ -89,9 +89,11 @@ export class InitService {
     await new Promise((resolve) => setTimeout(resolve, 10000));
     this.taskService.markTaskAsSuccess(taskName, 'Lab started');
 
-    // save the init version
+    // save the init version and the config hash used for this restart,
+    // so we can later detect if the config was changed since the last restart
     this.fileService.updatePrivateFileData({
       lastInitManagerVersion: this.configService.getLabManagerVersion(),
+      lastInitConfigHash: this.configFileService.getConfigHash(),
     });
   }
 

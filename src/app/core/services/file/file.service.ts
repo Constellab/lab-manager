@@ -54,6 +54,7 @@ export class FileService {
 
     const dataTemplate: PrivateFileData = {
       lastInitManagerVersion: null,
+      lastInitConfigHash: null,
     };
     privateFile.data = { ...dataTemplate, ...(privateFile.data ?? {}), ...data };
     this.createPrivateFile(privateFile);

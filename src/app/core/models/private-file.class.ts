@@ -34,6 +34,9 @@ export interface PrivateFile {
 export interface PrivateFileData {
   // version of the manager that has been used to init the lab
   lastInitManagerVersion: string;
+  // hash of config.json that was applied on the last successful init/restart.
+  // Used to detect if the config was changed since the last restart.
+  lastInitConfigHash: string;
 }
 
 export function getPrivateFileTemplate(): PrivateFile {
@@ -66,6 +69,7 @@ export function getPrivateFileTemplate(): PrivateFile {
     },
     data: {
       lastInitManagerVersion: null,
+      lastInitConfigHash: null,
     },
     openaiApiKey: null,
   };

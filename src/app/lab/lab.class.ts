@@ -19,6 +19,9 @@ export interface LabManagerStatus {
   isInitialized: boolean;
   // version of the lab manager that has been used to init the lab
   lastInitVersion: string;
+  // true if the config was changed since the last restart (init) of the lab,
+  // meaning the lab must be restarted to apply the new config
+  needsRestart: boolean;
   labFrontUrl: string;
   codelabFrontUrl: string;
   labStatus: LabStatus;
