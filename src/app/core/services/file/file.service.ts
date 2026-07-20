@@ -124,6 +124,34 @@ export class FileService {
     this.writeFile(this.envFilePath, env);
   }
 
+  //////////////////////// CUSTOM ENV FILE //////////////////////
+
+  // Custom, ops-set vars (e.g. GWS_MCP_SERVER_ENABLED), injected into the lab
+  // container via `env_file:`. Distinct from lab-manager.env, which holds fixed
+  // system config consumed by compose `--env-file` interpolation.
+  private readonly customVarsFileName = 'lab-manager-custom.env';
+
+  public get customVarsFilePath(): string {
+    return this.getConfPath(this.customVarsFileName);
+  }
+
+  public updateCustomVarsFile(env: string): void {
+    this.writeFile(this.customVarsFilePath, env);
+  }
+
+  /**
+   * Ensure the custom-vars file exists (create it empty if missing).
+   * The glab service references it via `env_file:`, and docker compose errors on a
+   * missing env file. `setAllEnvVariables` writes it on every config update, but a
+   * bare restart (without a config update) could run compose before it ever existed
+   * -- e.g. right after upgrading to the compose file that adds the `env_file:` entry.
+   */
+  public ensureCustomVarsFileExists(): void {
+    if (!this.exists(this.customVarsFilePath)) {
+      this.writeFile(this.customVarsFilePath, '');
+    }
+  }
+
   //////////////////////// GENERIC ///////////////////////////////////
 
   public readJsonFile(path: string): any {

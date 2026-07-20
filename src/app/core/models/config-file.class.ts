@@ -5,6 +5,18 @@ export interface ConfigFile {
   environment: ConfigFileEnv;
 }
 
+// Cross-repo contract with gws_core (Settings.MCP_SERVER_ENABLED_ENV_VAR).
+// Stored inside ConfigFile.variables as the string "true"/"false".
+export const MCP_SERVER_ENABLED_KEY = 'GWS_MCP_SERVER_ENABLED';
+
+export interface McpConfigDTO {
+  enabled: boolean;
+}
+
+export interface CustomEnvVariablesDTO {
+  variables: Record<string, string>;
+}
+
 export interface ConfigFileEnv {
   bricks: ConfigFileBrick[];
   variables: Record<string, string>;

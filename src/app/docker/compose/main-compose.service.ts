@@ -101,6 +101,12 @@ export class MainComposeService {
     }
 
     this.fileService.writeDockerCompose(dockerComposeContent);
+
+    // The glab service reads lab-manager-custom.env via `env_file:`; compose errors
+    // if it is missing. Guarantee it exists so a bare restart cannot fail before the
+    // first config update writes it.
+    this.fileService.ensureCustomVarsFileExists();
+
     this.logger.log(`${dockerComposeFileName} file generated`);
   }
 

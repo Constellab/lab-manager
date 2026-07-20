@@ -1,5 +1,12 @@
 import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { BrickConfigsDTO, ConfigFile, LabManagerCleanDTO } from '../core/models/config-file.class';
+import {
+  BrickConfigsDTO,
+  ConfigFile,
+  CustomEnvVariablesDTO,
+  LabManagerCleanDTO,
+  McpConfigDTO,
+  MCP_SERVER_ENABLED_KEY,
+} from '../core/models/config-file.class';
 import { TaskStatusInfo } from '../core/models/task.class';
 import { ConfigFileService } from '../core/services/config-file/config-file.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
@@ -238,8 +245,78 @@ export class LabService implements OnModuleInit {
 
     // if the private file exists, we update the env variables
     if (this.fileService.privateFileExists()) {
-      this.envVariableService.setAllEnvVariables(config, this.fileService.readPrivateFile());
+      await this.envVariableService.setAllEnvVariables(config, this.fileService.readPrivateFile());
     }
+  }
+
+  //////////////////////////// MCP CONFIG ////////////////////////////
+
+  /**
+   * Whether the MCP server is enabled on the lab. Reads the flag from the shared
+   * custom-vars store (ConfigFile.variables); the value is a typed convenience over
+   * the raw string gws_core parses. Takes effect only after a lab restart.
+   */
+  public getMcpConfig(): McpConfigDTO {
+    const config = this.getConfig();
+    return { enabled: config?.variables?.[MCP_SERVER_ENABLED_KEY] === 'true' };
+  }
+
+  /**
+   * Enable/disable the MCP server. Persists the config and rewrites the env files
+   * (no restart -- a separate restart applies it). Stored as the exact string
+   * gws_core parses (=== 'true').
+   */
+  public async setMcpConfig(enabled: boolean): Promise<void> {
+    const config = this.getConfig();
+    if (!config) {
+      throw new BadRequestException('The lab is not configured yet.');
+    }
+    if (!config.variables) config.variables = {};
+    config.variables[MCP_SERVER_ENABLED_KEY] = enabled ? 'true' : 'false';
+    await this.updateConfig(config);
+  }
+
+  //////////////////////////// CUSTOM ENV VARIABLES ////////////////////////////
+
+  /**
+   * All custom, ops-set env vars (ConfigFile.variables), including
+   * GWS_MCP_SERVER_ENABLED -- the MCP flag lives in the same store, getMcpConfig is
+   * just a typed view of it.
+   */
+  public getCustomEnvVariables(): CustomEnvVariablesDTO {
+    const config = this.getConfig();
+    return { variables: config?.variables ?? {} };
+  }
+
+  /**
+   * Replace the whole custom-env map with the given vars, then persist + rewrite the
+   * env files (no restart). Replace-all (not merge) so a key the caller omits is
+   * removed -- the editor UI owns this namespace and sends the full list.
+   *
+   * The MCP flag (MCP_SERVER_ENABLED_KEY) is the one exception: it lives in the same
+   * map but is set via setMcpConfig, so it is preserved across a replace rather than
+   * being wiped when the caller (which never sends it) omits it.
+   */
+  public async setCustomEnvVariables(vars: Record<string, string>): Promise<void> {
+    const config = this.getConfig();
+    if (!config) {
+      throw new BadRequestException('The lab is not configured yet.');
+    }
+
+    const preservedMcpValue = config.variables?.[MCP_SERVER_ENABLED_KEY];
+
+    const variables: Record<string, string> = {};
+    for (const [key, value] of Object.entries(vars)) {
+      // Ignore the MCP key even if a caller sends it: it is owned by setMcpConfig.
+      if (key === MCP_SERVER_ENABLED_KEY) continue;
+      variables[key] = value;
+    }
+    if (preservedMcpValue !== undefined) {
+      variables[MCP_SERVER_ENABLED_KEY] = preservedMcpValue;
+    }
+
+    config.variables = variables;
+    await this.updateConfig(config);
   }
 
   public async updateBrickConfig(brickConfigs: BrickConfigsDTO): Promise<void> {

@@ -99,6 +99,16 @@ export class EnvVariableService {
       // write the env variables to the .env file
       this.fileService.updateEnvFile(envVariables.toString());
 
+      // Custom user vars (e.g. GWS_MCP_SERVER_ENABLED) go to a SEPARATE file that
+      // the glab service reads via `env_file:` (literal injection, no ${}
+      // interpolation). Written WITHOUT the $$ escaping that EnvVariables.toString()
+      // applies for the --env-file interpolation path, so values containing '$'
+      // survive intact.
+      const customVarsLines = Object.entries(configJson.variables ?? {})
+        .map(([key, value]) => `${key}="${value ?? ''}"`)
+        .join('\n');
+      this.fileService.updateCustomVarsFile(customVarsLines ? customVarsLines + '\n' : '');
+
       this.taskService.markTaskAsSuccess(taskName, 'Env variables set');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

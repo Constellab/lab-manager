@@ -6,6 +6,11 @@ services:
   glab:
     image: constellab/glab:${TAG_PREFIX}${GLAB_TAG}
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    # Custom, ops-set env vars (e.g. GWS_MCP_SERVER_ENABLED). Injected literally.
+    # The explicit `environment:` entries below override any colliding key here,
+    # so system config stays authoritative. Colocated with this compose file.
+    env_file:
+      - ./lab-manager-custom.env
     environment:
       - LAB_ID=${LAB_ID}
       - LAB_NAME=${LAB_NAME}

@@ -1,5 +1,11 @@
 import { Body, Controller, Get, Post, Put } from '@nestjs/common';
-import { BrickConfigsDTO, ConfigFile, LabManagerCleanDTO } from '../core/models/config-file.class';
+import {
+  BrickConfigsDTO,
+  ConfigFile,
+  CustomEnvVariablesDTO,
+  LabManagerCleanDTO,
+  McpConfigDTO,
+} from '../core/models/config-file.class';
 import { TaskStatusInfo } from '../core/models/task.class';
 import { UpdateLabManagerCommand } from '../core/services/external/external-space.class';
 import { ErrorLogs } from '../docker/docker.class';
@@ -82,6 +88,28 @@ export class LabController {
   @Put('bricks-config')
   updateBrickConfig(@Body() updateConfig: BrickConfigsDTO): Promise<void> {
     return this.labService.updateBrickConfig(updateConfig);
+  }
+
+  ///////////////////////// MCP / CUSTOM ENV /////////////////////////
+
+  @Get('mcp-config')
+  getMcpConfig(): McpConfigDTO {
+    return this.labService.getMcpConfig();
+  }
+
+  @Put('mcp-config')
+  setMcpConfig(@Body() body: McpConfigDTO): Promise<void> {
+    return this.labService.setMcpConfig(body.enabled);
+  }
+
+  @Get('custom-env-variable')
+  getCustomEnvVariables(): CustomEnvVariablesDTO {
+    return this.labService.getCustomEnvVariables();
+  }
+
+  @Put('custom-env-variable')
+  setCustomEnvVariables(@Body() body: CustomEnvVariablesDTO): Promise<void> {
+    return this.labService.setCustomEnvVariables(body.variables);
   }
 
   ///////////////////////// DESKTOP /////////////////////////
