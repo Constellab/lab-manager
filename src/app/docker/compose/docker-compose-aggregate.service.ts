@@ -3,6 +3,7 @@ import { execSync } from 'child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { ConfigFileService } from '../../core/services/config-file/config-file.service';
 import { FileService } from '../../core/services/file/file.service';
 import { TaskService } from '../../core/services/task/task.service';
@@ -27,7 +28,8 @@ export class DockerComposeAggregateService implements OnModuleInit {
     private dockerComposeService: DockerComposeService,
     private taskService: TaskService,
     private configFileService: ConfigFileService,
-    private fileService: FileService
+    private fileService: FileService,
+    private coreConfigService: CoreConfigService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -358,6 +360,11 @@ services:
 
   ///////////////////////////////// ON START //////////////////////////////////////
   private async initializeSubComposesWithAutoStart(): Promise<void> {
+    if (!this.coreConfigService.getAutoStartSubComposes()) {
+      this.logger.log('Auto start of sub-composes is disabled');
+      return;
+    }
+
     this.logger.log('Checking for sub-composes with autoStart enabled');
     const subComposes = this.dockerComposeService.getAllSubComposes();
 

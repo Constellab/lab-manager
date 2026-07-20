@@ -66,6 +66,14 @@ export class CoreConfigService {
     return this.getConfigBoolean('AUTO_START_LAB', true);
   }
 
+  public getAutoStartSubComposes(): boolean {
+    return this.getConfigBoolean('AUTO_START_SUB_COMPOSES', true);
+  }
+
+  public getAutoStartStandaloneFront(): boolean {
+    return this.getConfigBoolean('AUTO_START_STANDALONE_FRONT', true);
+  }
+
   /**
    * Provided for on premise installations. Can be used to add additional hosts to the lab manager
    * to enable access to apps from other domains.

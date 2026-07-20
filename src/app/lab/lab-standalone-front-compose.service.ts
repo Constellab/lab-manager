@@ -35,6 +35,11 @@ export class LabStandaloneFrontComposeService implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
+    if (!this.coreConfigService.getAutoStartStandaloneFront()) {
+      this.logger.log('Auto start of the standalone front is disabled');
+      return;
+    }
+
     if (this.coreConfigService.isDesktop() || this.coreConfigService.isPrivateCloud()) {
       this.startStandaloneFrontContainer().catch((e) => {
         this.logger.error('Error while starting the lab manager standalone container', e);
