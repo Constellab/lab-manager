@@ -13,10 +13,22 @@ export class ConfigFileService {
   constructor(private fileService: FileService) {}
 
   /**
-   * Update the config and store result in config file
+   * Update the config and store result in config file.
+   *
+   * Any change to the config (bricks, MCP flag, custom env variables, ...) means
+   * the lab must be restarted for it to take effect, so the "needs restart" flag
+   * is set here -- this is the single chokepoint every config write goes through.
+   * The flag is reset to false on the next lab start (InitService.init). We only
+   * mark once the lab has been initialized (a private file exists); config writes
+   * that happen during migrations at init time are harmless because init resets
+   * the flag after them.
    */
   public updateConfig(config: ConfigFile): void {
     this.fileService.writeJsonFile(this.configFilePath, config);
+
+    if (this.fileService.privateFileExists()) {
+      this.fileService.updatePrivateFileData({ needsRestart: true });
+    }
   }
 
   public getConfig(): ConfigFile {

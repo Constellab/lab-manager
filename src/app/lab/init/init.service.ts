@@ -90,10 +90,13 @@ export class InitService {
     this.taskService.markTaskAsSuccess(taskName, 'Lab started');
 
     // save the init version and the config hash used for this restart,
-    // so we can later detect if the config was changed since the last restart
+    // so we can later detect if the config was changed since the last restart.
+    // The lab has just (re)started with the current config and manager version,
+    // so any pending "needs restart" state is cleared here.
     this.fileService.updatePrivateFileData({
       lastInitManagerVersion: this.configService.getLabManagerVersion(),
       lastInitConfigHash: this.configFileService.getConfigHash(),
+      needsRestart: false,
     });
   }
 

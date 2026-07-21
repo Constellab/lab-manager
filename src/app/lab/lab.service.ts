@@ -48,6 +48,11 @@ export class LabService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
+    // If the manager was updated to a new version since the last lab start, the
+    // lab needs a restart for the new version to take effect. Detect this once,
+    // on manager startup, and persist it as the stored "needs restart" flag.
+    this.detectManagerVersionChange();
+
     this.logger.log('Checking if we auto start the lab');
     if (!this.coreConfigService.getAutoStartLab()) {
       this.logger.log('Auto start lab is disabled');
@@ -69,27 +74,18 @@ export class LabService implements OnModuleInit {
 
   public async getStatus(): Promise<LabManagerStatus> {
     let lastInitManagerVersion: string = null;
-    let lastInitConfigHash: string = null;
+    let needsRestart = false;
     if (this.fileService.privateFileExists()) {
       const privateFileData = this.fileService.readPrivateFile().data;
       lastInitManagerVersion = privateFileData?.lastInitManagerVersion ?? null;
-      lastInitConfigHash = privateFileData?.lastInitConfigHash ?? null;
+      // "needs restart" is a stored flag: set to true when the config/env
+      // variables change (LabService.updateConfig) or when the manager version
+      // changed since the last start (LabService.detectManagerVersionChange),
+      // and reset to false on the next lab start (InitService.init).
+      needsRestart = privateFileData?.needsRestart ?? false;
     }
 
-    // The lab needs a restart if, since the last restart (init):
-    //  - the config was changed (config.json hash differs), or
-    //  - the lab manager was updated to a different version.
-    // We only evaluate this once the lab has been initialized at least once
-    // (a hash/version was stored) and a config currently exists to compare against.
-    const currentConfigHash = this.configFileService.getConfigHash();
     const currentManagerVersion = this.coreConfigService.getLabManagerVersion();
-
-    const configChanged =
-      lastInitConfigHash != null && currentConfigHash != null && currentConfigHash !== lastInitConfigHash;
-    const managerVersionChanged =
-      lastInitManagerVersion != null && currentManagerVersion !== lastInitManagerVersion;
-
-    const needsRestart = configChanged || managerVersionChanged;
 
     const containers = await this.mainComposeService.inspectContainers();
     const containersStatus = containers.getStatus();
@@ -132,6 +128,30 @@ export class LabService implements OnModuleInit {
         hasStartError: glabStartLog?.main_errors?.length > 0,
       },
     };
+  }
+
+  /**
+   * If the lab has already been initialized and the manager version stored at the
+   * last lab start differs from the current version, mark the lab as needing a
+   * restart. Called once on manager startup (onModuleInit). The flag is reset to
+   * false on the next lab start (InitService.init).
+   */
+  private detectManagerVersionChange(): void {
+    if (!this.fileService.privateFileExists()) {
+      return;
+    }
+
+    const privateFileData = this.fileService.readPrivateFile().data;
+    const lastInitManagerVersion = privateFileData?.lastInitManagerVersion ?? null;
+    const currentManagerVersion = this.coreConfigService.getLabManagerVersion();
+
+    if (lastInitManagerVersion != null && currentManagerVersion !== lastInitManagerVersion) {
+      this.logger.log(
+        `Lab manager version changed since last start (${lastInitManagerVersion} -> ` +
+          `${currentManagerVersion}), marking the lab as needing a restart`
+      );
+      this.fileService.updatePrivateFileData({ needsRestart: true });
+    }
   }
 
   public async getStartingLabError(): Promise<ErrorLogs> {
@@ -241,6 +261,9 @@ export class LabService implements OnModuleInit {
   }
 
   public async updateConfig(config: ConfigFile): Promise<void> {
+    // configFileService.updateConfig marks the lab as needing a restart (the
+    // config changed). This is the single chokepoint every config write goes
+    // through, including updateBrickConfig and the migrations run at init time.
     await this.configFileService.updateConfig(config);
 
     // if the private file exists, we update the env variables

@@ -37,6 +37,10 @@ export interface PrivateFileData {
   // hash of config.json that was applied on the last successful init/restart.
   // Used to detect if the config was changed since the last restart.
   lastInitConfigHash: string;
+  // whether the lab must be restarted for pending changes to take effect.
+  // Set to true when the config/env variables change or when the manager was
+  // updated to a new version; reset to false on the next lab start (init).
+  needsRestart: boolean;
 }
 
 export function getPrivateFileTemplate(): PrivateFile {
@@ -70,6 +74,7 @@ export function getPrivateFileTemplate(): PrivateFile {
     data: {
       lastInitManagerVersion: null,
       lastInitConfigHash: null,
+      needsRestart: false,
     },
     openaiApiKey: null,
   };
