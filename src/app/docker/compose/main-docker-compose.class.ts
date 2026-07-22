@@ -85,7 +85,7 @@ export class MainDockerCompose extends DockerCompose {
 
       return '';
     } catch (error) {
-      return error.message || error.toString();
+      return error instanceof Error ? error.message : String(error);
     }
   }
 
@@ -150,7 +150,7 @@ export class MainDockerCompose extends DockerCompose {
       );
       return '';
     } catch (error) {
-      return error.message || error.toString();
+      return error instanceof Error ? error.message : String(error);
     }
   }
 

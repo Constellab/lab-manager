@@ -23,7 +23,7 @@ export class LabController {
   }
 
   @Get('starting/error')
-  getStartingError(): Promise<ErrorLogs> {
+  getStartingError(): Promise<ErrorLogs | null> {
     return this.labService.getStartingLabError();
   }
 
@@ -72,7 +72,7 @@ export class LabController {
   }
 
   @Get('config')
-  getConfig(): ConfigFile {
+  getConfig(): ConfigFile | null {
     return this.labService.getConfig();
   }
 

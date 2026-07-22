@@ -321,7 +321,7 @@ export class DockerComposeService {
       {
         labDomain: this.configService.getVirtualHost(),
       },
-      config.envVariables
+      config.envVariables ?? null
     );
 
     // Check if file exists and content differs
@@ -372,17 +372,17 @@ export class DockerComposeService {
       composeFilePath: this.fileService.dockerComposePath,
       description: 'Main compose for the lab services',
       isSubCompose: false,
-      env: DockerComposeService.MAIN_COMPOSE_ID.env,
+      env: DockerComposeService.MAIN_COMPOSE_ID.env!,
       autoStart: true,
     };
 
     const systemComposeInfo: ComposeInfo = {
       brickName: DockerComposeService.SYSTEM_COMPOSE_ID.brickName,
       uniqueName: DockerComposeService.SYSTEM_COMPOSE_ID.uniqueName,
-      composeFilePath: null,
+      composeFilePath: '',
       description: 'System compose for the reverse proxy and lab manager',
       isSubCompose: false,
-      env: DockerComposeService.SYSTEM_COMPOSE_ID.env,
+      env: DockerComposeService.SYSTEM_COMPOSE_ID.env!,
       autoStart: true,
     };
 
@@ -416,7 +416,7 @@ export class DockerComposeService {
   /**
    * Get the current process info for a compose
    */
-  public getSubComposeProcess(composeId: DockerComposeUniqueId): SubComposeProcessInfo | null {
+  public getSubComposeProcess(composeId: DockerComposeUniqueId): SubComposeProcessInfo | undefined {
     return this.subComposeProcess.get(this.getComposeKey(composeId));
   }
 

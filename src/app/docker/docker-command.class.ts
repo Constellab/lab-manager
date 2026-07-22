@@ -82,7 +82,7 @@ export class DockerCommand {
     return result;
   }
 
-  private async runDockerPs(format: DockerFormatKey[], containerNames: string[] = null): Promise<any[]> {
+  private async runDockerPs(format: DockerFormatKey[], containerNames: string[] = []): Promise<any[]> {
     const strFormat = DockerFormatKeys.keysToString(format);
 
     let command = `docker ps -a --no-trunc --format=${strFormat}`;

@@ -455,6 +455,7 @@ services:
         'The service nonexistent-service does not exist in the compose file'
       );
     });
+  });
 
   describe('Label operations', () => {
     let compose: DockerComposeYaml;
@@ -474,7 +475,7 @@ services:
       compose.addTraefikLabels('minimal-service', 'test.example.com', 8080);
       const service = compose.content.services['minimal-service'];
       expect(service.labels).toBeDefined();
-      expect(service.labels.length).toBeGreaterThan(0);
+      expect(service.labels!.length).toBeGreaterThan(0);
     });
 
     it('should throw error when adding labels to nonexistent service', () => {
@@ -488,7 +489,7 @@ services:
     it('should replace network variable with prod network', () => {
       const compose = new DockerComposeYaml(composeWithVariables, null);
       compose.parseVariables(
-        { hostVolume: '/test/volume', isNamed: false },
+        { hostVolume: '/test/volume', hostVolumeNoBackup: '/test/volume-no-backup', isNamed: false },
         { labDomain: 'example.com' },
         null
       );
@@ -506,7 +507,7 @@ services:
       };
       const compose = new DockerComposeYaml(composeWithVariables, composeId);
       compose.parseVariables(
-        { hostVolume: '/test/volume', isNamed: false },
+        { hostVolume: '/test/volume', hostVolumeNoBackup: '/test/volume-no-backup', isNamed: false },
         { labDomain: 'example.com' },
         null
       );
@@ -518,7 +519,7 @@ services:
     it('should replace volume variable with host path', () => {
       const compose = new DockerComposeYaml(composeWithVariables, null);
       compose.parseVariables(
-        { hostVolume: '/actual/host/path', isNamed: false },
+        { hostVolume: '/actual/host/path', hostVolumeNoBackup: '/actual/host/path-no-backup', isNamed: false },
         { labDomain: 'example.com' },
         null
       );
@@ -530,7 +531,7 @@ services:
     it('should replace volume variable with named volume', () => {
       const compose = new DockerComposeYaml(composeWithVariables, null);
       compose.parseVariables(
-        { hostVolume: 'named-volume', isNamed: true },
+        { hostVolume: 'named-volume', hostVolumeNoBackup: 'named-volume-no-backup', isNamed: true },
         { labDomain: 'example.com' },
         null
       );
@@ -555,7 +556,7 @@ services:
     it('should add CONTAINER_PREFIX based on brick and unique name', () => {
       const compose = new DockerComposeYaml(composeWithVariables, null);
       compose.parseVariables(
-        { hostVolume: '/test/volume', isNamed: false },
+        { hostVolume: '/test/volume', hostVolumeNoBackup: '/test/volume-no-backup', isNamed: false },
         { labDomain: 'example.com' },
         null
       );
@@ -582,7 +583,7 @@ services:
 `;
       const compose = new DockerComposeYaml(composeWithCustomVar, null);
       compose.parseVariables(
-        { hostVolume: '/test/volume', isNamed: false },
+        { hostVolume: '/test/volume', hostVolumeNoBackup: '/test/volume-no-backup', isNamed: false },
         { labDomain: 'example.com' },
         { CUSTOM_VAR: 'custom_value' }
       );
@@ -595,15 +596,15 @@ services:
     it('should convert x-gws-config https labels to traefik labels', () => {
       const compose = new DockerComposeYaml(composeWithXGwsConfig, null);
       compose.parseVariables(
-        { hostVolume: '/test/volume', isNamed: false },
+        { hostVolume: '/test/volume', hostVolumeNoBackup: '/test/volume-no-backup', isNamed: false },
         { labDomain: 'example.com' },
         null
       );
       const service = compose.content.services['web-service'];
       expect(service.labels).toBeDefined();
-      expect(service.labels.length).toBeGreaterThan(0);
+      expect(service.labels!.length).toBeGreaterThan(0);
       // Check that traefik labels were added
-      const traefikLabels = service.labels.filter((l) => l.startsWith('traefik.'));
+      const traefikLabels = service.labels!.filter((l) => l.startsWith('traefik.'));
       expect(traefikLabels.length).toBeGreaterThan(0);
       // Check that x-gws-config was removed from service
       expect(service['x-gws-config']).toBeUndefined();
@@ -612,7 +613,7 @@ services:
     it('should add port mapping instead of traefik labels for localhost', () => {
       const compose = new DockerComposeYaml(composeWithXGwsConfigLocalhost, null);
       compose.parseVariables(
-        { hostVolume: '/test/volume', isNamed: false },
+        { hostVolume: '/test/volume', hostVolumeNoBackup: '/test/volume-no-backup', isNamed: false },
         { labDomain: 'localhost' },
         null
       );
@@ -642,7 +643,7 @@ services:
 `;
       const compose = new DockerComposeYaml(composeContent, null);
       compose.parseVariables(
-        { hostVolume: '/test/volume', isNamed: false },
+        { hostVolume: '/test/volume', hostVolumeNoBackup: '/test/volume-no-backup', isNamed: false },
         { labDomain: 'localhost' },
         null
       );

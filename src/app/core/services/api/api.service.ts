@@ -92,7 +92,7 @@ export class ApiService {
 
   private catchError(error: AxiosError, route: string, logError?: boolean): Observable<never> {
     const apiError: ApiError = {
-      status: error.response ? error.response.status : null,
+      status: error.response?.status ?? 0,
       message: error.message ?? '',
       error: error,
     };

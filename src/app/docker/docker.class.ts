@@ -34,21 +34,21 @@ export class DockerInspect {
     names: string,
     state: DockerContainerState | null,
     exitCode: string,
-    image: string,
-    startedAt: string,
-    health: ContainerHealth
+    image: string | null,
+    startedAt: string | null,
+    health: ContainerHealth | null
   ) {
     this.names = names;
     this.exitCode = parseInt(exitCode);
-    this.image = image;
-    this.startedAt = startedAt;
-    this.health = health;
+    this.image = image ?? '';
+    this.startedAt = startedAt ?? '';
+    this.health = health ?? 'none';
 
     this.status = this.convertStateToStatus(state, this.exitCode, this.names);
   }
 
   private convertStateToStatus(
-    state: DockerContainerState,
+    state: DockerContainerState | null,
     exitCode: number,
     names: string
   ): ContainerStatus {

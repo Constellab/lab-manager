@@ -9,13 +9,15 @@
     "target": "es2017",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
+    "paths": {
+      "src/*": ["./src/*"]
+    },
     "incremental": true,
     "skipLibCheck": true,
-    "strictNullChecks": false,
-    "noImplicitAny": false,
+    "strict": true,
+    "noImplicitReturns": true,
     "strictBindCallApply": false,
-    "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true
   }
 }

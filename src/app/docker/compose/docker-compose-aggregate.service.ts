@@ -64,7 +64,7 @@ export class DockerComposeAggregateService implements OnModuleInit {
       const result = await dockerCompose.composePull();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
+      this.taskService.markTaskAsError(taskName, String(e));
       throw e;
     }
   }
@@ -73,8 +73,9 @@ export class DockerComposeAggregateService implements OnModuleInit {
     try {
       await this.pullServicesTask(composeId);
     } catch (e) {
-      this.logger.error('Error while pulling images: ' + e.message);
-      this.logger.error(e.stack);
+      const error = e instanceof Error ? e : new Error(String(e));
+      this.logger.error('Error while pulling images: ' + error.message);
+      this.logger.error(error.stack);
     }
   }
 
@@ -100,7 +101,7 @@ export class DockerComposeAggregateService implements OnModuleInit {
 
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
+      this.taskService.markTaskAsError(taskName, String(e));
       throw e;
     }
   }
@@ -115,7 +116,7 @@ export class DockerComposeAggregateService implements OnModuleInit {
       const result = await dockerCompose.composeStop(services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
+      this.taskService.markTaskAsError(taskName, String(e));
       throw e;
     }
   }
@@ -130,7 +131,7 @@ export class DockerComposeAggregateService implements OnModuleInit {
       const result = await dockerCompose.composeDown(services);
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
+      this.taskService.markTaskAsError(taskName, String(e));
       throw e;
     }
   }

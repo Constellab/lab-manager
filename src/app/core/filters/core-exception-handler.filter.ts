@@ -43,7 +43,7 @@ export class CoreExceptionHandlerFilter implements ExceptionFilter {
       const error: NestApiError = {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         detail: ErrorCode.SERVER_ERROR,
-        code: ErrorCode[ErrorCode.SERVER_ERROR],
+        code: ErrorCode.SERVER_ERROR,
         instanceId: instanceId,
       };
       response.status(error.status).json(error);
@@ -63,7 +63,7 @@ export class CoreExceptionHandlerFilter implements ExceptionFilter {
     // in prod env, send a server error exception to hide detail for the user
     if (this.coreConfigService.isProduction()) {
       return this.convertToNestError(
-        ErrorCode[ErrorCode.SERVER_ERROR],
+        ErrorCode.SERVER_ERROR,
         ErrorCode.SERVER_ERROR,
         HttpStatus.BAD_REQUEST
       );

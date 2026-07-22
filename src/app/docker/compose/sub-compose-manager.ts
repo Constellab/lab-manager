@@ -43,7 +43,7 @@ export class SubComposeFolder {
       composeFilePath: this.getDockerComposePath(),
       isSubCompose: true,
       description: composeYaml.getDescription(),
-      autoStart: composeYaml.getAutoStart(),
+      autoStart: composeYaml.getAutoStart() ?? true,
     };
   }
 }

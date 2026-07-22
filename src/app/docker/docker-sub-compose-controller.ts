@@ -115,7 +115,7 @@ export class DockerSubComposeController {
     env?: DockerComposeYamlEnv
   ): DockerComposeUniqueId {
     if (env === 'none') {
-      env = null;
+      env = undefined;
     }
     return {
       brickName,

@@ -14,7 +14,7 @@ export class CoreConfigService {
   ) {}
 
   public getEnvironmentProfile(): EnvironmentProfile {
-    return this.configService.get(ENVIRONMENT_PROFILE_KEY);
+    return this.configService.get<EnvironmentProfile>(ENVIRONMENT_PROFILE_KEY) as EnvironmentProfile;
   }
 
   public isProduction(): boolean {
@@ -43,7 +43,7 @@ export class CoreConfigService {
   }
 
   public getLabManagerVersion(): string {
-    return this.configService.get('LAB_MANAGER_VERSION');
+    return this.getRequiredConfig('LAB_MANAGER_VERSION');
   }
 
   public getLogLevel(): LogLevel {
@@ -51,11 +51,11 @@ export class CoreConfigService {
   }
 
   public getLogPath(): string {
-    return this.configService.get('LOG_PATH');
+    return this.getRequiredConfig('LOG_PATH');
   }
 
   public getLabManagerApiKey(): string {
-    return this.configService.get('LAB_MANAGER_API_KEY');
+    return this.getRequiredConfig('LAB_MANAGER_API_KEY');
   }
 
   public getVirtualHost(): string {
@@ -90,16 +90,16 @@ export class CoreConfigService {
   }
 
   public getLabManagerStandaloneFrontVersion(): string {
-    return this.configService.get('LAB_MANAGER_STANDALONE_FRONT_VERSION');
+    return this.getRequiredConfig('LAB_MANAGER_STANDALONE_FRONT_VERSION');
   }
 
 
   public getDesktopCommunityApiUrl(): string {
-    return this.configService.get('DESKTOP_COMMUNITY_API_URL');
+    return this.getRequiredConfig('DESKTOP_COMMUNITY_API_URL');
   }
 
   public getDesktopCommunityFrontUrl(): string {
-    return this.configService.get('DESKTOP_COMMUNITY_FRONT_URL');
+    return this.getRequiredConfig('DESKTOP_COMMUNITY_FRONT_URL');
   }
 
   public getAppHostsCount(): number {
@@ -241,8 +241,20 @@ export class CoreConfigService {
     return join(this.getEnvFolderPath('dev'), '.ssh');
   }
 
-  public static getEnvVariable(name: string): string {
+  public static getEnvVariable(name: string): string | undefined {
     return process.env[name];
+  }
+
+  /**
+   * Read a config value that must be set. Throws a clear error when missing
+   * so a required env variable never silently becomes an empty string.
+   */
+  protected getRequiredConfig(configName: string): string {
+    const value = this.configService.get<string>(configName);
+    if (value == null) {
+      throw Error(`The env variable '${configName}' must be set.`);
+    }
+    return value;
   }
 
   public static setEnvVariable(name: string, value: string): void {
@@ -251,7 +263,7 @@ export class CoreConfigService {
 
   protected getConfigNumber(configName: string): number {
     try {
-      return parseInt(this.configService.get(configName), 10);
+      return parseInt(this.configService.get(configName) ?? '', 10);
     } catch (error) {
       console.error('Error while parsing config ' + configName + ' to number');
       throw error;
@@ -259,7 +271,7 @@ export class CoreConfigService {
   }
 
   protected getConfigBoolean(configName: string, defaultValue?: boolean): boolean {
-    const stringBool: string = this.configService.get(configName);
+    const stringBool: string | undefined = this.configService.get(configName);
 
     if (stringBool === 'false') {
       return false;

@@ -1,3 +1,3 @@
 export class UpdateLabManagerCommand {
-  command: string;
+  command!: string;
 }

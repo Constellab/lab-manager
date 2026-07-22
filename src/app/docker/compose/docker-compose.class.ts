@@ -251,7 +251,7 @@ export class DockerCompose {
         await dockerCommand.dockerExec(
           containerName,
           `sh -c "mysqladmin ping --host='localhost' --user='root' --password=\\$MYSQL_ROOT_PASSWORD"`,
-          null,
+          undefined,
           ExecCommandMode.NO_LOG
         );
       } catch (e) {
@@ -273,7 +273,7 @@ export class DockerCompose {
     if (existsSync(this.composeFilePath)) {
       unlinkSync(this.composeFilePath);
     }
-    if (existsSync(this.envFilePath)) {
+    if (this.envFilePath && existsSync(this.envFilePath)) {
       unlinkSync(this.envFilePath);
     }
   }

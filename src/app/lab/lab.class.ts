@@ -5,9 +5,9 @@ import { ContainerStatus, DockerProgress } from '../docker/docker.class';
 export type LabStatus = 'STOPPED' | 'RUNNING' | 'STARTING' | 'ERROR';
 
 export class GlabStatus {
-  status: ContainerStatus;
-  startProgress: DockerProgress;
-  hasStartError: boolean;
+  status!: ContainerStatus;
+  startProgress!: DockerProgress | null;
+  hasStartError!: boolean;
 }
 
 export interface LabManagerStatus {
@@ -18,7 +18,7 @@ export interface LabManagerStatus {
   isConfigured: boolean;
   isInitialized: boolean;
   // version of the lab manager that has been used to init the lab
-  lastInitVersion: string;
+  lastInitVersion: string | null;
   // true if the config was changed since the last restart (init) of the lab,
   // meaning the lab must be restarted to apply the new config
   needsRestart: boolean;

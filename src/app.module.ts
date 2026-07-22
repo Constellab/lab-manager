@@ -17,7 +17,7 @@ import { LabModule } from './app/lab/lab.module';
 function configureWinstonLogger(configService: CoreConfigService): WinstonModuleOptions {
   const logConfig: LoggerConfig = {
     logLevel: configService.getLogLevel(),
-    logFilePath: configService.isLocal() ? null : configService.getLogPath(),
+    logFilePath: configService.isLocal() ? '' : configService.getLogPath(),
     colorize: configService.isDevelopment(),
   };
   return configureLogger(logConfig);

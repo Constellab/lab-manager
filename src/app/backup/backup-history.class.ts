@@ -48,7 +48,6 @@ export class LabBackupHistory {
         backup.data = {
           totalSize: backup.dataSize,
           status: backup.dataStatus,
-          transfer: null,
         } as BackupInfo;
         delete backup.dataSize;
         delete backup.dataStatus;
@@ -57,7 +56,6 @@ export class LabBackupHistory {
         backup.db = {
           totalSize: backup.dbSize,
           status: backup.dbStatus,
-          transfer: null,
         } as BackupInfo;
         delete backup.dbSize;
         delete backup.dbStatus;

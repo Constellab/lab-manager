@@ -77,7 +77,7 @@ export class LabService implements OnModuleInit {
   }
 
   public async getStatus(): Promise<LabManagerStatus> {
-    let lastInitManagerVersion: string = null;
+    let lastInitManagerVersion: string | null = null;
     let needsRestart = false;
     if (this.fileService.privateFileExists()) {
       const privateFileData = this.fileService.readPrivateFile().data;
@@ -116,7 +116,7 @@ export class LabService implements OnModuleInit {
 
     return {
       containersStatus: containersStatus,
-      currentTask: this.taskService.currentTask,
+      currentTask: this.taskService.currentTask ?? undefined,
       adminerIsRunning: await this.adminerService.adminerIsRunning(),
       version: currentManagerVersion,
       isConfigured: this.configFileService.configFileExists(),
@@ -128,8 +128,8 @@ export class LabService implements OnModuleInit {
       labStatus: labStatus,
       glabStatus: {
         status: containers.getContainer(MainComposeServiceName.GLAB)?.status ?? 'none',
-        startProgress: glabStartLog?.progress,
-        hasStartError: glabStartLog?.main_errors?.length > 0,
+        startProgress: glabStartLog?.progress ?? null,
+        hasStartError: (glabStartLog?.main_errors?.length ?? 0) > 0,
       },
     };
   }
@@ -158,7 +158,7 @@ export class LabService implements OnModuleInit {
     }
   }
 
-  public async getStartingLabError(): Promise<ErrorLogs> {
+  public async getStartingLabError(): Promise<ErrorLogs | null> {
     return await this.mainComposeService.getGlabStartErrorLogs('prod');
   }
 
@@ -240,7 +240,7 @@ export class LabService implements OnModuleInit {
   }
 
   //////////////////////////// CONFIG ////////////////////////////
-  public getConfig(): ConfigFile {
+  public getConfig(): ConfigFile | null {
     return this.configFileService.getConfig();
   }
 
@@ -369,9 +369,27 @@ export class LabService implements OnModuleInit {
       throw new BadRequestException('The brick gws_core is required in the bricks configuration');
     }
 
+    // get gws_core version info
+    const brickInfo = await this.communityService.getBrickVersion(BrickGWS.GWS_CORE, gwsCore.version);
+
+    // retrieve front version
+    const frontVersion = brickInfo.technicalInfo?.[BrickGWSTechnicalInfo.GWS_CORE_FRONT_VERSION];
+    if (frontVersion == null) {
+      throw new BadRequestException('The front version is not set in the gws_core brick technical info');
+    }
+
+    // retrieve glab tag
+    const glabTag = brickInfo.technicalInfo?.[BrickGWSTechnicalInfo.GWS_CORE_GLAB_VERSION];
+    if (glabTag == null) {
+      throw new BadRequestException(
+        'The glab tag is not set in the config file and could not be found in the gws_core' +
+          ' brick technical info'
+      );
+    }
+
     const configFile: ConfigFile = {
-      front_version: null,
-      glab_tag: null,
+      front_version: frontVersion,
+      glab_tag: glabTag,
       environment: {
         bricks: brickConfigs.brickVersions.map((brick) => ({
           name: brick.name,
@@ -381,27 +399,6 @@ export class LabService implements OnModuleInit {
       },
       variables: {},
     };
-
-    // get gws_core version info
-    const brickInfo = await this.communityService.getBrickVersion(BrickGWS.GWS_CORE, gwsCore.version);
-
-    // retrieve front version
-    const frontVersion = brickInfo.technicalInfo[BrickGWSTechnicalInfo.GWS_CORE_FRONT_VERSION];
-    if (frontVersion == null) {
-      throw new BadRequestException('The front version is not set in the gws_core brick technical info');
-    }
-    configFile.front_version = frontVersion;
-
-    // retrieve glab tag
-    const glabTag = brickInfo.technicalInfo[BrickGWSTechnicalInfo.GWS_CORE_GLAB_VERSION];
-    if (glabTag == null) {
-      throw new BadRequestException(
-        'The glab tag is not set in the config file and could not be found in the gws_core' +
-          ' brick technical info'
-      );
-    }
-
-    configFile.glab_tag = glabTag;
 
     this.configFileService.updateConfig(configFile);
   }

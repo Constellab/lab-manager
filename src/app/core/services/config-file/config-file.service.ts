@@ -31,7 +31,7 @@ export class ConfigFileService {
     }
   }
 
-  public getConfig(): ConfigFile {
+  public getConfig(): ConfigFile | null {
     if (!this.configFileExists()) {
       return null;
     }
@@ -80,8 +80,9 @@ export class ConfigFileService {
         existingBrick.version = minBrick.version;
         configUpdated = true;
       } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
         this.logger.error(
-          `Error comparing versions for brick '${minBrick.name}': ${error.message}. Skipping this brick.`
+          `Error comparing versions for brick '${minBrick.name}': ${message}. Skipping this brick.`
         );
       }
     }

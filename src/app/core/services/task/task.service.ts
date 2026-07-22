@@ -8,12 +8,12 @@ import { TaskStatus, TaskStatusInfo } from '../../models/task.class';
  */
 @Injectable()
 export class TaskService {
-  private task$: BehaviorSubject<TaskStatusInfo> = new BehaviorSubject<TaskStatusInfo>(null);
+  private task$: BehaviorSubject<TaskStatusInfo | null> = new BehaviorSubject<TaskStatusInfo | null>(null);
 
   private readonly logger = new Logger(TaskService.name);
 
   public getTask$(): Observable<TaskStatusInfo> {
-    return this.task$.asObservable().pipe(filter((task) => task != null));
+    return this.task$.asObservable().pipe(filter((task): task is TaskStatusInfo => task != null));
   }
 
   public get currentTask(): TaskStatusInfo | null {
@@ -51,6 +51,9 @@ export class TaskService {
   }
 
   public updateTaskInfo(name: string, info: string, logMessage: boolean = true): void {
+    if (this.currentTask == null) {
+      throw new BadRequestException(`There is no running task`);
+    }
     this.updateTask(name, this.currentTask.status, info, logMessage);
   }
 

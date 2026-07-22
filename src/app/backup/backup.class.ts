@@ -74,8 +74,8 @@ export interface LabBackupStorageI {
   triggerMode: BackupTriggerMode;
   s3Prefix: string;
 
-  endpoint: string; // for s3
-  accountName: string; // for azure
+  endpoint: string | null; // for s3
+  accountName: string | null; // for azure
 }
 
 export class LabBackupStorage {
@@ -88,14 +88,14 @@ export class LabBackupStorage {
   data: BackupInfo;
   db: BackupInfo;
 
-  frequency: BackupFrequency;
+  frequency!: BackupFrequency;
   triggerMode: BackupTriggerMode;
   s3Prefix: string;
 
   // not stored in the json
-  bucketConfig: BucketConfig;
-  dbProcess: ChildProcess;
-  dataProcess: ChildProcess;
+  bucketConfig!: BucketConfig;
+  dbProcess: ChildProcess | null = null;
+  dataProcess: ChildProcess | null = null;
 
   constructor(triggerMode: BackupTriggerMode, s3Prefix: string) {
     this.id = StringHelper.generateUUID() + '_' + new Date().getTime();
@@ -222,7 +222,7 @@ export class LabBackupStorage {
       storage.bucketConfig = {
         type: json.type,
         config: {
-          accountName: json.accountName,
+          accountName: json.accountName ?? '',
           containerName: json.bucket,
           accountKey: '',
           region: json.region,
@@ -233,14 +233,17 @@ export class LabBackupStorage {
         type: json.type,
         config: {
           bucket: json.bucket,
-          endpoint: json.endpoint,
+          endpoint: json.endpoint ?? '',
           region: json.region,
-          credentials: null,
+          credentials: {
+            accessKeyId: '',
+            secretAccessKey: '',
+          },
         },
       };
     }
     storage.startUploadAt = new Date(json.startUploadAt);
-    storage.endUploadAt = json.endUploadAt ? new Date(json.endUploadAt) : null;
+    storage.endUploadAt = json.endUploadAt ? new Date(json.endUploadAt) : undefined;
     storage.status = json.status;
     storage.data = json.data;
     storage.db = json.db;

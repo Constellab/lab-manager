@@ -65,7 +65,7 @@ export class AdminerComposeService {
 
       this.taskService.markTaskAsSuccess(taskName, 'Ok');
     } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
+      this.taskService.markTaskAsError(taskName, String(e));
       throw e;
     }
   }
@@ -82,7 +82,7 @@ export class AdminerComposeService {
 
       this.taskService.markTaskAsSuccess(taskName, 'Ok');
     } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
+      this.taskService.markTaskAsError(taskName, String(e));
       throw e;
     }
   }

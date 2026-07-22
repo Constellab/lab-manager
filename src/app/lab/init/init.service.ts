@@ -41,9 +41,10 @@ export class InitService {
 
       this.logger.log('[FULL INIT] Full init ended successfully');
     } catch (e) {
-      this.logger.error('[FULL INIT] Full init ended with error :' + e);
-      if (e.stack) {
-        this.logger.error(e.stack);
+      const error = e instanceof Error ? e : new Error(String(e));
+      this.logger.error('[FULL INIT] Full init ended with error :' + error);
+      if (error.stack) {
+        this.logger.error(error.stack);
       }
     }
   }
@@ -57,9 +58,10 @@ export class InitService {
 
       this.logger.log('[INIT] Init ended successfully');
     } catch (e) {
-      this.logger.error('[INIT] Init ended with error :' + e);
-      if (e.stack) {
-        this.logger.error(e.stack);
+      const error = e instanceof Error ? e : new Error(String(e));
+      this.logger.error('[INIT] Init ended with error :' + error);
+      if (error.stack) {
+        this.logger.error(error.stack);
       }
     }
   }
@@ -95,7 +97,7 @@ export class InitService {
     // so any pending "needs restart" state is cleared here.
     this.fileService.updatePrivateFileData({
       lastInitManagerVersion: this.configService.getLabManagerVersion(),
-      lastInitConfigHash: this.configFileService.getConfigHash(),
+      lastInitConfigHash: this.configFileService.getConfigHash() ?? undefined,
       needsRestart: false,
     });
   }
@@ -127,7 +129,7 @@ export class InitService {
 
       const privateJson: PrivateFile = this.fileService.getPrivateFileTemplate();
 
-      let oldPrivateJson: PrivateFile = null;
+      let oldPrivateJson: PrivateFile | null = null;
       // if the private file already exists, retrieve the data sub object from it
       if (this.fileService.privateFileExists()) {
         oldPrivateJson = this.fileService.readPrivateFile();
@@ -177,15 +179,16 @@ export class InitService {
       privateJson.db.gwsCoreDevPassword = labInitConfig.db.gwsCoreDevPassword;
 
       // captcha site key
-      privateJson.lab.captchaSiteKey = labInitConfig.lab.captchaSiteKey;
+      privateJson.lab.captchaSiteKey = labInitConfig.lab.captchaSiteKey as string;
 
       // open ai
-      privateJson.openaiApiKey = labInitConfig.openaiApiKey;
+      privateJson.openaiApiKey = labInitConfig.openaiApiKey as string;
 
       this.fileService.createPrivateFile(privateJson);
       this.taskService.markTaskAsSuccess(taskName, 'private.json file generated');
     } catch (e) {
-      this.taskService.markTaskAsError(taskName, `Error while generating private.json file : ${e.message}`);
+      const message = e instanceof Error ? e.message : String(e);
+      this.taskService.markTaskAsError(taskName, `Error while generating private.json file : ${message}`);
       throw e;
     }
   }

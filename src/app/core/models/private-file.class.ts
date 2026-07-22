@@ -47,35 +47,35 @@ export function getPrivateFileTemplate(): PrivateFile {
   return {
     version: 1,
     space: {
-      prodApiKey: null,
-      devApiKey: null,
-      apiUrl: null,
-      frontUrl: null,
+      prodApiKey: '',
+      devApiKey: '',
+      apiUrl: '',
+      frontUrl: '',
     },
     community: {
-      frontUrl: null,
-      apiUrl: null,
+      frontUrl: '',
+      apiUrl: '',
     },
     lab: {
-      id: null,
-      name: null,
+      id: '',
+      name: '',
       codelabUsername: 'codelab',
-      codelabToken: null,
-      codelabHashToken: null,
-      captchaSiteKey: null,
+      codelabToken: '',
+      codelabHashToken: '',
+      captchaSiteKey: '',
     },
     backup: {
       enable: true,
     },
     db: {
-      gwsCoreProdPassword: null,
-      gwsCoreDevPassword: null,
+      gwsCoreProdPassword: '',
+      gwsCoreDevPassword: '',
     },
     data: {
-      lastInitManagerVersion: null,
-      lastInitConfigHash: null,
+      lastInitManagerVersion: '',
+      lastInitConfigHash: '',
       needsRestart: false,
     },
-    openaiApiKey: null,
+    openaiApiKey: '',
   };
 }

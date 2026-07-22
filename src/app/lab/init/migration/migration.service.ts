@@ -41,7 +41,7 @@ export class MigrationService {
       const currentVersion = ClVersion.fromString(currentVersionString);
 
       // Get the last init version from private file
-      let lastInitVersion: ClVersion = null;
+      let lastInitVersion: ClVersion | null = null;
       if (this.fileService.privateFileExists()) {
         const privateFile = this.fileService.readPrivateFile();
         const lastInitVersionString = privateFile.data?.lastInitManagerVersion;
@@ -100,10 +100,11 @@ export class MigrationService {
           await migration.migrate(currentVersionString);
           this.taskService.updateTask(taskName, 'RUNNING', `Completed: ${description}`);
         } catch (error) {
-          if (error.stack) {
-            this.logger.error(error.stack);
+          const err = error instanceof Error ? error : new Error(String(error));
+          if (err.stack) {
+            this.logger.error(err.stack);
           }
-          throw new Error(`Migration to version ${destinationVersion} failed: ${error.message}`);
+          throw new Error(`Migration to version ${destinationVersion} failed: ${err.message}`);
         }
       }
 
@@ -112,7 +113,8 @@ export class MigrationService {
         `Successfully executed ${pendingMigrations.length} migration(s)`
       );
     } catch (error) {
-      this.taskService.markTaskAsError(taskName, `Migration process failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.taskService.markTaskAsError(taskName, `Migration process failed: ${message}`);
       throw error;
     }
   }

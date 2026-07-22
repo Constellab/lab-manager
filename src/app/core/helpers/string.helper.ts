@@ -17,7 +17,7 @@ export class StringHelper {
    * @param file filename or full file path
    * @return the file extension without the .
    */
-  public static getFileExtension(file: string): string {
+  public static getFileExtension(file: string): string | null {
     if (!file) return null;
     return StringHelper.extractFilenameFromFullPath(file).split('.').slice(-1).join('.');
   }

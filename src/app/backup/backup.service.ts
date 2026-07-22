@@ -45,7 +45,7 @@ export class BackupService implements OnModuleInit {
 
   private readonly logger = new Logger(BackupService.name);
 
-  private backupHistory: LabBackupHistory = null;
+  private backupHistory: LabBackupHistory | null = null;
 
   constructor(
     private configService: CoreConfigService,
@@ -97,7 +97,8 @@ export class BackupService implements OnModuleInit {
         );
       this.logger.log('Syncing backup history with space server done');
     } catch (e) {
-      this.logError(`Error during backup module init. Error : ${e.message}`, e);
+      const error = e instanceof Error ? e : new Error(String(e));
+      this.logError(`Error during backup module init. Error : ${error.message}`, error);
     }
   }
 
@@ -121,7 +122,8 @@ export class BackupService implements OnModuleInit {
     try {
       backupInfo = await this.externalSpaceService.getBackupInfo();
     } catch (e) {
-      this.logError(`[AutoBackup] Error while getting the backup info: ${e.message}, skipping`, e);
+      const error = e instanceof Error ? e : new Error(String(e));
+      this.logError(`[AutoBackup] Error while getting the backup info: ${error.message}, skipping`, error);
       return;
     }
 
@@ -129,7 +131,8 @@ export class BackupService implements OnModuleInit {
       // we can do the backup
       await this.createMultipleProdBackup(backupInfo, 'AUTOMATIC');
     } catch (e) {
-      this.logError(`[AutoBackup] Error while creating the backup : ${e.message}, skipping`, e);
+      const error = e instanceof Error ? e : new Error(String(e));
+      this.logError(`[AutoBackup] Error while creating the backup : ${error.message}, skipping`, error);
       return;
     }
   }
@@ -188,13 +191,14 @@ export class BackupService implements OnModuleInit {
               `[Backup][${triggerMode}] The last activity was detected at ` +
                 `'${lastActivityDate.toISOString()}', skipping`
             );
-            return;
+            return new LabBackupHistory();
           }
         }
       }
     } catch (e) {
       // for now we still run the backup even if we can't get the activity
-      this.logError(`Error while getting the lab activity: ${e.message}. Running the backup anyway`, e);
+      const error = e instanceof Error ? e : new Error(String(e));
+      this.logError(`Error while getting the lab activity: ${error.message}. Running the backup anyway`, error);
     }
 
     const backupHistory = this.getBackupHistory();
@@ -324,7 +328,8 @@ export class BackupService implements OnModuleInit {
       const dataSize = parseInt(sizeResult.trim(), 10);
       backup.setDataTotalSize(dataSize);
     } catch (e) {
-      this.logError(`Error while getting the data folder size. Error : ${e.message}`, e);
+      const error = e instanceof Error ? e : new Error(String(e));
+      this.logError(`Error while getting the data folder size. Error : ${error.message}`, error);
     }
 
     // Generate ownership manifest for extensions folder only
@@ -341,7 +346,8 @@ export class BackupService implements OnModuleInit {
         this.logger.log('Extensions folder does not exist, skipping ownership manifest generation');
       }
     } catch (e) {
-      this.logError(`Error while generating ownership manifest. Error : ${e.message}`, e);
+      const error = e instanceof Error ? e : new Error(String(e));
+      this.logError(`Error while generating ownership manifest. Error : ${error.message}`, error);
       // Continue with backup even if manifest generation fails
     }
 
@@ -382,7 +388,8 @@ export class BackupService implements OnModuleInit {
         }
       }
     } catch (e) {
-      this.logError(`Error while collecting backup exclude patterns: ${e.message}`, e);
+      const error = e instanceof Error ? e : new Error(String(e));
+      this.logError(`Error while collecting backup exclude patterns: ${error.message}`, error);
     }
 
     return patterns;
@@ -477,7 +484,7 @@ export class BackupService implements OnModuleInit {
 
   public getCurrentBackupStatus(): LabBackupStorage[] {
     const backupHistory = this.getBackupHistory();
-    if (backupHistory.hasRunningBackup) {
+    if (backupHistory.hasRunningBackup()) {
       return backupHistory.getRunningBackups();
     }
 
@@ -579,7 +586,7 @@ export class BackupService implements OnModuleInit {
       }
     }
 
-    return this.backupHistory;
+    return this.backupHistory!;
   }
 
   public hasRunningBackup(): boolean {
@@ -631,8 +638,9 @@ export class BackupService implements OnModuleInit {
           await this.downloadAndApplyOwnershipManifest(restoreDTO);
           this.taskService.updateTaskInfo(BackupService.RESTORE_BACKUP_TASK, 'Data Restored');
         } catch (e) {
+          const error = e instanceof Error ? e : new Error(String(e));
           this.logger.warn(
-            `Warning: Could not apply ownership from manifest. Error: ${e.message}. ` +
+            `Warning: Could not apply ownership from manifest. Error: ${error.message}. ` +
               `Files may have incorrect ownership.`
           );
           this.taskService.updateTaskInfo(
@@ -644,7 +652,8 @@ export class BackupService implements OnModuleInit {
 
       this.onRestoreBackupSuccess();
     } catch (e) {
-      const error = e.data ?? e.message ?? e.toString();
+      const err = e as { data?: string; message?: string };
+      const error = err.data ?? err.message ?? String(e);
       this.taskService.markTaskAsError(BackupService.RESTORE_BACKUP_TASK, error);
       throw Error(error);
     }

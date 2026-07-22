@@ -37,7 +37,7 @@ export class MainComposeService {
   /**
    * Get start error logs from the glab container
    */
-  public async getGlabStartErrorLogs(mode: 'prod' | 'dev'): Promise<ErrorLogs> {
+  public async getGlabStartErrorLogs(mode: 'prod' | 'dev'): Promise<ErrorLogs | null> {
     const logs = this.fileService.readLogStartFileIfExists(mode);
     if (!logs) return null;
 
@@ -47,7 +47,7 @@ export class MainComposeService {
     };
   }
 
-  public async getGlabStartProgressLogs(mode: 'prod' | 'dev'): Promise<DockerProgress> {
+  public async getGlabStartProgressLogs(mode: 'prod' | 'dev'): Promise<DockerProgress | null> {
     const logs = this.fileService.readLogStartFileIfExists(mode);
     if (!logs) return null;
 

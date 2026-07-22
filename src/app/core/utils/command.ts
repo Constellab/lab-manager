@@ -108,7 +108,7 @@ export class Command {
       });
 
       spawnCommand.on('exit', (code: number, signal: NodeJS.Signals | null) => {
-        console.log('EXIT ' + code, +' ' + signal);
+        console.log('EXIT ' + code, ' ' + (signal ?? ''));
 
         if (code === 0) {
           subscriber.complete();

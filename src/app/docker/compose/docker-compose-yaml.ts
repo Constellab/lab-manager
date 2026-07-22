@@ -7,6 +7,7 @@ import {
   DockerComposeVolume,
   DockerComposeVolumeVariable,
   DockerComposeYamlEnv,
+  XGwsMainConfig,
   XBackupExclude,
   XGwsServiceConfig,
   XHttpsLabel,
@@ -36,11 +37,11 @@ export class DockerComposeYaml {
     if (!strYaml || strYaml.trim().length === 0) {
       throw new Error('The docker-compose.yml content is empty');
     }
-    const yamlJson = load(strYaml);
+    const yamlJson = load(strYaml) as DockerComposeJson;
 
     // Initialize x-gws-config if it doesn't exist
     if (!yamlJson['x-gws-config']) {
-      yamlJson['x-gws-config'] = {};
+      yamlJson['x-gws-config'] = {} as XGwsMainConfig;
     }
 
     if (composeId?.brickName) {
@@ -54,7 +55,7 @@ export class DockerComposeYaml {
     if (composeId?.env) {
       yamlJson['x-gws-config'].env = composeId.env;
     }
-    this.content = this.checkYaml(yamlJson as DockerComposeJson);
+    this.content = this.checkYaml(yamlJson);
   }
 
   private checkYaml(content: DockerComposeJson): DockerComposeJson {
@@ -151,7 +152,7 @@ export class DockerComposeYaml {
       this.content.services[serviceName].environment = [];
     }
 
-    this.content.services[serviceName].environment.push(`${envKey}=${envValue}`);
+    this.content.services[serviceName].environment!.push(`${envKey}=${envValue}`);
   }
 
   ////////////////////// PORTS //////////////////////
@@ -161,7 +162,7 @@ export class DockerComposeYaml {
       this.content.services[serviceName].ports = [];
     }
 
-    this.content.services[serviceName].ports.push(`${hostPort}:${containerPort}`);
+    this.content.services[serviceName].ports!.push(`${hostPort}:${containerPort}`);
   }
   ////////////////////// NETWORKS //////////////////////
 
@@ -181,10 +182,10 @@ export class DockerComposeYaml {
     }
 
     // check if the network already exists for the service
-    if (this.content.services[serviceName].networks.includes(networkName)) {
+    if (this.content.services[serviceName].networks!.includes(networkName)) {
       return;
     }
-    this.content.services[serviceName].networks.push(networkName);
+    this.content.services[serviceName].networks!.push(networkName);
 
     this.addGlobalNetwork(networkName, external);
   }
@@ -207,7 +208,7 @@ export class DockerComposeYaml {
   private removeServiceNetwork(serviceName: string, networkName: string): void {
     this.checkServiceExists(serviceName);
     if (this.content.services[serviceName].networks) {
-      this.content.services[serviceName].networks = this.content.services[serviceName].networks.filter(
+      this.content.services[serviceName].networks = this.content.services[serviceName].networks!.filter(
         (net) => net !== networkName
       );
     }
@@ -256,7 +257,7 @@ export class DockerComposeYaml {
       this.content.services[serviceName].volumes = [];
     }
 
-    this.content.services[serviceName].volumes.push(`${hostPath}:${containerPath}`);
+    this.content.services[serviceName].volumes!.push(`${hostPath}:${containerPath}`);
   }
 
   addNamedVolumeToService(serviceName: string, volumeName: string, containerPath: string): void {
@@ -387,7 +388,7 @@ export class DockerComposeYaml {
       this.content.services[serviceName].labels = [];
     }
 
-    this.content.services[serviceName].labels.push(...labels);
+    this.content.services[serviceName].labels!.push(...labels);
   }
 
   addTraefikLabels(serviceName: string, host: string, servicePort: number): void {

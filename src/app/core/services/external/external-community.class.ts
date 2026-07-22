@@ -14,12 +14,12 @@ export enum BrickRepositoryType {
 }
 
 export class BrickVersionDTO {
-  brickName: string;
-  brickVersion: string;
-  repoType: BrickRepositoryType;
-  repositoryUrl: string;
+  brickName!: string;
+  brickVersion!: string;
+  repoType!: BrickRepositoryType;
+  repositoryUrl!: string;
   // url to access the repository with the token
-  repositoryAccessUrl: string;
+  repositoryAccessUrl!: string;
   technicalInfo?: Record<string, any>;
 }
 

@@ -25,7 +25,7 @@ export class DockerContainerService {
       await dockerCommand.dockerRmContainer(containerName);
       this.taskService.markTaskAsSuccess(taskName, 'Ok');
     } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
+      this.taskService.markTaskAsError(taskName, String(e));
       throw e;
     }
   }
@@ -41,7 +41,7 @@ export class DockerContainerService {
       await dockerCommand.startContainer(containerName);
       this.taskService.markTaskAsSuccess(taskName, 'Ok');
     } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
+      this.taskService.markTaskAsError(taskName, String(e));
       throw e;
     }
   }
@@ -57,7 +57,7 @@ export class DockerContainerService {
       await dockerCommand.stopContainer(containerName);
       this.taskService.markTaskAsSuccess(taskName, 'Ok');
     } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
+      this.taskService.markTaskAsError(taskName, String(e));
       throw e;
     }
   }
@@ -112,7 +112,7 @@ export class DockerContainerService {
       const result = await dockerCommand.pruneUnusedImages();
       this.taskService.markTaskAsSuccess(taskName, result);
     } catch (e) {
-      this.taskService.markTaskAsError(taskName, e.toString());
+      this.taskService.markTaskAsError(taskName, String(e));
       throw e;
     }
   }

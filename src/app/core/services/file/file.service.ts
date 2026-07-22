@@ -52,11 +52,7 @@ export class FileService {
   public updatePrivateFileData(data: Partial<PrivateFileData>): void {
     const privateFile = this.readPrivateFile();
 
-    const dataTemplate: PrivateFileData = {
-      lastInitManagerVersion: null,
-      lastInitConfigHash: null,
-      needsRestart: false,
-    };
+    const dataTemplate: PrivateFileData = getPrivateFileTemplate().data;
     privateFile.data = { ...dataTemplate, ...(privateFile.data ?? {}), ...data };
     this.createPrivateFile(privateFile);
   }
