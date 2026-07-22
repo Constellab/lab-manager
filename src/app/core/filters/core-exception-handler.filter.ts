@@ -82,7 +82,30 @@ export class CoreExceptionHandlerFilter implements ExceptionFilter {
     this.logger.error(
       `Error during request ${request.url} | Method ${request.method} | InstanceId ${instanceId}`
     );
-    this.logger.error(error.stack);
+    // error.stack is undefined when the caught value is a plain object (e.g. an ApiError
+    // thrown by BLApiService) or a non-Error throw. Fall back to a serialized form.
+    this.logger.error(error?.stack ?? this.stringifyError(error));
+  }
+
+  /**
+   * Build a readable string for a thrown value that has no usable stack trace
+   * (plain objects, strings, numbers, ApiError instances, etc.).
+   */
+  private stringifyError(error: unknown): string {
+    if (error == null) {
+      return 'Unknown error (no error object thrown)';
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    if (error instanceof Error && error.message) {
+      return `${error.name}: ${error.message}`;
+    }
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return String(error);
+    }
   }
 
   /**

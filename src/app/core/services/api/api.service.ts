@@ -7,6 +7,8 @@ import { ApiError, ApiHttpOption, ApiHttpOptionObserve } from './api.class';
 
 @Injectable()
 export class ApiService {
+  private readonly logger = new Logger('BLApiService');
+
   constructor(private httpService: HttpService) {}
 
   /**
@@ -118,9 +120,9 @@ export class ApiService {
     // log if log error is not set to false (default is true)
     if (logError !== false) {
       if (apiError.message) {
-        Logger.error(`[BLApiService] Error during call to route '${route}' : ${apiError.message}`);
+        this.logger.error(`Error during call to route '${route}' : ${apiError.message}`);
       } else {
-        Logger.error(`[BLApiService] Error during call to route '${route}'`);
+        this.logger.error(`Error during call to route '${route}'`);
       }
     }
     return throwError(() => apiError);
