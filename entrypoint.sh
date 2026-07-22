@@ -19,8 +19,16 @@ if [ -d /app ]; then
 
     if [ "$TARGET_UID" != "0" ] && \
        { [ "$TARGET_UID" != "$CURRENT_UID" ] || [ "$TARGET_GID" != "$CURRENT_GID" ]; }; then
-        sudo groupmod -g "$TARGET_GID" labuser 2>/dev/null || \
-            sudo groupadd -g "$TARGET_GID" labuser_host
+        echo "entrypoint: remapping labuser ${CURRENT_UID}:${CURRENT_GID} -> ${TARGET_UID}:${TARGET_GID} to match /app owner"
+
+        # Try to move labuser's own group to TARGET_GID. This can fail if the
+        # GID is already claimed by another group in the container; in that
+        # case we don't create a redundant group — usermod below sets the
+        # primary group by GID, which is what actually matters for ownership.
+        if ! sudo groupmod -g "$TARGET_GID" labuser; then
+            echo "entrypoint: could not move labuser group to GID ${TARGET_GID} (likely already in use); binding primary group by GID instead" >&2
+        fi
+
         sudo usermod -u "$TARGET_UID" -g "$TARGET_GID" labuser
         sudo chown -R "$TARGET_UID:$TARGET_GID" /home/labuser /lab-manager
     fi
