@@ -115,6 +115,11 @@ export class RcloneService {
       '128M',
       '--transfers',
       '16',
+      // Don't abort the whole sync when a local source file changes size during
+      // upload (e.g. a DB / log / index file being written by a live container).
+      // rclone would otherwise fail with "source file is being updated". This
+      // only affects local -> remote uploads (backups), not remote -> local restores.
+      '--local-no-check-updated',
       ...options,
       ...excludePatterns.flatMap((pattern) => ['--exclude', pattern]),
       'sync',
