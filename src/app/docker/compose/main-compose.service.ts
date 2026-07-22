@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { GPUService } from 'src/app/core/services/gpu/gpu.service';
+import { GPUService } from '../../core/services/gpu/gpu.service';
 import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { FileService } from '../../core/services/file/file.service';
 import { DockerProgress, ErrorLogs } from '../docker.class';

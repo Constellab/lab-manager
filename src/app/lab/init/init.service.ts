@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { hashSync } from 'bcrypt';
-import { TaskService } from 'src/app/core/services/task/task.service';
+import { TaskService } from '../../core/services/task/task.service';
 import { PrivateFile } from '../../core/models/private-file.class';
 import { ConfigFileService } from '../../core/services/config-file/config-file.service';
 import { CoreConfigService } from '../../core/services/config/core-config.service';

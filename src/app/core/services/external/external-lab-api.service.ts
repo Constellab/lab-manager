@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { lastValueFrom } from 'rxjs';
-import { ApiHttpOption } from 'src/app/core/services/api/api.class';
-import { ApiService } from 'src/app/core/services/api/api.service';
-import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
-import { FileService } from 'src/app/core/services/file/file.service';
+import { ApiHttpOption } from '../api/api.class';
+import { ApiService } from '../api/api.service';
+import { CoreConfigService } from '../config/core-config.service';
+import { FileService } from '../file/file.service';
 import { MainComposeServiceName, MainDockerCompose } from '../../../docker/compose/main-docker-compose.class';
 import { LabGlobalActivity } from './external-lab.class';
 

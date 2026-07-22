@@ -488,7 +488,7 @@ export class DockerComposeYaml {
   }
 
   toString(): string {
-    return dump(this.content, { lineWidth: -1, quotingType: "'" });
+    return dump(this.content, { lineWidth: -1, quoteStyle: 'single' });
   }
 
   equalTo(other: DockerComposeYaml): boolean {

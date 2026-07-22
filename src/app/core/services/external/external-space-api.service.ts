@@ -1,12 +1,12 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { lastValueFrom } from 'rxjs';
-import { LabBackupHistory } from 'src/app/backup/backup-history.class';
-import { BackupInfoDTO } from 'src/app/backup/backup.class';
-import { ApiHttpOption } from 'src/app/core/services/api/api.class';
-import { ApiService } from 'src/app/core/services/api/api.service';
-import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
-import { FileService } from 'src/app/core/services/file/file.service';
-import { LabManagerMigrationPlanDTO } from 'src/app/lab/init/migration/migration.dto';
+import { LabBackupHistory } from '../../../backup/backup-history.class';
+import { BackupInfoDTO } from '../../../backup/backup.class';
+import { ApiHttpOption } from '../api/api.class';
+import { ApiService } from '../api/api.service';
+import { CoreConfigService } from '../config/core-config.service';
+import { FileService } from '../file/file.service';
+import { LabManagerMigrationPlanDTO } from '../../../lab/init/migration/migration.dto';
 import { UpdateLabManagerCommand } from './external-space.class';
 
 /**

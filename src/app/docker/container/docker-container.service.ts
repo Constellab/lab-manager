@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { TaskService } from 'src/app/core/services/task/task.service';
+import { TaskService } from '../../core/services/task/task.service';
 import { CoreConfigService } from '../../core/services/config/core-config.service';
 import { DockerCommand } from '../docker-command.class';
 import { DockerPsFull } from '../docker.class';

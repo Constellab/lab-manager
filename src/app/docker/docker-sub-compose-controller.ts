@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { LabGuard } from 'src/app/core/decorators/lab-guard.decorator';
+import { LabGuard } from '../core/decorators/lab-guard.decorator';
 import { AuthContextService } from '../core/auth/auth-context.service';
 import { DockerComposeAggregateService } from './compose/docker-compose-aggregate.service';
 import {

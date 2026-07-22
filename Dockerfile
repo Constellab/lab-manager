@@ -4,27 +4,27 @@
 # https://blog.logrocket.com/containerized-development-nestjs-docker/
 
 # Build step
-FROM node:20-alpine3.19 AS builder
+FROM oven/bun:1.3.14-alpine AS builder
 WORKDIR /lab-manager
 
-# Copy package and package-lock.json file for modules installation
-COPY /package.json /package-lock.json ./
+# Copy package.json and bun lockfile for modules installation
+COPY /package.json /bun.lock ./
 
-# Run modules installation
-RUN npm ci
+# Run modules installation (reproducible: fail if lockfile is out of date)
+RUN bun install --frozen-lockfile
 
 # copy the rest of the app
 COPY . .
 
-RUN npm run build
+RUN bun run build
 
 ## Second Stage : Setup command to run your app using lightweight node image
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 WORKDIR /lab-manager
 
-ENV NODE_VERSION=20.12.2
+ENV BUN_VERSION=1.3.14
 # do not name RCLONE_VERSION as it is a reserved name
-ENV CUSTOM_RCLONE_VERSION=1.53.3-4ubuntu1.22.04.3
+ENV CUSTOM_RCLONE_VERSION=1.60.1+dfsg-3ubuntu0.24.04.5
 ENV DOCKER_COMPOSE_VERSION=2.26.1
 
 
@@ -32,7 +32,7 @@ ENV DOCKER_COMPOSE_VERSION=2.26.1
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     rm -f /etc/apt/apt.conf.d/docker-clean && \
-    sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list && \
+    sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources && \
     apt-get update && apt-get -y install \
     ca-certificates \
     curl \
@@ -51,21 +51,25 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get -y install docker-ce docker-ce-cli containerd.io
 
 
-# Install node js directly from official binaries
-RUN curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz -o /tmp/node.tar.xz && \
-    mkdir -p /usr/local/lib/nodejs && \
-    tar -xJf /tmp/node.tar.xz -C /usr/local/lib/nodejs && \
-    rm /tmp/node.tar.xz && \
-    ln -s /usr/local/lib/nodejs/node-v${NODE_VERSION}-linux-x64/bin/node /usr/local/bin/node && \
-    ln -s /usr/local/lib/nodejs/node-v${NODE_VERSION}-linux-x64/bin/npm /usr/local/bin/npm && \
-    ln -s /usr/local/lib/nodejs/node-v${NODE_VERSION}-linux-x64/bin/npx /usr/local/bin/npx
-ENV PATH="/usr/local/lib/nodejs/node-v${NODE_VERSION}-linux-x64/bin:${PATH}"
-
-# Install rclone, unzip and pciutils (useful for lspci command)
+# Install rclone, unzip and pciutils (useful for lspci command).
+# unzip is also required by the bun install step below.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     apt-get update && \
     apt-get install -y rclone=${CUSTOM_RCLONE_VERSION} unzip pciutils
+
+# Install bun directly from official binaries.
+# The runtime base is glibc (ubuntu), so we fetch the glibc build
+# (bun-linux-x64), not the musl variant used by the alpine builder image.
+RUN curl -fsSL https://github.com/oven-sh/bun/releases/download/bun-v${BUN_VERSION}/bun-linux-x64.zip -o /tmp/bun.zip && \
+    unzip -q /tmp/bun.zip -d /tmp/bun && \
+    mkdir -p /usr/local/lib/bun && \
+    mv /tmp/bun/bun-linux-x64/bun /usr/local/lib/bun/bun && \
+    rm -rf /tmp/bun.zip /tmp/bun && \
+    chmod +x /usr/local/lib/bun/bun && \
+    ln -s /usr/local/lib/bun/bun /usr/local/bin/bun && \
+    ln -s /usr/local/lib/bun/bun /usr/local/bin/bunx
+ENV PATH="/usr/local/lib/bun:${PATH}"
 
 
 # Set UTC timezone for the docker
@@ -78,7 +82,10 @@ ARG USER_ID=1000
 ARG GROUP_ID=1000
 ARG LAB_MANAGER_VERSION
 
-RUN groupadd -g ${GROUP_ID} labuser && \
+# Ubuntu 24.04 ships a default "ubuntu" user/group at UID/GID 1000, which
+# collides with our labuser. Remove it before claiming 1000 for labuser.
+RUN userdel -r ubuntu 2>/dev/null || true; \
+    groupadd -g ${GROUP_ID} labuser && \
     useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash labuser && \
     echo "labuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
     chown labuser:labuser /lab-manager
@@ -101,13 +108,13 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 ENV LAB_MANAGER_VERSION=${LAB_MANAGER_VERSION}
 
 # Copy files with correct ownership
-COPY --from=builder --chown=labuser:labuser /lab-manager/package.json /lab-manager/package-lock.json ./
+COPY --from=builder --chown=labuser:labuser /lab-manager/package.json /lab-manager/bun.lock ./
 
-# Switch to labuser for npm install and copy dist
+# Switch to labuser for dependency install and copy dist
 USER labuser
 
 # Dependencies are needed and are not bundled in chunks
-RUN npm ci --production
+RUN bun install --frozen-lockfile --production
 
 # copy dist
 COPY --from=builder --chown=labuser:labuser /lab-manager/dist/ ./dist
@@ -117,5 +124,5 @@ RUN chmod -R 775 dist/assets
 
 EXPOSE 3010
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["node", "dist/main"]
+CMD ["bun", "dist/main"]
 

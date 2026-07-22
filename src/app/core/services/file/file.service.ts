@@ -13,7 +13,7 @@ import { readdir, stat } from 'fs/promises';
 import { getPrivateFileTemplate, PrivateFile, PrivateFileData } from '../../models/private-file.class';
 
 import { dirname, join } from 'path';
-import { StartLog } from 'src/app/docker/docker.class';
+import { StartLog } from '../../../docker/docker.class';
 import { Command, ExecCommandMode } from '../../utils/command';
 import { CoreConfigService } from '../config/core-config.service';
 

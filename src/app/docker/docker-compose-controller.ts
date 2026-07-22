@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { LabGuard } from 'src/app/core/decorators/lab-guard.decorator';
+import { LabGuard } from '../core/decorators/lab-guard.decorator';
 import { DockerComposeAggregateService } from './compose/docker-compose-aggregate.service';
 import {
   ComposeList,

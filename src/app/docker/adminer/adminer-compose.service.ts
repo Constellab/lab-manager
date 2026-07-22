@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CoreConfigService } from 'src/app/core/services/config/core-config.service';
-import { FileService } from 'src/app/core/services/file/file.service';
-import { TaskService } from 'src/app/core/services/task/task.service';
+import { CoreConfigService } from '../../core/services/config/core-config.service';
+import { FileService } from '../../core/services/file/file.service';
+import { TaskService } from '../../core/services/task/task.service';
 import { DockerComposeYaml } from '../compose/docker-compose-yaml';
 import { DockerCompose } from '../compose/docker-compose.class';
 import { DockerComposeService } from '../compose/docker-compose.service';

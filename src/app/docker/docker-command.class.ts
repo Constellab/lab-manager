@@ -1,5 +1,5 @@
 import { BadRequestException, Logger } from '@nestjs/common';
-import { Command, ExecCommandMode } from 'src/app/core/utils/command';
+import { Command, ExecCommandMode } from '../core/utils/command';
 import { DockerComposeInspect } from './compose/docker-compose-inspect.class';
 import { DockerInspect, DockerPsFull, DockerRunOptions } from './docker.class';
 
