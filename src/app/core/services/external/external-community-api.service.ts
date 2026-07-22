@@ -3,7 +3,11 @@ import { lastValueFrom } from 'rxjs';
 import { ApiHttpOption } from '../api/api.class';
 import { ApiService } from '../api/api.service';
 import { FileService } from '../file/file.service';
-import { BrickVersionDTO } from './external-community.class';
+import {
+  BrickVersionDTO,
+  HnBrickInfoDTO,
+  HnBrickInfoRequestDTO,
+} from './external-community.class';
 
 @Injectable()
 export class ExternalCommunityApiService {
@@ -45,6 +49,20 @@ export class ExternalCommunityApiService {
             size: size,
           },
         }
+      )
+    );
+  }
+
+  /**
+   * Call the community 'info' route to retrieve summary info (latest version,
+   * new-version flag, description, image, ...) for a batch of bricks at once.
+   */
+  public getMultipleBrickInfo(bricks: HnBrickInfoRequestDTO[]): Promise<HnBrickInfoDTO[]> {
+    return lastValueFrom(
+      this.apiService.post(
+        this.constructRoute(`${ExternalCommunityApiService.BRICKS_BASE_ROUTE}/info`),
+        { bricks },
+        this.getRequestOptions()
       )
     );
   }

@@ -7,6 +7,7 @@ import {
   McpConfigDTO,
 } from '../core/models/config-file.class';
 import { TaskStatusInfo } from '../core/models/task.class';
+import { HnBrickInfoDTO } from '../core/services/external/external-community.class';
 import { UpdateLabManagerCommand } from '../core/services/external/external-space.class';
 import { ErrorLogs } from '../docker/docker.class';
 import { LabInitConfig, LabManagerStatus } from './lab.class';
@@ -78,6 +79,16 @@ export class LabController {
   @Get('bricks-config')
   getBrickConfig(): BrickConfigsDTO {
     return this.labService.getBricksConfig();
+  }
+
+  /**
+   * Like bricks-config, but enriches the current bricks with community info
+   * (latest version, whether a newer version exists, description, image, ...)
+   * by calling the community 'info' route.
+   */
+  @Get('bricks-info')
+  getBrickInfo(): Promise<HnBrickInfoDTO[]> {
+    return this.labService.getBricksInfo();
   }
 
   @Put('config')

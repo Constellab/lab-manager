@@ -11,7 +11,11 @@ import { TaskStatusInfo } from '../core/models/task.class';
 import { ConfigFileService } from '../core/services/config-file/config-file.service';
 import { CoreConfigService } from '../core/services/config/core-config.service';
 import { ExternalCommunityApiService } from '../core/services/external/external-community-api.service';
-import { BrickGWS, BrickGWSTechnicalInfo } from '../core/services/external/external-community.class';
+import {
+  BrickGWS,
+  BrickGWSTechnicalInfo,
+  HnBrickInfoDTO,
+} from '../core/services/external/external-community.class';
 import { ExternalLabApiService } from '../core/services/external/external-lab-api.service';
 import { ExternalSpaceApiService } from '../core/services/external/external-space-api.service';
 import { UpdateLabManagerCommand } from '../core/services/external/external-space.class';
@@ -258,6 +262,21 @@ export class LabService implements OnModuleInit {
     return {
       brickVersions: configFile.environment?.bricks ?? [],
     };
+  }
+
+  /**
+   * Like getBricksConfig, but enriches the current bricks with community info
+   * (latest version, whether a newer version exists, description, image, ...)
+   * by calling the community 'info' route with the current name/version pairs.
+   */
+  public getBricksInfo(): Promise<HnBrickInfoDTO[]> {
+    const { brickVersions } = this.getBricksConfig();
+    if (brickVersions.length === 0) {
+      return Promise.resolve([]);
+    }
+    return this.communityService.getMultipleBrickInfo(
+      brickVersions.map((brick) => ({ name: brick.name, version: brick.version }))
+    );
   }
 
   public async updateConfig(config: ConfigFile): Promise<void> {
