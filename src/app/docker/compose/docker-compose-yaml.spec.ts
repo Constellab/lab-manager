@@ -606,8 +606,9 @@ services:
       // Check that traefik labels were added
       const traefikLabels = service.labels!.filter((l) => l.startsWith('traefik.'));
       expect(traefikLabels.length).toBeGreaterThan(0);
-      // Check that x-gws-config was removed from service
-      expect(service['x-gws-config']).toBeUndefined();
+      // x-gws-config is kept on the service: it is persisted to disk and read back
+      // at backup time to collect backupExclude patterns
+      expect(service['x-gws-config']).toBeDefined();
     });
 
     it('should add port mapping instead of traefik labels for localhost', () => {
@@ -620,8 +621,8 @@ services:
       const service = compose.content.services['local-service'];
       expect(service.ports).toBeDefined();
       expect(service.ports).toContain('9090:8080');
-      // x-gws-config should be removed
-      expect(service['x-gws-config']).toBeUndefined();
+      // x-gws-config is kept on the service (see backupExclude collection at backup time)
+      expect(service['x-gws-config']).toBeDefined();
     });
 
     it('should use internalPort as localhostHostPort if not specified', () => {
