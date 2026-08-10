@@ -6,6 +6,9 @@ export type DockerContainerState = 'running' | 'exited' | 'created' | 'paused' |
 // type for container computed status
 export type ContainerStatus = 'running' | 'stopped' | 'error' | 'none';
 
+// the two streams a container writes its logs to
+export type LogStream = 'stdout' | 'stderr';
+
 export type ContainerHealth = 'healthy' | 'unhealthy' | 'starting' | 'none';
 
 export interface DockerPsFull {

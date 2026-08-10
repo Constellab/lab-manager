@@ -1,7 +1,9 @@
-import { Controller, Get, Param, Put, StreamableFile } from '@nestjs/common';
+import { Controller, Get, Param, Put, Query, StreamableFile } from '@nestjs/common';
 import { createReadStream } from 'fs';
 import { DockerContainerService } from './container/docker-container.service';
+import { LogSearchQueryParams, LogSearchResult } from './container/log-search.dto';
 import { DockerLogs, DockerPsFull } from './docker.class';
+import { LogSearchQueryPipe } from './pipes/log-search-query.pipe';
 
 /**
  * Controller to manage the main Docker Compose operations
@@ -25,6 +27,19 @@ export class DockerContainersController {
   async getLogs(@Param('containerName') containerName: string): Promise<DockerLogs> {
     const logs = await this.dockerContainerService.getLogs(containerName);
     return { logs };
+  }
+
+  /**
+   * Filtered read of the logs, for a machine client that must not receive the whole blob.
+   * A route of its own : an older lab manager answers 404, which is a signal the caller can branch
+   * on, where unknown query parameters on `/logs` would have been silently ignored.
+   */
+  @Get(':containerName/logs/search')
+  searchLogs(
+    @Param('containerName') containerName: string,
+    @Query(LogSearchQueryPipe) params: LogSearchQueryParams
+  ): Promise<LogSearchResult> {
+    return this.dockerContainerService.searchLogs(containerName, params);
   }
 
   @Get(':containerName/logs/error')

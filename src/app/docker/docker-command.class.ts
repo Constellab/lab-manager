@@ -1,7 +1,7 @@
 import { BadRequestException, Logger } from '@nestjs/common';
 import { Command, ExecCommandMode } from '../core/utils/command';
 import { DockerComposeInspect } from './compose/docker-compose-inspect.class';
-import { DockerInspect, DockerPsFull, DockerRunOptions } from './docker.class';
+import { DockerInspect, DockerPsFull, DockerRunOptions, LogStream } from './docker.class';
 
 export interface DockerFormatKey {
   key: string; // key in the json
@@ -13,6 +13,23 @@ export interface DockerExecOptions {
   user?: string;
   interactive?: boolean; // -i flag for stdin support
 }
+
+export interface StreamLogsOptions {
+  since?: string; // passed to docker logs --since
+  until?: string; // passed to docker logs --until
+  timeoutMs: number; // hard ceiling on the whole reading
+  /** Called for each complete line, returns false to stop the reading. */
+  onLine: (line: string, stream: LogStream) => boolean;
+}
+
+export interface StreamLogsOutcome {
+  timedOut: boolean;
+  /** Exit code of `docker logs`, null when it was killed by a signal. */
+  exitCode: number | null;
+}
+
+/** Ceiling above which a stream with no newline in sight is handed over as a line of its own. */
+const MAX_BUFFERED_LINE_LENGTH = 1_000_000;
 
 export class DockerFormatKeys {
   public static readonly NAMES: DockerFormatKey = { key: 'names', dockerKey: 'Names' };
@@ -158,6 +175,111 @@ export class DockerCommand {
       `docker logs --tail 2000 ${containerName} --since ${inspect.startedAt} 2>&1 1>/dev/null`,
       ExecCommandMode.STDERR_AS_SUCCESS
     );
+  }
+
+  /**
+   * Read the logs of a container line by line, without any `--tail`, and hand each line to the
+   * caller along with the stream it came from.
+   *
+   * `--timestamps` is always applied : it makes `since` coherent and lets the response report the
+   * window actually covered. Docker is spawned with an argument list rather than a shell command
+   * line, so the container name and the time bounds are never interpreted by a shell.
+   *
+   * @returns whether the reading was cut short by the deadline, and the exit code of docker. A
+   * failure is reported rather than thrown : the lines already read are worth more to the caller
+   * than an exception.
+   */
+  public streamLogs(containerName: string, options: StreamLogsOptions): Promise<StreamLogsOutcome> {
+    const args = ['logs', '--timestamps'];
+    if (options.since) args.push('--since', options.since);
+    if (options.until) args.push('--until', options.until);
+    args.push(containerName);
+
+    return new Promise<StreamLogsOutcome>((resolve, reject) => {
+      const { childProcess } = this.getCommand().spawn('docker', args);
+      const pending: Record<LogStream, string> = { stdout: '', stderr: '' };
+      let stopped = false;
+      let timedOut = false;
+
+      const stopReading = (reason: 'timeout' | 'caller'): void => {
+        if (stopped) return;
+        stopped = true;
+        timedOut = timedOut || reason === 'timeout';
+        clearTimeout(timer);
+        childProcess.kill('SIGKILL');
+        // the container was read up to here, so the exit code of a process we just killed says
+        // nothing about the logs already collected
+        resolve({ timedOut, exitCode: 0 });
+      };
+
+      // second barrier, for a docker daemon that never answers : the per line deadline of the
+      // consumer cannot fire if no line ever arrives
+      const timer = setTimeout(() => stopReading('timeout'), options.timeoutMs);
+
+      const consume = (stream: LogStream, chunk: string): void => {
+        if (stopped) return;
+        pending[stream] += chunk;
+
+        let newlineIndex = pending[stream].indexOf('\n');
+        while (newlineIndex >= 0) {
+          const line = pending[stream].slice(0, newlineIndex).replace(/\r$/, '');
+          pending[stream] = pending[stream].slice(newlineIndex + 1);
+          if (!options.onLine(line, stream)) {
+            stopReading('caller');
+            return;
+          }
+          newlineIndex = pending[stream].indexOf('\n');
+        }
+
+        // a container that writes a huge amount without ever emitting a newline must not grow the
+        // buffer without bound
+        if (pending[stream].length > MAX_BUFFERED_LINE_LENGTH) {
+          const line = pending[stream];
+          pending[stream] = '';
+          if (!options.onLine(line, stream)) stopReading('caller');
+        }
+      };
+
+      // setEncoding rather than toString on each chunk : a character split across two chunks is
+      // then rebuilt instead of being corrupted
+      childProcess.stdout?.setEncoding('utf8');
+      childProcess.stderr?.setEncoding('utf8');
+      childProcess.stdout?.on('data', (data: string) => consume('stdout', data));
+      childProcess.stderr?.on('data', (data: string) => consume('stderr', data));
+
+      childProcess.on('error', (error) => {
+        if (stopped) return;
+        stopped = true;
+        clearTimeout(timer);
+        reject(error);
+      });
+
+      // 'close' and not 'exit' : the streams are guaranteed flushed, so no trailing line is lost
+      childProcess.on('close', (code) => {
+        if (stopped) return;
+        stopped = true;
+        clearTimeout(timer);
+
+        // a log that does not end with a newline still holds a last line
+        for (const stream of ['stdout', 'stderr'] as LogStream[]) {
+          if (pending[stream].length > 0) options.onLine(pending[stream], stream);
+        }
+
+        if (code !== 0) {
+          this.logger.warn(`Command 'docker ${args.join(' ')}' exited with the code ${code}`);
+        }
+        resolve({ timedOut: false, exitCode: code });
+      });
+    });
+  }
+
+  /** Names of every container of the host, running or not. */
+  public async listContainerNames(): Promise<string[]> {
+    const result = await this.getCommand().execCommand(`docker ps -a --format "{{.Names}}"`);
+    return result
+      .split('\n')
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0);
   }
 
   public async exportLogsToFile(containerName: string, filePath: string): Promise<string> {
