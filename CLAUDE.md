@@ -2,20 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Cross-repo work**: read [`monorepo-back/docs/architecture/platform-map.md`](../monorepo-back/docs/architecture/platform-map.md) (sibling repository) when a change spans repositories, when cutting a release, or when a cross-repo inconsistency looks like a bug — it holds the version chain, the release ordering, and the deliberate oddities.
+
 ## Development Commands
 
-### Building and Running
+### Package manager: Bun only
 
-- `npm run build` - Build the NestJS application
-- `npm run start` - Start the application
-- `npm run start:dev` - Start in development mode with file watching
-- `npm run start:debug` - Start in debug mode with file watching
-- `npm run start:prod` - Start the production build
+This repository uses **Bun** (lockfile: `bun.lock`). Use `bun install`, `bun add <pkg>`,
+`bun run <script>` and `bunx <bin>`.
 
-### Docker
-
-- `npm run build-image` - Build Docker image as 'lab-manager'
-- `docker build -t lab_manager_test .` - Test Dockerfile build
+`package.json` holds the script list; `bun run start:dev` is the usual watch loop and
+`bun run build-image` builds the Docker image as `lab-manager`.
 
 ## Architecture Overview
 

@@ -18,7 +18,7 @@ Here are the steps to setup the docker container:
 - run the docker container `lab-manager` from the `lab-configurer` repository `lab-configurer\local\docker-compose.yml`. `docker-compose up -d lab-manager`
 - open the vscode in the container
 - clone this repository in `/home` folder of the container
-- install the dependencies `npm install`
+- install the dependencies `bun install`
 
 To test the dockerfile run : `docker build -t lab-manager-test .`
 
@@ -50,7 +50,7 @@ Once in the docker container you can clone the repository in /home folder. then 
 Then you can run the app with the following command:
 
 ```bash
-npm run start
+bun run start
 ```
 
 Then run the configure lab manager route to create files. You can create a local lab named 'localhost' in space to test connexion with the lab manager.
