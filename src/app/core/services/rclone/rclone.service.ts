@@ -60,12 +60,22 @@ export class RcloneService {
       return ['--azureblob-account', config.config.accountName];
     } else {
       return [
+        '--s3-provider',
+        this.getS3Provider(config.type),
         '--s3-endpoint',
         config.config.endpoint,
         '--s3-region',
         config.config.region,
       ];
     }
+  }
+
+  /**
+   * GCS rejects a request whose signature covers the Accept-Encoding header
+   * (SignatureDoesNotMatch). rclone signs it unless the provider is GCS.
+   */
+  private getS3Provider(type: BucketType.NORMAL | BucketType.GCP): string {
+    return type === BucketType.GCP ? 'GCS' : 'Other';
   }
 
   private getSecretEnv(config: BucketConfig): Record<string, string> {
