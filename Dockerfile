@@ -23,8 +23,11 @@ FROM ubuntu:24.04
 WORKDIR /lab-manager
 
 ENV BUN_VERSION=1.3.14
-# do not name RCLONE_VERSION as it is a reserved name
-ENV CUSTOM_RCLONE_VERSION=1.60.1+dfsg-3ubuntu0.24.04.6
+# do not name RCLONE_VERSION as it is a reserved name.
+# Official binary, not the Ubuntu package: 1.60 signs the Accept-Encoding header,
+# which GCS rejects, and it does not know the GCS provider that avoids it.
+ENV CUSTOM_RCLONE_VERSION=1.75.1
+ENV CUSTOM_RCLONE_SHA256=982b5aa772841168f8e380f139e9e787b2a105403e32b94da8676a0e1c0a13ab
 ENV DOCKER_COMPOSE_VERSION=2.26.1
 
 
@@ -51,12 +54,19 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get -y install docker-ce docker-ce-cli containerd.io
 
 
-# Install rclone, unzip and pciutils (useful for lspci command).
-# unzip is also required by the bun install step below.
+# Install unzip and pciutils (useful for lspci command).
+# unzip is also required by the rclone and bun install steps below.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     apt-get update && \
-    apt-get install -y rclone=${CUSTOM_RCLONE_VERSION} unzip pciutils
+    apt-get install -y unzip pciutils
+
+# Install rclone from the official binaries, checked against the pinned sha256
+RUN curl -fsSL https://downloads.rclone.org/v${CUSTOM_RCLONE_VERSION}/rclone-v${CUSTOM_RCLONE_VERSION}-linux-amd64.zip -o /tmp/rclone.zip && \
+    echo "${CUSTOM_RCLONE_SHA256}  /tmp/rclone.zip" | sha256sum -c - && \
+    unzip -q /tmp/rclone.zip -d /tmp/rclone && \
+    install -m 755 /tmp/rclone/rclone-v${CUSTOM_RCLONE_VERSION}-linux-amd64/rclone /usr/bin/rclone && \
+    rm -rf /tmp/rclone.zip /tmp/rclone
 
 # Install bun directly from official binaries.
 # The runtime base is glibc (ubuntu), so we fetch the glibc build
