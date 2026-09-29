@@ -67,7 +67,7 @@ Run the container with the following env variables :
 
 ## 🌎 License
 
-`lab-manager` is completely free and open-source and licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html).
+`lab-manager` is completely free and open-source and licensed under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.en.html).
 
 <br/>
 
