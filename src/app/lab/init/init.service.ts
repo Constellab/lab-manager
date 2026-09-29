@@ -73,13 +73,12 @@ export class InitService {
 
     await this.configureDockerCompose();
 
-    
     // UP CONTAINERS
     await this.aggregateComposeService.restartMainServices({ updateContainers: true });
-    
+
     // Prune unused images before starting containers
     await this.dockerContainerService.pruneUnusedImages();
-    
+
     // wait for 10 seconds to let the containers start
     // so the progress of the glab is updated before the lab is marked as idle
     // because is not waiting, there is a small gap where we can't detect the lab
@@ -145,10 +144,12 @@ export class InitService {
       privateJson.space.devApiKey = labInitConfig.space.devApiKey;
       privateJson.space.apiUrl = labInitConfig.space.apiUrl;
       privateJson.space.frontUrl = labInitConfig.space.frontUrl;
+      privateJson.space.cspAllowedDomains = labInitConfig.space.cspAllowedDomains ?? '';
 
       // Community information
       privateJson.community.frontUrl = labInitConfig.community.frontUrl;
       privateJson.community.apiUrl = labInitConfig.community.apiUrl;
+      privateJson.community.cspAllowedDomain = labInitConfig.community.cspAllowedDomain ?? '';
 
       // Backup info
       privateJson.backup = {

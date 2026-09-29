@@ -37,11 +37,17 @@ export interface LabInitConfig {
     prodApiKey: string;
     devApiKey: string;
     frontUrl: string;
+    // Space domains allowed in the lab front CSP, space separated CSP host sources.
+    // Optional: an older Space does not send it, see EnvVariableService.
+    cspAllowedDomains?: string;
   };
   community: {
     apiUrl: string;
     apiKey: string;
     frontUrl: string;
+    // Community domain allowed in the lab front CSP (plainly and as wss://), a single
+    // CSP host source. Optional, same as above.
+    cspAllowedDomain?: string;
   };
   lab: {
     id: string;

@@ -128,6 +128,8 @@ services:
       - DEV_FRONT_URLS=http://localhost:89
       - COMMUNITY_FRONT_URL=${COMMUNITY_FRONT_URL}
       - COMMUNITY_API_URL=${COMMUNITY_API_URL}
+      - CSP_ALLOWED_DOMAINS=${CSP_ALLOWED_DOMAINS}
+      - COMMUNITY_CSP_ALLOWED_DOMAIN=${COMMUNITY_CSP_ALLOWED_DOMAIN}
       - CAPTCHA_SITE_KEY=
     networks:
       - gencovery-network-prod

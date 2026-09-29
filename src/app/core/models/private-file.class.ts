@@ -5,10 +5,14 @@ export interface PrivateFile {
     devApiKey: string;
     apiUrl: string;
     frontUrl: string;
+    // missing from a private.json written before the field existed
+    cspAllowedDomains?: string;
   };
   community: {
     frontUrl: string;
     apiUrl: string;
+    // missing from a private.json written before the field existed
+    cspAllowedDomain?: string;
   };
   lab: {
     id: string;
@@ -51,10 +55,12 @@ export function getPrivateFileTemplate(): PrivateFile {
       devApiKey: '',
       apiUrl: '',
       frontUrl: '',
+      cspAllowedDomains: '',
     },
     community: {
       frontUrl: '',
       apiUrl: '',
+      cspAllowedDomain: '',
     },
     lab: {
       id: '',

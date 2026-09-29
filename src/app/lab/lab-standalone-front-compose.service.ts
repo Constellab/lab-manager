@@ -4,6 +4,7 @@ import { DockerComposeYaml } from '../docker/compose/docker-compose-yaml';
 import { DockerCompose } from '../docker/compose/docker-compose.class';
 import { DockerComposeService } from '../docker/compose/docker-compose.service';
 import { DockerComposeUniqueId } from '../docker/compose/docker-compose.types';
+import { getUrlHost } from '../core/utils/url';
 
 @Injectable()
 export class LabStandaloneFrontComposeService implements OnModuleInit {
@@ -89,6 +90,14 @@ export class LabStandaloneFrontComposeService implements OnModuleInit {
         serviceName,
         'COMMUNITY_FRONT_URL',
         this.coreConfigService.getDesktopCommunityFrontUrl()
+      );
+      // The standalone front only calls the lab manager (its own domain, or localhost) and the
+      // community api, so the community api is the only domain its CSP must allow on top.
+      // Left empty for an invalid url, the image then keeps its own defaults.
+      dockerYaml.addEnvironmentVariable(
+        serviceName,
+        'CSP_ALLOWED_DOMAINS',
+        getUrlHost(this.coreConfigService.getDesktopCommunityApiUrl())
       );
       const labManagerSubdomain = LabStandaloneFrontComposeService.LAB_MANAGER_SUBDOMAIN;
       const virtualHost = this.coreConfigService.getVirtualHost();

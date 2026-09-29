@@ -5,6 +5,29 @@ import { TaskService } from '../../core/services/task/task.service';
 import { ConfigFile } from '../../core/models/config-file.class';
 import { PrivateFile } from '../../core/models/private-file.class';
 import { FileService } from '../../core/services/file/file.service';
+import { getUrlHost } from '../../core/utils/url';
+
+/**
+ * Space domains allowed in the lab front CSP (connect-src and media-src), as space separated
+ * CSP host sources. The Space sends them; a private.json written by an older Space, or by the
+ * standalone front, does not have them, so they are derived from the space urls instead.
+ * Empty when nothing is known: the lab front then keeps its own defaults.
+ */
+export function getCspAllowedDomains(privateJson: PrivateFile): string {
+  if (privateJson.space?.cspAllowedDomains) {
+    return privateJson.space.cspAllowedDomains;
+  }
+  const hosts = [getUrlHost(privateJson.space?.frontUrl), getUrlHost(privateJson.space?.apiUrl)];
+  return [...new Set(hosts.filter((host) => host))].join(' ');
+}
+
+/**
+ * Community domain allowed in the lab front CSP (connect-src, plainly and as wss://), a single
+ * CSP host source. Same fallback as getCspAllowedDomains, from the community api url.
+ */
+export function getCommunityCspAllowedDomain(privateJson: PrivateFile): string {
+  return privateJson.community?.cspAllowedDomain || getUrlHost(privateJson.community?.apiUrl);
+}
 
 /**
  * Simple class to generate the env variable string
@@ -73,6 +96,10 @@ export class EnvVariableService {
         envVariables.addEnvVariable('COMMUNITY_FRONT_URL', privateJson.community.frontUrl);
         envVariables.addEnvVariable('COMMUNITY_API_URL', privateJson.community.apiUrl);
       }
+
+      // CONTENT SECURITY POLICY of the lab front, on top of the lab own domain (VIRTUAL_HOST)
+      envVariables.addEnvVariable('CSP_ALLOWED_DOMAINS', getCspAllowedDomains(privateJson));
+      envVariables.addEnvVariable('COMMUNITY_CSP_ALLOWED_DOMAIN', getCommunityCspAllowedDomain(privateJson));
 
       envVariables.addEnvVariable('GWS_CORE_PROD_DB_PASSWORD', privateJson.db.gwsCoreProdPassword);
       envVariables.addEnvVariable('GWS_CORE_DEV_DB_PASSWORD', privateJson.db.gwsCoreDevPassword);
